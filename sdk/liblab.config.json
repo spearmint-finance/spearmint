@@ -1,22 +1,11 @@
 {
-  "liblabVersion": "1",
+  "liblabVersion": "2",
   "specFilePath": "./openapi.json",
-  "languages": [
-    "python",
-    "typescript"
-  ],
-  "outputDir": ".",
   "sdkName": "spearmint-sdk",
   "apiVersion": "1.0.0",
   "apiName": "Spearmint API",
-  "python": {
-    "packageName": "spearmint-sdk",
-    "liblabVersion": "2",
-    "sdkVersion": "0.1.0"
-  },
-  "typescript": {
-    "npmName": "@spearmint-money/sdk",
-    "liblabVersion": "2",
-    "sdkVersion": "0.1.0"
-  }
+  "languages": [
+    "python",
+    "typescript"
+  ]
 }
