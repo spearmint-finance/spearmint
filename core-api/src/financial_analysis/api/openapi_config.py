@@ -239,7 +239,28 @@ def customize_openapi_schema(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         The customized OpenAPI schema
     """
+    # 1. Generate Unique Operation IDs
+    # LibLab and other generators require unique operationIds to generate clean method names.
+    paths = openapi_schema.get('paths', {})
+    for path, methods in paths.items():
+        for method, details in methods.items():
+            if 'operationId' not in details:
+                # Create a unique ID based on tags and method
+                # e.g. transactions_get, maintenance_fix_classifications_post
+                tags = details.get('tags', ['default'])
+                tag = tags[0] if tags else 'default'
+                
+                # Clean path for ID generation
+                clean_path = path.replace('/api/', '').replace('/', '_').replace('{', '').replace('}', '')
+                if clean_path.startswith('_'): clean_path = clean_path[1:]
+                
+                operation_id = f"{method}_{clean_path}"
+                details['operationId'] = operation_id
+
     # Add security schemes (for future authentication)
+    if "components" not in openapi_schema:
+        openapi_schema["components"] = {}
+
     openapi_schema["components"]["securitySchemes"] = {
         "bearerAuth": {
             "type": "http",
@@ -256,9 +277,6 @@ def customize_openapi_schema(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
     }
     
     # Add common response schemas
-    if "components" not in openapi_schema:
-        openapi_schema["components"] = {}
-    
     if "responses" not in openapi_schema["components"]:
         openapi_schema["components"]["responses"] = {}
     
@@ -267,7 +285,7 @@ def customize_openapi_schema(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
     # Add external documentation
     openapi_schema["externalDocs"] = {
         "description": "Find more information in the project documentation",
-        "url": "https://github.com/yourusername/financial-analysis"
+        "url": "https://github.com/spearmint-finance/spearmint"
     }
     
     return openapi_schema
