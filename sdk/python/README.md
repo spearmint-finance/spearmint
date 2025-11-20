@@ -299,6 +299,7 @@ Class | Method | HTTP request | Description
  - [BalanceReportResponse](docs/BalanceReportResponse.md)
  - [BalanceResponse](docs/BalanceResponse.md)
  - [BalanceSummary](docs/BalanceSummary.md)
+ - [BodyImportTransactionsApiImportPost](docs/BodyImportTransactionsApiImportPost.md)
  - [BulkClassifyRequest](docs/BulkClassifyRequest.md)
  - [BulkClassifyResponse](docs/BulkClassifyResponse.md)
  - [CalculatedBalance](docs/CalculatedBalance.md)
