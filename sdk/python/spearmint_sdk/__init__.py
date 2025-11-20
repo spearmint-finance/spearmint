@@ -63,6 +63,7 @@ __all__ = [
     "BalanceReportResponse",
     "BalanceResponse",
     "BalanceSummary",
+    "BodyImportTransactionsApiImportPost",
     "BulkClassifyRequest",
     "BulkClassifyResponse",
     "CalculatedBalance",
@@ -248,6 +249,7 @@ from spearmint_sdk.models.balance_history import BalanceHistory as BalanceHistor
 from spearmint_sdk.models.balance_report_response import BalanceReportResponse as BalanceReportResponse
 from spearmint_sdk.models.balance_response import BalanceResponse as BalanceResponse
 from spearmint_sdk.models.balance_summary import BalanceSummary as BalanceSummary
+from spearmint_sdk.models.body_import_transactions_api_import_post import BodyImportTransactionsApiImportPost as BodyImportTransactionsApiImportPost
 from spearmint_sdk.models.bulk_classify_request import BulkClassifyRequest as BulkClassifyRequest
 from spearmint_sdk.models.bulk_classify_response import BulkClassifyResponse as BulkClassifyResponse
 from spearmint_sdk.models.calculated_balance import CalculatedBalance as CalculatedBalance

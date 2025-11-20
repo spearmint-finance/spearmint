@@ -34,6 +34,7 @@ from spearmint_sdk.models.balance_history import BalanceHistory
 from spearmint_sdk.models.balance_report_response import BalanceReportResponse
 from spearmint_sdk.models.balance_response import BalanceResponse
 from spearmint_sdk.models.balance_summary import BalanceSummary
+from spearmint_sdk.models.body_import_transactions_api_import_post import BodyImportTransactionsApiImportPost
 from spearmint_sdk.models.bulk_classify_request import BulkClassifyRequest
 from spearmint_sdk.models.bulk_classify_response import BulkClassifyResponse
 from spearmint_sdk.models.calculated_balance import CalculatedBalance
