@@ -18,44 +18,44 @@ A comprehensive REST API for financial transaction analysis and management.
 
 ## Features
 
-### 📊 Transaction Management
+### Transaction Management
 - Import transactions from CSV files
 - CRUD operations for transactions and categories
 - Advanced filtering and search capabilities
 
-### 🔍 Analysis & Insights
+### Analysis & Insights
 - Income and expense analysis with category breakdowns
 - Cash flow analysis and trends
 - Financial health indicators
 - Time-series analysis (daily, weekly, monthly, quarterly, yearly)
 
-### 🔗 Relationship Detection
+### Relationship Detection
 - Automatic transfer pair detection
 - Credit card payment/receipt matching
 - Reimbursement pair detection
 - Manual relationship management
 
-### 📈 Projections & Forecasting
+### Projections & Forecasting
 - Income and expense projections
 - Cash flow forecasting
 - Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)
 - Scenario analysis (best case, worst case, expected)
 - Accuracy metrics (MAPE, RMSE, MAE, R-squared)
 
-### 📑 Reporting & Export
+### Reporting & Export
 - Summary reports with key metrics
 - Detailed income/expense reports
 - Reconciliation reports
 - Export to JSON and CSV formats
 
-### 🏷️ Classification System
+### Classification System
 - 10 system classifications for transaction types
 - Custom user-defined classifications
 - Pattern-based classification rules
 - Bulk and automatic classification
 - Classification-aware calculations
 
-### 🛡️ Error Handling & Logging
+### Error Handling & Logging
 - Standardized error responses with detailed error codes
 - Comprehensive request/response logging
 - Performance monitoring
