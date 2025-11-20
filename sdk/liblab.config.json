@@ -5,7 +5,7 @@
     "python",
     "typescript"
   ],
-  "outputDir": "./generated",
+  "outputDir": ".",
   "sdkName": "spearmint-sdk",
   "apiVersion": "1.0.0",
   "apiName": "Spearmint API",

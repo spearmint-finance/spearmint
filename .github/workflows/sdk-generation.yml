@@ -58,4 +58,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(sdk): Auto-generate SDKs via LibLab"
-          file_pattern: 'spearmint/sdk/generated/**'
+          file_pattern: 'spearmint/sdk/python/** spearmint/sdk/typescript/**'
