@@ -4,8 +4,9 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'spearmint/core-api/**'
-      - 'spearmint/sdk/liblab.config.json'
+      - 'core-api/**'
+      - 'sdk/liblab.config.json'
+      - '.github/workflows/sdk-generation.yml' # Trigger on workflow changes too
   workflow_dispatch:
 
 jobs:
@@ -13,12 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./spearmint
+        working-directory: .
 
     services:
-      # We need the API running to fetch the Spec, OR we assume the spec is committed.
-      # Best practice: Generate spec during build.
-      # For this workflow, we'll assume we build the API container to extract the spec.
       pass:
         image: alpine
 
@@ -36,20 +34,20 @@ jobs:
 
       - name: Generate OpenAPI Spec from Core API
         run: |
-          # We can run the python code directly to extract spec without full docker compose
           cd core-api
           pip install -r requirements.txt
           # Create a small script to print the JSON
+          # We need to ensure python path finds the src module
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           python -c "from src.financial_analysis.api.main import app; import json; print(json.dumps(app.openapi()))" > ../sdk/openapi.json
           cd ..
 
       - name: Build SDKs with LibLab
         env:
           LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
-        working-directory: ./spearmint/sdk
+        working-directory: ./sdk
         run: |
           # Ensure config points to the local file we just generated
-          # We sed it just in case it was pointing to localhost
           sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
           
           liblab build
@@ -58,4 +56,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(sdk): Auto-generate SDKs via LibLab"
-          file_pattern: 'spearmint/sdk/python/** spearmint/sdk/typescript/**'
+          file_pattern: 'sdk/python/** sdk/typescript/**'
