@@ -108,28 +108,26 @@ coverage.xml
 Thumbs.db
 .DS_Store
 
-# Frontend - Node modules
-frontend/node_modules/
-frontend/.vite/
+# Node.js / Frontend
+node_modules/
+.vite/
+dist/
+build/
 
-# Frontend - Build output
-frontend/dist/
-frontend/build/
-
-# Frontend - Playwright test results
-frontend/test-results/
-frontend/playwright-report/
-frontend/playwright/.cache/
-
-# Frontend - Playwright screenshots (exclude baselines, include actual/diff)
-frontend/tests/**/*-actual.png
-frontend/tests/**/*-diff.png
-frontend/tests/**/*-previous.png
-
-# Frontend - Environment
-frontend/.env
-frontend/.env.local
-frontend/.env.production
+# Frontend - Specific
+web-app/node_modules/
+web-app/.vite/
+web-app/dist/
+web-app/build/
+web-app/test-results/
+web-app/playwright-report/
+web-app/playwright/.cache/
+web-app/tests/**/*-actual.png
+web-app/tests/**/*-diff.png
+web-app/tests/**/*-previous.png
+web-app/.env
+web-app/.env.local
+web-app/.env.production
 
 #cluade
 .claude
