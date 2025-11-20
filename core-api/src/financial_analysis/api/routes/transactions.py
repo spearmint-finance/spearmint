@@ -1,0 +1,273 @@
+"""Transaction API endpoints."""
+
+from typing import Optional, List
+from datetime import date
+from decimal import Decimal
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from ..dependencies import get_db
+from ..schemas.transaction import (
+    TransactionCreate,
+    TransactionUpdate,
+    TransactionResponse,
+    TransactionListResponse
+)
+from ..schemas.common import SuccessResponse, PaginationParams
+from ...services.transaction_service import TransactionService, TransactionFilter
+from ...utils.validators import ValidationError
+
+router = APIRouter()
+
+
+@router.post("/transactions", response_model=TransactionResponse, status_code=201)
+def create_transaction(
+    transaction: TransactionCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new transaction.
+    
+    Args:
+        transaction: Transaction data
+        db: Database session
+        
+    Returns:
+        TransactionResponse: Created transaction
+    """
+    service = TransactionService(db)
+    
+    try:
+        created = service.create_transaction(
+            transaction_date=transaction.transaction_date,
+            amount=transaction.amount,
+            transaction_type=transaction.transaction_type,
+            category_id=transaction.category_id,
+            source=transaction.source,
+            description=transaction.description,
+            payment_method=transaction.payment_method,
+            classification_id=transaction.classification_id,
+            include_in_analysis=transaction.include_in_analysis,
+            is_transfer=transaction.is_transfer,
+            transfer_account_from=transaction.transfer_account_from,
+            transfer_account_to=transaction.transfer_account_to,
+            notes=transaction.notes,
+            tag_names=transaction.tag_names
+        )
+        return created
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create transaction: {str(e)}")
+
+
+@router.get("/transactions/{transaction_id}", response_model=TransactionResponse)
+def get_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get transaction by ID.
+    
+    Args:
+        transaction_id: Transaction ID
+        db: Database session
+        
+    Returns:
+        TransactionResponse: Transaction data
+    """
+    service = TransactionService(db)
+    transaction = service.get_transaction(transaction_id)
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
+    
+    return transaction
+
+
+@router.get("/transactions", response_model=TransactionListResponse)
+def list_transactions(
+    start_date: Optional[date] = Query(None, description="Start date filter"),
+    end_date: Optional[date] = Query(None, description="End date filter"),
+    transaction_type: Optional[str] = Query(None, pattern="^(Income|Expense)$", description="Transaction type filter"),
+    category_id: Optional[int] = Query(None, gt=0, description="Category ID filter"),
+    classification_id: Optional[int] = Query(None, gt=0, description="Classification ID filter"),
+    include_in_analysis: Optional[bool] = Query(None, description="Include in analysis filter"),
+    is_transfer: Optional[bool] = Query(None, description="Is transfer filter"),
+    min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
+    max_amount: Optional[Decimal] = Query(None, gt=0, description="Maximum amount filter"),
+    search_text: Optional[str] = Query(None, description="Search in description, source, notes"),
+    include_capital_expenses: bool = Query(True, description="Include non-operating expenses (capital, refunds, reimbursements, etc.) in results"),
+    include_transfers: bool = Query(True, description="Include transfers in results"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Number of results to skip"),
+    sort_by: str = Query("transaction_date", description="Field to sort by"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
+    db: Session = Depends(get_db)
+):
+    """
+    List transactions with optional filters.
+
+    Args:
+        Various filter parameters
+        db: Database session
+
+    Returns:
+        TransactionListResponse: List of transactions
+    """
+    from ...database.models import TransactionClassification
+
+    service = TransactionService(db)
+
+    # Build exclusion list for classifications
+    exclude_classification_ids = []
+
+    # Get all classifications that are excluded from expense calculations
+    # This matches the logic in AnalysisService.analyze_expenses()
+    if not include_capital_expenses:
+        excluded_classifications = db.query(TransactionClassification).filter(
+            TransactionClassification.exclude_from_expense_calc == True
+        ).all()
+        exclude_classification_ids.extend([c.classification_id for c in excluded_classifications])
+
+    # Get Credit Card Payment classification IDs (to exclude with transfers)
+    if not include_transfers:
+        credit_card_classifications = db.query(TransactionClassification).filter(
+            TransactionClassification.classification_name.in_([
+                "Credit Card Payment",
+                "Credit Card Receipt"
+            ])
+        ).all()
+        exclude_classification_ids.extend([c.classification_id for c in credit_card_classifications])
+
+    # Build filter with exclusions
+    # Resolve transfer filtering precedence:
+    # - If include_transfers is False, exclude transfers by default (is_transfer=False)
+    # - Otherwise honor the explicit is_transfer filter (if provided)
+    resolved_is_transfer = (is_transfer if include_transfers else False)
+
+    filters = TransactionFilter(
+        start_date=start_date,
+        end_date=end_date,
+        transaction_type=transaction_type,
+        category_id=category_id,
+        classification_id=classification_id,
+        include_in_analysis=include_in_analysis,
+        is_transfer=resolved_is_transfer,
+        min_amount=min_amount,
+        max_amount=max_amount,
+        search_text=search_text,
+        exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
+        limit=limit,
+        offset=offset,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
+    transactions = service.list_transactions(filters)
+
+    # Get total count and summary (without pagination)
+    filters_no_limit = TransactionFilter(
+        start_date=start_date,
+        end_date=end_date,
+        transaction_type=transaction_type,
+        category_id=category_id,
+        classification_id=classification_id,
+        include_in_analysis=include_in_analysis,
+        is_transfer=resolved_is_transfer,
+        min_amount=min_amount,
+        max_amount=max_amount,
+        search_text=search_text,
+        exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
+        limit=999999,
+        offset=0
+    )
+    all_transactions = service.list_transactions(filters_no_limit)
+
+    total = len(all_transactions)
+
+    # Calculate summary statistics
+    total_income = sum(float(t.amount) for t in all_transactions if t.transaction_type == "Income")
+    total_expenses = sum(abs(float(t.amount)) for t in all_transactions if t.transaction_type == "Expense")
+    net_income = total_income - total_expenses
+
+    summary = {
+        "total_income": total_income,
+        "total_expenses": total_expenses,
+        "net_income": net_income,
+        "transaction_count": total
+    }
+
+    return TransactionListResponse(
+        transactions=transactions,
+        total=total,
+        limit=limit,
+        offset=offset,
+        summary=summary
+    )
+
+
+@router.put("/transactions/{transaction_id}", response_model=TransactionResponse)
+def update_transaction(
+    transaction_id: int,
+    transaction: TransactionUpdate,
+    reapply_rules: Optional[bool] = Query(None, description="If true, re-apply classification rules"),
+    db: Session = Depends(get_db)
+):
+    """
+    Update transaction.
+    
+    Args:
+        transaction_id: Transaction ID
+        transaction: Updated transaction data
+        db: Database session
+        
+    Returns:
+        TransactionResponse: Updated transaction
+    """
+    service = TransactionService(db)
+    
+    try:
+        # Convert to dict and remove None values
+        updates = transaction.model_dump(exclude_unset=True)
+
+        # If query param provided, let it override body or supply value
+        if reapply_rules is not None:
+            updates["reapply_rules"] = reapply_rules
+
+        updated = service.update_transaction(transaction_id, **updates)
+
+        if not updated:
+            raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
+
+        return updated
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update transaction: {str(e)}")
+
+
+@router.delete("/transactions/{transaction_id}", response_model=SuccessResponse)
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete transaction.
+    
+    Args:
+        transaction_id: Transaction ID
+        db: Database session
+        
+    Returns:
+        SuccessResponse: Success message
+    """
+    service = TransactionService(db)
+    
+    deleted = service.delete_transaction(transaction_id)
+    
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
+    
+    return SuccessResponse(message=f"Transaction {transaction_id} deleted successfully")
+

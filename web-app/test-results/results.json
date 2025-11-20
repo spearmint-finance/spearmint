@@ -1,0 +1,280 @@
+{
+  "config": {
+    "configFile": "D:\\CodingProjects\\financial-analysis\\frontend\\playwright.config.ts",
+    "rootDir": "D:/CodingProjects/financial-analysis/frontend/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/CodingProjects/financial-analysis/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/CodingProjects/financial-analysis/frontend/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.1",
+    "workers": 12,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "stdout": "ignore",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "detect-relationships-button.spec.ts",
+      "file": "detect-relationships-button.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Detect Relationships Button",
+          "file": "detect-relationships-button.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should have Detect Relationships button visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1541,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Verifying button is visible...\n"
+                        },
+                        {
+                          "text": "✓ Button is visible and enabled\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-07T15:29:06.405Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3831a07fe69810c6f105-a56b9649bc5eb9782954",
+              "file": "detect-relationships-button.spec.ts",
+              "line": 22,
+              "column": 3
+            },
+            {
+              "title": "should detect relationships when button is clicked",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2666,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing relationship detection...\n"
+                        },
+                        {
+                          "text": "✓ Button shows loading state\n"
+                        },
+                        {
+                          "text": "✓ Detection completed\n"
+                        },
+                        {
+                          "text": "✓ Message shown: No relationship pairs found\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-07T15:29:06.404Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3831a07fe69810c6f105-aeb4b925841bd4d70dae",
+              "file": "detect-relationships-button.spec.ts",
+              "line": 32,
+              "column": 3
+            },
+            {
+              "title": "should show visual indicators for linked pairs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4715,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing visual indicators...\n"
+                        },
+                        {
+                          "text": "✓ Found 2 NVIDIA transactions\n"
+                        },
+                        {
+                          "text": "✓ Found 1 Reinvestment classification chips\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-07T15:29:06.438Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3831a07fe69810c6f105-4f47b7b778c9245950f1",
+              "file": "detect-relationships-button.spec.ts",
+              "line": 69,
+              "column": 3
+            },
+            {
+              "title": "should disable button during detection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 6844,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing button disabled state...\n"
+                        },
+                        {
+                          "text": "✓ Button is enabled initially\n"
+                        },
+                        {
+                          "text": "✓ Button is disabled during detection\n"
+                        },
+                        {
+                          "text": "✓ Button is enabled again after detection\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-07T15:29:06.435Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "3831a07fe69810c6f105-2197d0769443ca074241",
+              "file": "detect-relationships-button.spec.ts",
+              "line": 102,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-07T15:29:04.112Z",
+    "duration": 9796.632000000001,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

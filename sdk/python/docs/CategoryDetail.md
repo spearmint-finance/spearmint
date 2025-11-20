@@ -1,0 +1,34 @@
+# CategoryDetail
+
+Detailed category information.
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**category** | **str** | Category name | 
+**total** | **float** | Total amount | 
+**count** | **int** | Number of transactions | 
+**average** | **float** | Average transaction amount | 
+**percentage** | **float** | Percentage of total | 
+
+## Example
+
+```python
+from spearmint_sdk.models.category_detail import CategoryDetail
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of CategoryDetail from a JSON string
+category_detail_instance = CategoryDetail.from_json(json)
+# print the JSON string representation of the object
+print(CategoryDetail.to_json())
+
+# convert the object into a dict
+category_detail_dict = category_detail_instance.to_dict()
+# create an instance of CategoryDetail from a dict
+category_detail_from_dict = CategoryDetail.from_dict(category_detail_dict)
+```
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+
