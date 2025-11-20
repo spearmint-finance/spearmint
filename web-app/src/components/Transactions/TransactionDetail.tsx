@@ -1,0 +1,328 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Chip,
+  Divider,
+  Grid,
+  IconButton,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
+import LinkIcon from "@mui/icons-material/Link";
+import { useSnackbar } from "notistack";
+import type { Transaction } from "../../types/transaction";
+import { useDeleteTransaction } from "../../hooks/useTransactions";
+import { formatCurrency, formatDate } from "../../utils/formatters";
+import TransactionForm from "./TransactionForm";
+
+interface TransactionDetailProps {
+  open: boolean;
+  onClose: () => void;
+  transaction: Transaction | null;
+}
+
+function TransactionDetail({
+  open,
+  onClose,
+  transaction,
+}: TransactionDetailProps) {
+  const { enqueueSnackbar } = useSnackbar();
+  const deleteMutation = useDeleteTransaction();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  if (!transaction) {
+    return null;
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync(transaction.id);
+      enqueueSnackbar("Transaction deleted successfully", {
+        variant: "success",
+      });
+      setDeleteConfirmOpen(false);
+      onClose();
+    } catch (error) {
+      enqueueSnackbar("Failed to delete transaction", { variant: "error" });
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">Transaction Details</Typography>
+            <IconButton onClick={onClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2}>
+            {/* Transaction Type */}
+            <Grid item xs={12}>
+              <Chip
+                label={transaction.transaction_type}
+                color={
+                  transaction.transaction_type === "Income"
+                    ? "success"
+                    : "error"
+                }
+                size="medium"
+              />
+            </Grid>
+
+            {/* Description */}
+            <Grid item xs={12}>
+              <Typography variant="caption" color="text.secondary">
+                Description
+              </Typography>
+              <Typography variant="h6">{transaction.description}</Typography>
+            </Grid>
+
+            {/* Amount */}
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" color="text.secondary">
+                Amount
+              </Typography>
+              <Typography
+                variant="h5"
+                color={
+                  transaction.transaction_type === "Income"
+                    ? "success.main"
+                    : "error.main"
+                }
+              >
+                {transaction.transaction_type === "Income" ? "+" : "-"}
+                {formatCurrency(Math.abs(transaction.amount))}
+              </Typography>
+            </Grid>
+
+            {/* Date */}
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" color="text.secondary">
+                Date
+              </Typography>
+              <Typography variant="body1">
+                {formatDate(transaction.date, "long")}
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Divider />
+            </Grid>
+
+            {/* Category */}
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" color="text.secondary">
+                Category
+              </Typography>
+              <Typography variant="body1">
+                {transaction.category_name || "Uncategorized"}
+              </Typography>
+            </Grid>
+
+            {/* Balance */}
+            {transaction.balance !== undefined &&
+              transaction.balance !== null && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Balance After
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatCurrency(transaction.balance)}
+                  </Typography>
+                </Grid>
+              )}
+
+            {/* Classification */}
+            {transaction.classification_name && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Classification
+                </Typography>
+                <Typography variant="body1">
+                  {transaction.classification_name}
+                </Typography>
+              </Grid>
+            )}
+
+            {/* Related Transaction (Dividend Reinvestment) */}
+            {transaction.related_transaction_id &&
+              (transaction.classification_name === "Dividend Reinvestment" ||
+                transaction.classification_name?.includes(
+                  "Investment Distribution"
+                )) && (
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Box
+                    sx={{
+                      p: 2,
+                      bgcolor: "info.lighter",
+                      borderRadius: 1,
+                      border: "1px solid",
+                      borderColor: "info.light",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
+                      <LinkIcon fontSize="small" color="primary" />
+                      <Typography variant="subtitle2" color="primary">
+                        Linked Dividend Reinvestment Pair
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      This transaction is part of a dividend reinvestment pair.
+                      {transaction.classification_name ===
+                      "Dividend Reinvestment"
+                        ? " The dividend income was automatically reinvested."
+                        : " This dividend was automatically reinvested."}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 1, display: "block" }}
+                    >
+                      Related Transaction ID:{" "}
+                      {transaction.related_transaction_id}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+
+            {/* Notes */}
+            {transaction.notes && (
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary">
+                  Notes
+                </Typography>
+                <Typography variant="body2">{transaction.notes}</Typography>
+              </Grid>
+            )}
+
+            {/* Tags */}
+            {transaction.tags && transaction.tags.length > 0 && (
+              <Grid item xs={12}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Tags
+                </Typography>
+                <Box
+                  sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}
+                >
+                  {transaction.tags.map((tag, index) => (
+                    <Chip
+                      key={index}
+                      label={tag}
+                      size="small"
+                      variant="outlined"
+                    />
+                  ))}
+                </Box>
+              </Grid>
+            )}
+
+            {/* Metadata */}
+            {transaction.created_at && (
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="caption" color="text.secondary">
+                  Created: {formatDate(transaction.created_at, "long")}
+                  {transaction.updated_at &&
+                    transaction.updated_at !== transaction.created_at &&
+                    ` • Updated: ${formatDate(transaction.updated_at, "long")}`}
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            startIcon={<DeleteIcon />}
+            color="error"
+            onClick={() => setDeleteConfirmOpen(true)}
+          >
+            Delete
+          </Button>
+          <Box sx={{ flex: 1 }} />
+          <Button onClick={onClose}>Close</Button>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => setEditDialogOpen(true)}
+          >
+            Edit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <TransactionForm
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        transaction={transaction}
+        mode="edit"
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this transaction? This action cannot
+            be undone.
+          </Typography>
+          <Box sx={{ mt: 2, p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+            <Typography variant="body2" fontWeight="medium">
+              {transaction.description}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {formatCurrency(transaction.amount)} •{" "}
+              {formatDate(transaction.date)}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
+export default TransactionDetail;

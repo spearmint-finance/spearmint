@@ -1,0 +1,61 @@
+name: SDK Generation (LibLab)
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'spearmint/core-api/**'
+      - 'spearmint/sdk/liblab.config.json'
+  workflow_dispatch:
+
+jobs:
+  generate-sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./spearmint
+
+    services:
+      # We need the API running to fetch the Spec, OR we assume the spec is committed.
+      # Best practice: Generate spec during build.
+      # For this workflow, we'll assume we build the API container to extract the spec.
+      pass:
+        image: alpine
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install LibLab CLI
+        run: npm install -g liblab
+
+      - name: Generate OpenAPI Spec from Core API
+        run: |
+          # We can run the python code directly to extract spec without full docker compose
+          cd core-api
+          pip install -r requirements.txt
+          # Create a small script to print the JSON
+          python -c "from src.financial_analysis.api.main import app; import json; print(json.dumps(app.openapi()))" > ../sdk/openapi.json
+          cd ..
+
+      - name: Build SDKs with LibLab
+        env:
+          LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
+        working-directory: ./spearmint/sdk
+        run: |
+          # Ensure config points to the local file we just generated
+          # We sed it just in case it was pointing to localhost
+          sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
+          
+          liblab build
+
+      - name: Commit Generated SDKs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(sdk): Auto-generate SDKs via LibLab"
+          file_pattern: 'spearmint/sdk/generated/**'

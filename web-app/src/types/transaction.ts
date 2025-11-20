@@ -1,0 +1,72 @@
+// Transaction types based on backend API schemas
+
+export interface Transaction {
+  id: number;
+  date: string;
+  description: string;
+  amount: number;
+  transaction_type: "Income" | "Expense";
+  is_transfer?: boolean;
+  balance?: number;
+  category_id?: number;
+  category_name?: string;
+  classification_id?: number;
+  classification_name?: string;
+  source?: string;
+  payment_method?: string;
+  transfer_account_from?: string;
+  transfer_account_to?: string;
+  notes?: string;
+  tags?: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TransactionCreate {
+  date: string;
+  description: string;
+  amount: number;
+  transaction_type: "Income" | "Expense";
+  category_id: number; // Required field
+  balance?: number;
+  is_transfer?: boolean;
+  notes?: string;
+}
+
+export interface TransactionUpdate {
+  date?: string;
+  description?: string;
+  amount?: number;
+  transaction_type?: "Income" | "Expense";
+  balance?: number;
+  category_id?: number;
+  is_transfer?: boolean;
+  notes?: string;
+  // Force classification rules to re-apply even if a manual classification exists
+  reapply_rules?: boolean;
+}
+
+export interface TransactionFilter {
+  start_date?: string;
+  end_date?: string;
+  category_id?: number;
+  classification_id?: number;
+  min_amount?: number;
+  max_amount?: number;
+  search?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export interface TransactionListResponse {
+  transactions: Transaction[];
+  total: number;
+  limit: number;
+  offset: number;
+  summary?: {
+    total_income: number;
+    total_expenses: number;
+    net_income: number;
+    transaction_count: number;
+  };
+}

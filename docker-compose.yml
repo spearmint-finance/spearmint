@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------
+  # API GATEWAY (Entry Point)
+  # ----------------------------------------------------------------
+  gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - core-api
+      - web-app
+
+  # ----------------------------------------------------------------
+  # CORE API (Backend Service)
+  # ----------------------------------------------------------------
+  core-api:
+    build: ./core-api
+    volumes:
+      - ./core-api/src:/app/src  # Hot reload for code
+      - ./database/data:/app/data # Persist SQLite DB
+    environment:
+      - APP_ENV=local
+      - DEBUG=true
+      - DATABASE_URL=sqlite:////app/data/financial_data.db
+    # Override command for hot reloading in dev
+    command: uvicorn src.financial_analysis.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ----------------------------------------------------------------
+  # WEB APP (Frontend Service)
+  # ----------------------------------------------------------------
+  web-app:
+    build: ./web-app
+    # For local dev, we might prefer running 'npm run dev' instead of nginx
+    # but for the Docker composition, we treat it as a built artifact.
+    # To enable hot-reload for frontend, we'd need a dev-specific Dockerfile
+    # or run npm locally outside docker.
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
+  # ----------------------------------------------------------------
+  # DATABASE (Postgres - Future Proofing)
+  # ----------------------------------------------------------------
+  # Using SQLite file mount for now as per current setup, 
+  # but adding postgres here so we are ready to switch.
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=spearmint
+      - POSTGRES_PASSWORD=spearmint
+      - POSTGRES_DB=spearmint
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
