@@ -1,5 +1,5 @@
 {
-  "liblabVersion": "2",
+  "liblabVersion": "1",
   "specFilePath": "./openapi.json",
   "languages": [
     "python",
