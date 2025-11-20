@@ -8,6 +8,9 @@ on:
       - '.github/workflows/sdk-generation-opensource.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate-sdk-oss:
     runs-on: ubuntu-latest
