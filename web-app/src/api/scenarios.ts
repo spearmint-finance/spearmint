@@ -1,4 +1,4 @@
-import apiClient from "./client";
+import { scenariosApi } from "./sdk";
 
 export type ScenarioAdjusterIn = {
   type: "job_loss" | "income_reduction" | "expense_change" | "one_time";
@@ -37,10 +37,8 @@ export type ScenarioPreviewResponse = {
 };
 
 export async function previewScenario(payload: ScenarioPreviewRequest) {
-  const { data } = await apiClient.post<ScenarioPreviewResponse>(
-    "/scenarios/preview",
-    payload
-  );
-  return data;
+  const response = await scenariosApi.previewScenario({
+    scenarioPreviewRequest: payload as any // The generated SDK type might differ slightly in strictness
+  });
+  return response as unknown as ScenarioPreviewResponse;
 }
-

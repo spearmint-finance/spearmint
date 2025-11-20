@@ -31,7 +31,9 @@ services:
   # WEB APP (Frontend Service)
   # ----------------------------------------------------------------
   web-app:
-    build: ./web-app
+    build:
+      context: .
+      dockerfile: web-app/Dockerfile
     # For local dev, we might prefer running 'npm run dev' instead of nginx
     # but for the Docker composition, we treat it as a built artifact.
     # To enable hot-reload for frontend, we'd need a dev-specific Dockerfile

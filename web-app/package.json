@@ -30,7 +30,8 @@
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.63.0",
     "react-router-dom": "^6.26.2",
-    "recharts": "^2.15.4"
+    "recharts": "^2.15.4",
+    "@spearmint-money/sdk": "file:../sdk/typescript"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.1",
