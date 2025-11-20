@@ -53,7 +53,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 
 # Health check endpoint
-@app.get("/api/health")
+@app.get("/api/health", tags=["system"])
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "version": "1.0.0"}
@@ -82,7 +82,7 @@ app.include_router(maintenance.router, prefix="/api", tags=["maintenance"])
 
 
 # Root endpoint
-@app.get("/")
+@app.get("/", tags=["system"])
 async def root():
     """Root endpoint."""
     return {
