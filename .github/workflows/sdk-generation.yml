@@ -1,4 +1,4 @@
-name: SDK Generation (Hybrid)
+name: SDK Generation (LibLab)
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
           python scripts/generate_openapi.py ../sdk/openapi.json
           cd ..
 
-      - name: Build Python SDK with LibLab
+      - name: Build SDKs with LibLab
         env:
           LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
         working-directory: ./sdk
@@ -51,21 +51,10 @@ jobs:
           # Ensure config points to the local file we just generated
           sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
           
-          # Build Python only (as configured in liblab.config.json)
           liblab build
-
-      - name: Build TypeScript SDK with OpenAPI Generator
-        uses: openapi-generators/openapitools-generator-action@v1
-        with:
-          generator: typescript-fetch
-          openapi-file: sdk/openapi.json
-          command-args: >-
-            --package-name @spearmint-money/sdk
-            --output sdk/typescript
-            --additional-properties=typescriptThreePlus=true,supportsES6=true,npmName=@spearmint-money/sdk,npmVersion=0.1.0
 
       - name: Commit Generated SDKs
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore(sdk): Auto-generate SDKs (LibLab Python + OpenAPI TS)"
+          commit_message: "chore(sdk): Auto-generate SDKs via LibLab"
           file_pattern: 'sdk/python/** sdk/typescript/**'
