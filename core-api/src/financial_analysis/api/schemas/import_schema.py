@@ -18,7 +18,7 @@ class ImportErrorDetail(BaseModel):
     row: int = Field(..., description="Row number")
     field: str = Field(..., description="Field name")
     message: str = Field(..., description="Error message")
-    value: Optional[Any] = Field(None, description="Invalid value")
+    value: Optional[str] = Field(None, description="Invalid value")
 
 
 class ImportResponse(BaseModel):
