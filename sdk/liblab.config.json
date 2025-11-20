@@ -2,7 +2,8 @@
   "liblabVersion": "1",
   "specFilePath": "./openapi.json",
   "languages": [
-    "python"
+    "python",
+    "typescript"
   ],
   "outputDir": ".",
   "sdkName": "spearmint-sdk",
