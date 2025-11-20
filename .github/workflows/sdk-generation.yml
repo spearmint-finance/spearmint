@@ -38,28 +38,8 @@ jobs:
           pip install -r requirements.txt
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           
-          # create a temporary python script to write the spec to a file
-          # this avoids capturing stdout logs (startup messages) in the json
-          cat <<EOF > generate_spec.py
-import json
-import sys
-import logging
-
-# Suppress logging during import
-logging.disable(logging.CRITICAL)
-
-try:
-    from src.financial_analysis.api.main import app
-    
-    with open('../sdk/openapi.json', 'w') as f:
-        json.dump(app.openapi(), f, indent=2)
-    print("Successfully generated ../sdk/openapi.json")
-except Exception as e:
-    print(f"Error generating spec: {e}")
-    sys.exit(1)
-EOF
-          
-          python generate_spec.py
+          # Run the generation script
+          python scripts/generate_openapi.py ../sdk/openapi.json
           cd ..
 
       - name: Verify Spec Content
