@@ -6,7 +6,7 @@ on:
     paths:
       - 'core-api/**'
       - 'sdk/liblab.config.json'
-      - '.github/workflows/sdk-generation.yml' # Trigger on workflow changes too
+      - '.github/workflows/sdk-generation.yml'
   workflow_dispatch:
 
 jobs:
@@ -36,11 +36,34 @@ jobs:
         run: |
           cd core-api
           pip install -r requirements.txt
-          # Create a small script to print the JSON
-          # We need to ensure python path finds the src module
           export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python -c "from src.financial_analysis.api.main import app; import json; print(json.dumps(app.openapi()))" > ../sdk/openapi.json
+          
+          # create a temporary python script to write the spec to a file
+          # this avoids capturing stdout logs (startup messages) in the json
+          cat <<EOF > generate_spec.py
+import json
+import sys
+import logging
+
+# Suppress logging during import
+logging.disable(logging.CRITICAL)
+
+try:
+    from src.financial_analysis.api.main import app
+    
+    with open('../sdk/openapi.json', 'w') as f:
+        json.dump(app.openapi(), f, indent=2)
+    print("Successfully generated ../sdk/openapi.json")
+except Exception as e:
+    print(f"Error generating spec: {e}")
+    sys.exit(1)
+EOF
+          
+          python generate_spec.py
           cd ..
+
+      - name: Verify Spec Content
+        run: head -n 5 sdk/openapi.json
 
       - name: Build SDKs with LibLab
         env:
