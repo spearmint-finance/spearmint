@@ -2,7 +2,7 @@
  * API client for Transaction Relationships
  */
 
-import apiClient from "./client";
+import { relationshipsApi } from "./sdk";
 import type {
   DividendReinvestmentPairsResponse,
   TransferPairsResponse,
@@ -28,18 +28,12 @@ export const detectDividendReinvestments = async (
     auto_link = true,
   } = params;
 
-  const response = await apiClient.post<DividendReinvestmentPairsResponse>(
-    "/relationships/detect/dividend-reinvestments",
-    null,
-    {
-      params: {
-        date_tolerance_days,
-        amount_tolerance,
-        auto_link,
-      },
-    }
-  );
-  return response.data;
+  const response = await relationshipsApi.detectDividendReinvestments({
+    dateToleranceDays: date_tolerance_days,
+    amountTolerance: amount_tolerance,
+    autoLink: auto_link
+  });
+  return response as unknown as DividendReinvestmentPairsResponse;
 };
 
 /**
@@ -54,18 +48,12 @@ export const detectTransfers = async (
     auto_link = true,
   } = params;
 
-  const response = await apiClient.post<TransferPairsResponse>(
-    "/relationships/detect/transfers",
-    null,
-    {
-      params: {
-        date_tolerance_days,
-        amount_tolerance,
-        auto_link,
-      },
-    }
-  );
-  return response.data;
+  const response = await relationshipsApi.detectTransfers({
+    dateToleranceDays: date_tolerance_days,
+    amountTolerance: amount_tolerance,
+    autoLink: auto_link
+  });
+  return response as unknown as TransferPairsResponse;
 };
 
 /**
@@ -80,18 +68,12 @@ export const detectCreditCardPairs = async (
     auto_link = true,
   } = params;
 
-  const response = await apiClient.post<CreditCardPairsResponse>(
-    "/relationships/detect/credit-cards",
-    null,
-    {
-      params: {
-        date_tolerance_days,
-        amount_tolerance,
-        auto_link,
-      },
-    }
-  );
-  return response.data;
+  const response = await relationshipsApi.detectCreditCardPairs({
+    dateToleranceDays: date_tolerance_days,
+    amountTolerance: amount_tolerance,
+    autoLink: auto_link
+  });
+  return response as unknown as CreditCardPairsResponse;
 };
 
 /**
@@ -106,18 +88,12 @@ export const detectReimbursements = async (
     auto_link = true,
   } = params;
 
-  const response = await apiClient.post<ReimbursementPairsResponse>(
-    "/relationships/detect/reimbursements",
-    null,
-    {
-      params: {
-        date_tolerance_days,
-        amount_tolerance,
-        auto_link,
-      },
-    }
-  );
-  return response.data;
+  const response = await relationshipsApi.detectReimbursements({
+    dateToleranceDays: date_tolerance_days,
+    amountTolerance: amount_tolerance,
+    autoLink: auto_link
+  });
+  return response as unknown as ReimbursementPairsResponse;
 };
 
 /**
@@ -128,15 +104,8 @@ export const detectAllRelationships = async (
 ): Promise<DetectAllRelationshipsResponse> => {
   const { auto_link = true } = params;
 
-  const response = await apiClient.post<DetectAllRelationshipsResponse>(
-    "/relationships/detect/all",
-    null,
-    {
-      params: {
-        auto_link,
-      },
-    }
-  );
-  return response.data;
+  const response = await relationshipsApi.detectAllRelationships({
+    autoLink: auto_link
+  });
+  return response as unknown as DetectAllRelationshipsResponse;
 };
-

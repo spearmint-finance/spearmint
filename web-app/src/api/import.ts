@@ -1,4 +1,4 @@
-import apiClient from "./client";
+import { importApi as importClient } from "./sdk";
 import type {
   ImportResponse,
   ImportHistoryResponse,
@@ -15,22 +15,15 @@ export const importApi = {
     mode: "full" | "incremental" | "update" = "incremental",
     skipDuplicates: boolean = true
   ): Promise<ImportResponse> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("mode", mode);
-    formData.append("skip_duplicates", skipDuplicates.toString());
-
-    const response = await apiClient.post<ImportResponse>(
-      "/import",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 120000, // 2 minutes for file uploads
-      }
-    );
-    return response.data;
+    // The SDK should handle multipart/form-data if spec is correct
+    // Assuming the method is named importFile or uploadFile
+    // We pass the file object directly
+    const response = await importClient.importTransactions({
+      file,
+      mode,
+      skipDuplicates
+    });
+    return response as unknown as ImportResponse;
   },
 
   /**
@@ -40,33 +33,23 @@ export const importApi = {
     limit: number = 50,
     offset: number = 0
   ): Promise<ImportHistoryResponse> => {
-    const response = await apiClient.get<ImportHistoryResponse>(
-      "/import/history",
-      {
-        params: { limit, offset },
-      }
-    );
-    return response.data;
+    const response = await importClient.getImportHistory({ limit, offset });
+    return response as unknown as ImportHistoryResponse;
   },
 
   /**
    * Get detailed information about a specific import
    */
   getImportDetail: async (importId: number): Promise<ImportHistoryDetail> => {
-    const response = await apiClient.get<ImportHistoryDetail>(
-      `/import/history/${importId}`
-    );
-    return response.data;
+    const response = await importClient.getImportDetail({ importId });
+    return response as unknown as ImportHistoryDetail;
   },
 
   /**
    * Get import status for progress tracking
    */
   getImportStatus: async (importId: number): Promise<ImportStatusResponse> => {
-    const response = await apiClient.get<ImportStatusResponse>(
-      `/import/status/${importId}`
-    );
-    return response.data;
+    const response = await importClient.getImportStatus({ importId });
+    return response as unknown as ImportStatusResponse;
   },
 };
-

@@ -2,7 +2,7 @@
  * API client for Classification Management
  */
 
-import apiClient from "./client";
+import { classificationsApi } from "./sdk";
 import type {
   Classification,
   ClassificationCreate,
@@ -33,13 +33,8 @@ import type {
 export const getClassifications = async (
   systemOnly: boolean = false
 ): Promise<ClassificationListResponse> => {
-  const response = await apiClient.get<ClassificationListResponse>(
-    "/classifications",
-    {
-      params: { system_only: systemOnly },
-    }
-  );
-  return response.data;
+  const response = await classificationsApi.listClassifications({ systemOnly });
+  return response as unknown as ClassificationListResponse;
 };
 
 /**
@@ -48,10 +43,8 @@ export const getClassifications = async (
 export const getClassification = async (
   classificationId: number
 ): Promise<Classification> => {
-  const response = await apiClient.get<Classification>(
-    `/classifications/${classificationId}`
-  );
-  return response.data;
+  const response = await classificationsApi.getClassification({ classificationId });
+  return response as unknown as Classification;
 };
 
 /**
@@ -60,11 +53,8 @@ export const getClassification = async (
 export const createClassification = async (
   data: ClassificationCreate
 ): Promise<Classification> => {
-  const response = await apiClient.post<Classification>(
-    "/classifications",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.createClassification({ classificationCreate: data });
+  return response as unknown as Classification;
 };
 
 /**
@@ -74,11 +64,8 @@ export const updateClassification = async (
   classificationId: number,
   data: ClassificationUpdate
 ): Promise<Classification> => {
-  const response = await apiClient.put<Classification>(
-    `/classifications/${classificationId}`,
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.updateClassification({ classificationId, classificationUpdate: data });
+  return response as unknown as Classification;
 };
 
 /**
@@ -87,7 +74,7 @@ export const updateClassification = async (
 export const deleteClassification = async (
   classificationId: number
 ): Promise<void> => {
-  await apiClient.delete(`/classifications/${classificationId}`);
+  await classificationsApi.deleteClassification({ classificationId });
 };
 
 // ============================================================================
@@ -100,13 +87,8 @@ export const deleteClassification = async (
 export const getClassificationRules = async (
   activeOnly: boolean = false
 ): Promise<ClassificationRuleListResponse> => {
-  const response = await apiClient.get<ClassificationRuleListResponse>(
-    "/classification-rules",
-    {
-      params: { active_only: activeOnly },
-    }
-  );
-  return response.data;
+  const response = await classificationsApi.listClassificationRules({ activeOnly });
+  return response as unknown as ClassificationRuleListResponse;
 };
 
 /**
@@ -115,10 +97,8 @@ export const getClassificationRules = async (
 export const getClassificationRule = async (
   ruleId: number
 ): Promise<ClassificationRule> => {
-  const response = await apiClient.get<ClassificationRule>(
-    `/classification-rules/${ruleId}`
-  );
-  return response.data;
+  const response = await classificationsApi.getClassificationRule({ ruleId });
+  return response as unknown as ClassificationRule;
 };
 
 /**
@@ -127,11 +107,8 @@ export const getClassificationRule = async (
 export const createClassificationRule = async (
   data: ClassificationRuleCreate
 ): Promise<ClassificationRule> => {
-  const response = await apiClient.post<ClassificationRule>(
-    "/classification-rules",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.createClassificationRule({ classificationRuleCreate: data });
+  return response as unknown as ClassificationRule;
 };
 
 /**
@@ -141,11 +118,8 @@ export const updateClassificationRule = async (
   ruleId: number,
   data: ClassificationRuleUpdate
 ): Promise<ClassificationRule> => {
-  const response = await apiClient.put<ClassificationRule>(
-    `/classification-rules/${ruleId}`,
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.updateClassificationRule({ ruleId, classificationRuleUpdate: data });
+  return response as unknown as ClassificationRule;
 };
 
 /**
@@ -154,7 +128,7 @@ export const updateClassificationRule = async (
 export const deleteClassificationRule = async (
   ruleId: number
 ): Promise<void> => {
-  await apiClient.delete(`/classification-rules/${ruleId}`);
+  await classificationsApi.deleteClassificationRule({ ruleId });
 };
 
 /**
@@ -163,11 +137,8 @@ export const deleteClassificationRule = async (
 export const testClassificationRule = async (
   data: TestRuleRequest
 ): Promise<TestRuleResponse> => {
-  const response = await apiClient.post<TestRuleResponse>(
-    "/classification-rules/test",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.testClassificationRule({ testRuleRequest: data });
+  return response as unknown as TestRuleResponse;
 };
 
 // ============================================================================
@@ -181,11 +152,8 @@ export const classifyTransaction = async (
   transactionId: number,
   data: ClassifyTransactionRequest
 ): Promise<Classification> => {
-  const response = await apiClient.post<Classification>(
-    `/transactions/${transactionId}/classify`,
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.classifyTransaction({ transactionId, classifyTransactionRequest: data });
+  return response as unknown as Classification;
 };
 
 /**
@@ -194,11 +162,8 @@ export const classifyTransaction = async (
 export const bulkClassifyTransactions = async (
   data: BulkClassifyRequest
 ): Promise<BulkClassifyResponse> => {
-  const response = await apiClient.post<BulkClassifyResponse>(
-    "/transactions/bulk-classify",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.bulkClassifyTransactions({ bulkClassifyRequest: data });
+  return response as unknown as BulkClassifyResponse;
 };
 
 /**
@@ -207,11 +172,8 @@ export const bulkClassifyTransactions = async (
 export const autoClassifyTransactions = async (
   data: AutoClassifyRequest = {}
 ): Promise<AutoClassifyResponse> => {
-  const response = await apiClient.post<AutoClassifyResponse>(
-    "/classifications/auto-classify",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.autoClassifyTransactions({ autoClassifyRequest: data });
+  return response as unknown as AutoClassifyResponse;
 };
 
 /**
@@ -220,10 +182,6 @@ export const autoClassifyTransactions = async (
 export const applyClassificationRules = async (
   data: ApplyRulesRequest = {}
 ): Promise<ApplyRulesResponse> => {
-  const response = await apiClient.post<ApplyRulesResponse>(
-    "/classification-rules/apply",
-    data
-  );
-  return response.data;
+  const response = await classificationsApi.applyClassificationRules({ applyRulesRequest: data });
+  return response as unknown as ApplyRulesResponse;
 };
-

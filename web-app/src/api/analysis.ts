@@ -1,4 +1,5 @@
-import apiClient from "./client";
+import { analysisApi } from "./sdk";
+import { AnalysisModeEnum } from "@spearmint-money/sdk";
 
 // Analysis API functions
 
@@ -103,14 +104,27 @@ export interface CashFlowTrendsResponse {
   mode: "analysis" | "complete";
 }
 
+// Helper to convert string mode to Enum
+const toModeEnum = (mode?: string): AnalysisModeEnum | undefined => {
+  if (mode === 'analysis') return AnalysisModeEnum.Analysis;
+  if (mode === 'complete') return AnalysisModeEnum.Complete;
+  // 'with_capital' might map to Analysis or custom handling in backend logic that might not be in Enum yet.
+  // Assuming 'analysis' for now if undefined.
+  return undefined;
+};
+
 /**
  * Get income analysis
  */
 export const getIncomeAnalysis = async (
   params?: AnalysisParams
 ): Promise<IncomeAnalysisResponse> => {
-  const response = await apiClient.get("/analysis/income", { params });
-  return response.data;
+  const response = await analysisApi.analyzeIncome({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode)
+  });
+  return response as unknown as IncomeAnalysisResponse;
 };
 
 /**
@@ -119,8 +133,13 @@ export const getIncomeAnalysis = async (
 export const getExpenseAnalysis = async (
   params?: AnalysisParams & { top_n?: number }
 ): Promise<ExpenseAnalysisResponse> => {
-  const response = await apiClient.get("/analysis/expenses", { params });
-  return response.data;
+  const response = await analysisApi.analyzeExpenses({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode),
+    topN: params?.top_n
+  });
+  return response as unknown as ExpenseAnalysisResponse;
 };
 
 /**
@@ -129,8 +148,12 @@ export const getExpenseAnalysis = async (
 export const getCashFlowAnalysis = async (
   params?: AnalysisParams
 ): Promise<CashFlowResponse> => {
-  const response = await apiClient.get("/analysis/cashflow", { params });
-  return response.data;
+  const response = await analysisApi.analyzeCashFlow({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode)
+  });
+  return response as unknown as CashFlowResponse;
 };
 
 /**
@@ -139,8 +162,12 @@ export const getCashFlowAnalysis = async (
 export const getFinancialHealth = async (
   params?: AnalysisParams
 ): Promise<FinancialHealthResponse> => {
-  const response = await apiClient.get("/analysis/health", { params });
-  return response.data;
+  const response = await analysisApi.getFinancialHealth({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode)
+  });
+  return response as unknown as FinancialHealthResponse;
 };
 
 /**
@@ -149,8 +176,14 @@ export const getFinancialHealth = async (
 export const getFinancialSummary = async (
   params?: AnalysisParams & { top_n?: number; recent_count?: number }
 ): Promise<FinancialSummaryResponse> => {
-  const response = await apiClient.get("/analysis/summary", { params });
-  return response.data;
+  const response = await analysisApi.getFinancialSummary({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode),
+    topN: params?.top_n,
+    recentCount: params?.recent_count
+  });
+  return response as unknown as FinancialSummaryResponse;
 };
 
 export const getCashFlowTrends = async (
@@ -158,8 +191,13 @@ export const getCashFlowTrends = async (
     period?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
   }
 ): Promise<CashFlowTrendsResponse> => {
-  const response = await apiClient.get("/analysis/cashflow/trends", { params });
-  return response.data;
+  const response = await analysisApi.getCashFlowTrends({
+    startDate: params?.start_date,
+    endDate: params?.end_date,
+    mode: toModeEnum(params?.mode),
+    period: params?.period as any // Cast to TimePeriodEnum if available
+  });
+  return response as unknown as CashFlowTrendsResponse;
 };
 
 /**
@@ -187,6 +225,15 @@ export interface CategoryTrendsResponse {
 export const getExpenseCategoryTrends = async (
   params: CategoryTrendsParams
 ): Promise<CategoryTrendsResponse> => {
-  const response = await apiClient.get("/analysis/expenses/category-trends", { params });
-  return response.data;
+  // Check if this endpoint exists in SDK. 
+  // It might be under AnalysisApi -> getExpenseCategoryTrends
+  // Assuming naming convention holds.
+  const response = await analysisApi.getExpenseCategoryTrends({
+    startDate: params.start_date,
+    endDate: params.end_date,
+    period: params.period as any,
+    mode: toModeEnum(params.mode),
+    topN: params.top_n
+  });
+  return response as unknown as CategoryTrendsResponse;
 };
