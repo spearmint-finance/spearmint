@@ -3,17 +3,12 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 
-WORKDIR /sdk/typescript
-COPY sdk/typescript .
-# Install SDK dependencies and attempt build (ignoring strict TS errors in generated code)
-RUN npm install && (npm run build || true)
-
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY web-app/package.json web-app/package-lock.json ./
 
-# Install Web App dependencies
+# Install dependencies (including @spearmint-finance/sdk from npm)
 RUN npm install
 
 # Copy source code
