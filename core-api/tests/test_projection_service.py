@@ -8,10 +8,10 @@ from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.financial_analysis.database.base import Base
-from src.financial_analysis.database.models import Transaction, Category, TransactionClassification
-from src.financial_analysis.database.seed_data import seed_classifications
-from src.financial_analysis.services.projection_service import ProjectionService, ProjectionMethod
+from financial_analysis.database.base import Base
+from financial_analysis.database.models import Transaction, Category, TransactionClassification
+from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.services.projection_service import ProjectionService, ProjectionMethod
 
 
 @pytest.fixture

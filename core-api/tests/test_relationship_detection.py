@@ -6,12 +6,12 @@ from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.financial_analysis.database.base import Base
-from src.financial_analysis.database.models import (
+from financial_analysis.database.base import Base
+from financial_analysis.database.models import (
     Transaction, Category, TransactionClassification, TransactionRelationship
 )
-from src.financial_analysis.database.seed_data import seed_classifications
-from src.financial_analysis.services.classification_service import ClassificationService
+from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.services.classification_service import ClassificationService
 
 
 @pytest.fixture

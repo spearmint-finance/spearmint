@@ -4,7 +4,7 @@ import pytest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from src.financial_analysis.utils.validators import (
+from financial_analysis.utils.validators import (
     DataValidator,
     DuplicateDetector,
     ValidationError

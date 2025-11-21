@@ -36,7 +36,7 @@ class TestAnalysisWorkflow:
                   f"Classification: {txn.classification_id}, Include: {txn.include_in_analysis}")
 
         # Debug: Check classifications
-        from src.financial_analysis.database.models import TransactionClassification
+        from financial_analysis.database.models import TransactionClassification
         classifications = test_db_session.query(TransactionClassification).all()
         print(f"\n=== Classifications in DB ===")
         for c in classifications:
@@ -44,7 +44,7 @@ class TestAnalysisWorkflow:
                   f"Exclude Income: {c.exclude_from_income_calc}")
 
         # Debug: Direct query to see what the analysis service would get
-        from src.financial_analysis.database.models import Transaction
+        from financial_analysis.database.models import Transaction
         from sqlalchemy import or_
         query = test_db_session.query(Transaction).filter(
             Transaction.transaction_type == 'Income'
