@@ -208,7 +208,9 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("500.00"),
             transaction_type="Expense",
             category_id=2,  # Need a category
-            classification_id=2
+            classification_id=2,
+            is_transfer=True,
+            include_in_analysis=False
         ),
         Transaction(
             transaction_id=7,
@@ -217,7 +219,9 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("500.00"),
             transaction_type="Income",
             category_id=1,  # Need a category
-            classification_id=2
+            classification_id=2,
+            is_transfer=True,
+            include_in_analysis=False
         ),
     ]
     

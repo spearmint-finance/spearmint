@@ -312,16 +312,17 @@ def test_calculate_accuracy_metrics(db_session):
 def test_empty_data_projection(db_session):
     """Test projection with no historical data."""
     service = ProjectionService(db_session)
-    
+
     result = service.project_income(
         start_date=date.today() - timedelta(days=30),
         end_date=date.today(),
         projection_days=30,
         method=ProjectionMethod.LINEAR_REGRESSION
     )
-    
-    # Should return empty result
+
+    # Should return empty result with zero values
     assert result['projected_total'] == 0.0
-    assert 'error' in result
     assert len(result['daily_projections']) == 0
+    assert result['confidence_interval']['lower'] == 0.0
+    assert result['confidence_interval']['upper'] == 0.0
 

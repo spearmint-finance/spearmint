@@ -478,8 +478,8 @@ class AnalysisService:
         expense_result = self.analyze_expenses(date_range, mode)
 
         # Calculate net cash flow
-        # Note: expense_result.total_expenses is already negative, so we add it
-        net_cash_flow = income_result.total_income + expense_result.total_expenses
+        # Note: expenses are stored as positive values, so we subtract them
+        net_cash_flow = income_result.total_income - expense_result.total_expenses
 
         return CashFlowResult(
             net_cash_flow=net_cash_flow,
@@ -530,8 +530,8 @@ class AnalysisService:
                 'period': period_key,
                 'income': income_val.value,
                 'expenses': expense_val.value,
-                # expense_val.value is already negative, so we add it
-                'net_cash_flow': income_val.value + expense_val.value,
+                # Expenses are stored as positive values, so we subtract them
+                'net_cash_flow': income_val.value - expense_val.value,
                 'income_count': income_val.count,
                 'expense_count': expense_val.count
             })
@@ -578,8 +578,8 @@ class AnalysisService:
         # Calculate ratios
         income_to_expense_ratio = None
         if cash_flow.total_expenses != 0:
-            # Use absolute value of expenses since they're stored as negative
-            income_to_expense_ratio = float(cash_flow.total_income / abs(cash_flow.total_expenses))
+            # Expenses are stored as positive values
+            income_to_expense_ratio = float(cash_flow.total_income / cash_flow.total_expenses)
 
         savings_rate = None
         if cash_flow.total_income > 0:
@@ -836,8 +836,8 @@ class AnalysisService:
         expense_to_income_pct = None
 
         if expense_result.total_expenses != 0:
-            # Use absolute value of expenses since they're stored as negative
-            income_to_expense_ratio = float(income_result.total_income / abs(expense_result.total_expenses))
+            # Expenses are stored as positive values
+            income_to_expense_ratio = float(income_result.total_income / expense_result.total_expenses)
 
         if income_result.total_income > 0:
             # Use absolute value of expenses for percentage calculation

@@ -177,12 +177,12 @@ def seed_classifications(db: Session) -> None:
         if not existing:
             classification = TransactionClassification(**classification_data)
             db.add(classification)
-            print(f"  ✓ Added: {classification_data['classification_name']}")
+            print(f"  [OK] Added: {classification_data['classification_name']}")
         else:
             print(f"  - Skipped (exists): {classification_data['classification_name']}")
-    
+
     db.commit()
-    print("✓ Transaction classifications seeded successfully")
+    print("[OK] Transaction classifications seeded successfully")
 
 
 def seed_classification_rules(db: Session) -> None:
@@ -201,26 +201,26 @@ def seed_classification_rules(db: Session) -> None:
         ).first()
         
         if not classification:
-            print(f"  ✗ Classification not found for rule: {rule_data['rule_name']}")
+            print(f"  [ERROR] Classification not found for rule: {rule_data['rule_name']}")
             continue
-        
+
         # Check if rule already exists
         existing = db.query(ClassificationRule).filter_by(
             rule_name=rule_data["rule_name"]
         ).first()
-        
+
         if not existing:
             rule = ClassificationRule(
                 classification_id=classification.classification_id,
                 **rule_data
             )
             db.add(rule)
-            print(f"  ✓ Added: {rule_data['rule_name']}")
+            print(f"  [OK] Added: {rule_data['rule_name']}")
         else:
             print(f"  - Skipped (exists): {rule_data['rule_name']}")
-    
+
     db.commit()
-    print("✓ Classification rules seeded successfully")
+    print("[OK] Classification rules seeded successfully")
 
 
 def seed_all(db: Session) -> None:
@@ -232,5 +232,5 @@ def seed_all(db: Session) -> None:
     """
     seed_classifications(db)
     seed_classification_rules(db)
-    print("\n✓ All seed data loaded successfully")
+    print("\n[OK] All seed data loaded successfully")
 
