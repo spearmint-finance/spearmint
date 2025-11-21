@@ -221,7 +221,7 @@ jobs:
 
       - name: Install SDK dependencies
         working-directory: sdk/output/typescript
-        run: npm ci
+        run: npm install
 
       - name: Build SDK
         working-directory: sdk/output/typescript
