@@ -308,18 +308,19 @@ def test_budget(db_session):
 
 
 def test_seeded_classifications(db_session):
-    """Test that all 10 default classifications were seeded."""
+    """Test that all 12 default classifications were seeded."""
     classifications = db_session.query(TransactionClassification).all()
-    
-    # Should have 10 default classifications
-    assert len(classifications) == 10
-    
+
+    # Should have 12 default classifications
+    assert len(classifications) == 12
+
     # Verify specific classifications exist
     codes = [c.classification_code for c in classifications]
     expected_codes = [
         "STANDARD", "TRANSFER", "CC_PAYMENT", "CC_RECEIPT",
         "REIMB_PAID", "REIMB_RECEIVED", "REFUND",
-        "LOAN_DISB", "LOAN_PRINCIPAL", "LOAN_INTEREST"
+        "LOAN_DISB", "LOAN_PRINCIPAL", "LOAN_INTEREST",
+        "CAPITAL_EXPENSE", "REINVESTMENT"
     ]
     
     for code in expected_codes:
