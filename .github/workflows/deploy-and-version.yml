@@ -125,6 +125,13 @@ jobs:
           path: sdk/output/typescript/
           retention-days: 7
 
+      - name: Upload OpenAPI spec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: sdk/openapi.json
+          retention-days: 7
+
   # Bump version ONLY if both gateway and SDK succeed
   bump-version:
     needs: [build-gateway, build-sdk]
@@ -260,7 +267,7 @@ jobs:
       - name: Create Postman collection
         id: create-collection
         run: |
-          python dev-tools/collection_extractor/create_spearmint_collection.py \
+          python dev-tools/create_spearmint_collection.py \
             --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
             --version "${{ needs.bump-version.outputs.new_version }}" \
             --base-url "https://api.spearmint.ai" \
