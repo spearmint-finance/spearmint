@@ -5,9 +5,29 @@ from datetime import date
 from decimal import Decimal
 import pandas as pd
 from io import BytesIO
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
+from financial_analysis.database.base import Base
 from financial_analysis.services.import_service import ImportService
-from financial_analysis.database.models import Category, Transaction
+from financial_analysis.database.models import Category, Transaction, TransactionClassification
+from financial_analysis.database.seed_data import seed_classifications
+
+
+@pytest.fixture
+def db_session():
+    """Create a test database session."""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
+
+    # Seed classifications
+    seed_classifications(session)
+
+    yield session
+
+    session.close()
 
 
 class TestTransferDetection:
@@ -40,9 +60,9 @@ class TestTransferDetection:
         try:
             # Import
             result = service.import_from_excel(tmp_path, mode='incremental')
-            
+
             # Verify import succeeded
-            assert result.success
+            assert result.failed_rows == 0
             assert result.successful_rows == 1
             
             # Verify category was created and marked as transfer
@@ -87,7 +107,7 @@ class TestTransferDetection:
             
             try:
                 result = service.import_from_excel(tmp_path, mode='incremental')
-                assert result.success
+                assert result.failed_rows == 0
                 
                 # All should use the same category (first one created)
                 categories = db_session.query(Category).filter(
@@ -127,8 +147,8 @@ class TestTransferDetection:
         
         try:
             result = service.import_from_excel(tmp_path, mode='incremental')
-            
-            assert result.success
+
+            assert result.failed_rows == 0
             assert result.successful_rows == 1
             
             # Verify category is NOT marked as transfer
@@ -179,8 +199,8 @@ class TestTransferDetection:
         
         try:
             result = service.import_from_excel(tmp_path, mode='incremental')
-            
-            assert result.success
+
+            assert result.failed_rows == 0
             
             # Verify category was updated
             db_session.refresh(existing_category)
@@ -220,8 +240,8 @@ class TestTransferDetection:
         
         try:
             result = service.import_from_excel(tmp_path, mode='incremental')
-            
-            assert result.success
+
+            assert result.failed_rows == 0
             assert result.successful_rows == 3
             
             # Verify all transactions are marked as transfers
@@ -267,8 +287,8 @@ class TestTransferDetection:
         
         try:
             result = service.import_from_excel(tmp_path, mode='incremental')
-            
-            assert result.success
+
+            assert result.failed_rows == 0
             assert result.successful_rows == 3
             
             # Verify transfers are marked correctly
