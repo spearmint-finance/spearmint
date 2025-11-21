@@ -7,6 +7,7 @@ from datetime import date
 from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
 from financial_analysis.database.base import Base
@@ -23,7 +24,8 @@ def db_session():
     """Create a test database session."""
     engine = create_engine(
         "sqlite:///:memory:",
-        connect_args={"check_same_thread": False}
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool  # Use StaticPool to share a single connection
     )
     Base.metadata.create_all(engine)
 
@@ -41,15 +43,25 @@ def db_session():
 @pytest.fixture
 def client(db_session):
     """Create a test client with database override."""
+    # Save the original commit method
+    original_commit = db_session.commit
+
+    # Replace commit with flush during tests
+    # This allows services to call commit() without creating transaction boundaries
+    db_session.commit = db_session.flush
+
     def override_get_db():
         try:
             yield db_session
         finally:
             pass
-    
+
     app.dependency_overrides[get_db] = override_get_db
     client = TestClient(app)
     yield client
+
+    # Restore the original commit method
+    db_session.commit = original_commit
     app.dependency_overrides.clear()
 
 
