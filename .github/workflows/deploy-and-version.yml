@@ -200,17 +200,19 @@ jobs:
         with:
           ref: main  # Get the latest commit with version bump
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
       - name: Download SDK artifact
         uses: actions/download-artifact@v4
         with:
           name: typescript-sdk
           path: sdk/output/typescript/
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Update SDK version
         working-directory: sdk/output/typescript
@@ -218,20 +220,24 @@ jobs:
           # Update package.json version to match the bumped version
           npm version ${{ needs.bump-version.outputs.new_version }} --no-git-tag-version --allow-same-version
           echo "✓ Updated SDK version to ${{ needs.bump-version.outputs.new_version }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install SDK dependencies
         working-directory: sdk/output/typescript
         run: npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Build SDK
         working-directory: sdk/output/typescript
         run: npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm
         working-directory: sdk/output/typescript
-        run: |
-          npm publish --access public
-          echo "✓ Published @spearmint-finance/sdk@${{ needs.bump-version.outputs.new_version }} to npm"
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
