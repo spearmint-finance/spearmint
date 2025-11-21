@@ -311,3 +311,54 @@ jobs:
           echo "- **Postman**: Collection created ✓" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📦 **npm package**: [@spearmint-finance/sdk@${{ needs.bump-version.outputs.new_version }}](https://www.npmjs.com/package/@spearmint-finance/sdk)" >> $GITHUB_STEP_SUMMARY
+
+  # Publish OpenAPI spec to Postman Spec Hub
+  publish-spec:
+    needs: bump-version
+    if: needs.bump-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Get the latest commit with version bump
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Download OpenAPI spec artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: sdk/
+
+      - name: Publish spec to Postman
+        id: publish-spec
+        run: |
+          python dev-tools/publish_spec.py \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --spec-file "sdk/openapi.json" \
+            --version "${{ needs.bump-version.outputs.new_version }}" \
+            --output-file spec_info.json
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Upload spec info
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-spec-info
+          path: spec_info.json
+
+      - name: Summary
+        run: |
+          echo "## 📋 OpenAPI Spec Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Spec Hub**: Published ✓" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f spec_info.json ]; then
+            SPEC_ID=$(jq -r '.spec.id' spec_info.json)
+            echo "🔗 **View Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
+          fi
