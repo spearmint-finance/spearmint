@@ -1,4 +1,4 @@
-# Financial Analysis Tool
+# Spearmint Financial Analysis
 
 A comprehensive financial analysis application designed to provide deep insights into personal or business financial health through intelligent transaction classification, trend analysis, and predictive forecasting.
 
