@@ -37,6 +37,7 @@ jobs:
         run: |
           set -e
           cd core-api
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
           pytest tests/ -v --tb=short
 
   # Build and deploy API Gateway
