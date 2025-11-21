@@ -229,11 +229,11 @@ jobs:
 
       - name: Publish to npm
         working-directory: sdk/output/typescript
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm publish --access public
           echo "✓ Published @spearmint-finance/sdk@${{ needs.bump-version.outputs.new_version }} to npm"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   # Create Postman collection with new version
   create-postman-collection:
