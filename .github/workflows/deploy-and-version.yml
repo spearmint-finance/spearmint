@@ -89,6 +89,13 @@ jobs:
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           python scripts/generate_openapi.py ../sdk/openapi.json
 
+      - name: Validate OpenAPI Spec Structure
+        run: |
+          set -e
+          cd core-api
+          pip install openapi-spec-validator
+          python scripts/api_validation/api_validation.py --file ../sdk/openapi.json
+
       - name: Build SDK with LibLab
         env:
           LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
