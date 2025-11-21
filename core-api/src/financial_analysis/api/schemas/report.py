@@ -192,7 +192,7 @@ class TransactionDetail(BaseModel):
     type: str = Field(..., description="Transaction type (Income/Expense)")
     amount: float = Field(..., description="Transaction amount")
     classification: str = Field(..., description="Transaction classification")
-    source: str = Field(..., description="Data source")
+    source: Optional[str] = Field(None, description="Data source")
 
 
 class ReconciliationSummary(BaseModel):
