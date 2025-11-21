@@ -154,14 +154,23 @@ jobs:
       - name: Install Postman CLI
         run: |
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+          # Add Postman CLI to PATH
+          echo "$HOME/.postman/bin" >> $GITHUB_PATH
+
+      - name: Verify Postman CLI installation
+        run: |
+          export PATH="$HOME/.postman/bin:$PATH"
+          postman --version
 
       - name: Login to Postman
         run: |
+          export PATH="$HOME/.postman/bin:$PATH"
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
 
       - name: Validate spec against governance rules
         id: validate
         run: |
+          export PATH="$HOME/.postman/bin:$PATH"
           python dev-tools/validate_spec.py \
             --spec-file sdk/openapi.json \
             --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
