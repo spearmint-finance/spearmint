@@ -263,12 +263,12 @@ class ProjectionService:
         )
 
         # Calculate net cash flow projections
-        # Note: expenses are already negative values, so we ADD them to get net cash flow
-        # Net Cash Flow = Income + Expenses (where expenses are negative)
-        # Example: $1000 income + (-$800 expenses) = $200 net cash flow
+        # Note: expenses are stored as positive values, so we SUBTRACT them to get net cash flow
+        # Net Cash Flow = Income - Expenses
+        # Example: $1000 income - $800 expenses = $200 net cash flow
         projected_income = income_proj['projected_total']
         projected_expenses = expense_proj['projected_total']
-        projected_cashflow = projected_income + projected_expenses
+        projected_cashflow = projected_income - projected_expenses
 
         # Calculate confidence intervals for cash flow
         income_lower = income_proj['confidence_interval']['lower']
@@ -276,11 +276,11 @@ class ProjectionService:
         expense_lower = expense_proj['confidence_interval']['lower']
         expense_upper = expense_proj['confidence_interval']['upper']
 
-        # Cash flow confidence interval (income + expenses, where expenses are negative)
-        # Best case: high income, low expenses (expenses are negative, so lower is better)
-        # Worst case: low income, high expenses (expenses are negative, so upper is worse)
-        cashflow_lower = income_lower + expense_lower
-        cashflow_upper = income_upper + expense_upper
+        # Cash flow confidence interval (income - expenses)
+        # Best case: high income, low expenses
+        # Worst case: low income, high expenses
+        cashflow_lower = income_lower - expense_upper
+        cashflow_upper = income_upper - expense_lower
 
         result = {
             "projection_type": "cashflow",
@@ -575,7 +575,7 @@ class ProjectionService:
         """
         Combine income and expense projections into cash flow projections.
 
-        Note: Expenses are already negative values, so we ADD them to income
+        Note: Expenses are stored as positive values, so we SUBTRACT them from income
         to get the net cash flow (profit/loss).
         """
         combined = []
@@ -584,9 +584,9 @@ class ProjectionService:
                 "date": inc['date'],
                 "projected_income": inc['projected_value'],
                 "projected_expenses": exp['projected_value'],
-                "projected_cashflow": inc['projected_value'] + exp['projected_value'],
-                "cashflow_lower": inc['lower_bound'] + exp['lower_bound'],
-                "cashflow_upper": inc['upper_bound'] + exp['upper_bound']
+                "projected_cashflow": inc['projected_value'] - exp['projected_value'],
+                "cashflow_lower": inc['lower_bound'] - exp['upper_bound'],
+                "cashflow_upper": inc['upper_bound'] - exp['lower_bound']
             })
         return combined
 
@@ -598,25 +598,23 @@ class ProjectionService:
         """
         Generate best/worst/expected case scenarios.
 
-        Note: Expenses are already negative values, so we ADD them to income
+        Note: Expenses are stored as positive values, so we SUBTRACT them from income
         to get the net cash flow (profit/loss).
         """
         # Expected case: use projected values
         expected_income = income_proj['projected_total']
         expected_expenses = expense_proj['projected_total']
-        expected_cashflow = expected_income + expected_expenses
+        expected_cashflow = expected_income - expected_expenses
 
         # Best case: upper bound income, lower bound expenses
-        # (expenses are negative, so lower bound is less negative = better)
         best_income = income_proj['confidence_interval']['upper']
         best_expenses = expense_proj['confidence_interval']['lower']
-        best_cashflow = best_income + best_expenses
+        best_cashflow = best_income - best_expenses
 
         # Worst case: lower bound income, upper bound expenses
-        # (expenses are negative, so upper bound is more negative = worse)
         worst_income = income_proj['confidence_interval']['lower']
         worst_expenses = expense_proj['confidence_interval']['upper']
-        worst_cashflow = worst_income + worst_expenses
+        worst_cashflow = worst_income - worst_expenses
 
         return {
             "expected": {
