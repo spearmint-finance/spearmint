@@ -8,9 +8,9 @@ from enum import Enum
 
 
 class DecimalBaseModel(BaseModel):
-    """Base model with Decimal to float conversion for JSON serialization."""
+    """Base model with Decimal to string conversion for JSON serialization."""
     model_config = ConfigDict(
-        json_encoders={Decimal: float}
+        json_encoders={Decimal: str}
     )
 
 
