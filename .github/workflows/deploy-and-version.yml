@@ -132,9 +132,88 @@ jobs:
           path: sdk/openapi.json
           retention-days: 7
 
-  # Bump version ONLY if both gateway and SDK succeed
+  # Validate OpenAPI spec against Postman governance rules
+  validate-spec:
+    needs: build-sdk
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Download OpenAPI spec artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: sdk/
+
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Login to Postman
+        run: |
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Validate spec against governance rules
+        id: validate
+        run: |
+          python dev-tools/validate_spec.py \
+            --spec-file sdk/openapi.json \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --fail-severity WARNING \
+            --output-file spec-validation-results.json
+        continue-on-error: true
+
+      - name: Upload validation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec-validation-results
+          path: spec-validation-results.json
+          retention-days: 30
+
+      - name: Add validation summary to GitHub Actions
+        if: always()
+        run: |
+          echo "## 📋 OpenAPI Spec Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f spec-validation-results.json ]; then
+            VIOLATIONS=$(python -c "import json; data=json.load(open('spec-validation-results.json')); print(len(data.get('violations', [])))")
+            if [ "$VIOLATIONS" -eq 0 ]; then
+              echo "✅ **PASSED** - No governance or security violations found!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **FAILED** - Found $VIOLATIONS violation(s)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Violations:" >> $GITHUB_STEP_SUMMARY
+              python -c "
+          import json
+          data = json.load(open('spec-validation-results.json'))
+          for i, v in enumerate(data.get('violations', []), 1):
+              print(f\"{i}. **{v.get('severity', 'UNKNOWN')}** - Line {v.get('line number', 'N/A')}\")
+              print(f\"   - File: \`{v.get('file', 'N/A')}\`\")
+              print(f\"   - Path: \`{v.get('path', 'N/A')}\`\")
+              print(f\"   - Issue: {v.get('issue', 'N/A')}\")
+              print()
+          " >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Validation results file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if validation failed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "❌ Spec validation failed - see validation results above"
+          exit 1
+
+  # Bump version ONLY if gateway, SDK, and spec validation succeed
   bump-version:
-    needs: [build-gateway, build-sdk]
+    needs: [build-gateway, build-sdk, validate-spec]
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}

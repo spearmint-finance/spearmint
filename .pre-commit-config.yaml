@@ -4,14 +4,26 @@
 # Run manually: pre-commit run --all-files
 
 repos:
-  # OpenAPI validation hook
+  # OpenAPI generation hook
   - repo: local
     hooks:
-      - id: openapi-validation
-        name: OpenAPI Validation
+      - id: openapi-generation
+        name: OpenAPI Generation
         entry: python core-api/scripts/api_validation/api_validation.py --generate --output sdk/openapi.json
         language: system
         files: ^core-api/src/financial_analysis/api/.*\.py$
+        stages: [commit, push]
+        pass_filenames: false
+        verbose: true
+
+  # OpenAPI spec validation hook (Postman governance rules)
+  - repo: local
+    hooks:
+      - id: openapi-spec-validation
+        name: OpenAPI Spec Validation (Postman)
+        entry: python dev-tools/validate_spec.py --spec-file sdk/openapi.json --fail-severity WARNING
+        language: system
+        files: ^sdk/openapi\.json$
         stages: [commit, push]
         pass_filenames: false
         verbose: true
