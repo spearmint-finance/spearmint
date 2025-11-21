@@ -1,0 +1,410 @@
+
+==============================================================================================================
+                                         POSTMAN COLLECTION OVERVIEW                                          
+==============================================================================================================
+
+Collection: Postman API
+Description: **Version: 1.30.0**
+
+The Postman API enables you to programmatically access data stored in your Postman account.
+
+> Certain endpoints may be unavailable depending on your region and/or Postman plan. 
+  
+
+## Getting started
+
+You can get started with the Postman API by [forking the Postman API collection](https://learning.postman.com/docs/collaborating-in-postman/using-version-control/forking-elements/) to your workspace. You can also click **Run in Postman** to fork the collection and get started:  
+[<img src="https://run.pstmn.io/button.svg">](https://god.gw.postman.com/run-collection/12959542-c8142d51-e97c-46b6-bd77-52bb66712c9a?action=collection%2Ffork&source=rip_markdown&collection-url=entityId%3D12959542-c8142d51-e97c-46b6-bd77-52bb66712c9a%26entityType%3Dcollection%26workspaceId%3D405e0480-49cf-463b-8052-6c0d05a8e8f3)Once you've forked the collection, you can use Postman to send requests.
+
+### EU users
+
+For users in the EU with [<b>Enterprise</b> plans](https://www.postman.com/pricing/), the Postman API uses the `https://api.eu.postman.com` subdomain. Included in this collection is an **euUrl** variable that contains the EU-specific subdomain. To use it, update the **baseUrl** value with the `https://api.eu.postman.com` subdomain.
+
+## About the Postman API
+
+- You must use a valid API Key to send requests to the API endpoints.
+    
+- The API has [rate and usage limits](https://learning.postman.com/docs/developer/postman-api/postman-api-rate-limits/).
+    
+- The API only responds to HTTPS-secured communications. Any requests sent via HTTP return an HTTP `301` redirect to the corresponding HTTPS resources.
+    
+- The API returns requests responses in [JSON format](https://en.wikipedia.org/wiki/JSON).
+    
+- The request method (verb) determines the nature of action you intend to perform. A request made using the `GET` method implies that you want to fetch something from Postman. The `POST` method implies you want to save something new to Postman.
+    
+- For all requests, API calls respond with their corresponding [HTTP status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes). In the Postman client, the status code also provides help text that details the possible meaning of the response code.
+    
+- When calling the API Builder endpoints, you must send an `Accept` header with the `application/vnd.api.v10+json` value.
+    
+
+### IDs and UIDs
+
+All items in Postman, such as collections, workspaces, and APIs, have IDs and UIDs:
+
+- An ID is the unique ID assigned to a Postman item. For example, `ec29121c-5203-409f-9e84-e83ffc10f226`.
+    
+- The UID is the **full** ID of a Postman item. This value is the item's unique ID concatenated with the user ID. For example, in the `12345678-ec29121c-5203-409f-9e84-e83ffc10f226` UID:
+    
+    - `12345678` is the user's ID.
+        
+    - `ec29121c-5203-409f-9e84-e83ffc10f226` is the item's ID.
+        
+
+### Enum values
+
+Any documented enum values should be considered partial lists and may change over time.
+
+### 503 response
+
+An HTTP `503 Service Unavailable` response from our servers indicates there is an unexpected spike in API access traffic. The server is usually operational within the next five minutes. If the outage persists or you receive any other form of an HTTP `5XX` error, [contact support](https://support.postman.com/hc/en-us/requests/new/).
+
+### 403 response for unavailable features
+
+Depending on your region and/or Postman [plan](https://www.postman.com/pricing/), some endpoints will return an HTTP `403 Forbidden` response with the "This feature isn't available in your region." detail.
+
+## Authentication
+
+Postman uses API keys for authentication. The API key tells the API server that the request came from you. Everything that you have access to in Postman is accessible with your API key. You can [generate](https://learning.postman.com/docs/developer/postman-api/authentication/#generate-a-postman-api-key) a Postman API key in the [<b>API keys</b>](https://postman.postman.co/settings/me/api-keys) section of your Postman account settings.
+
+You must include an API key in each request to the Postman API with the `X-API-Key` request header. In Postman, you can store your API key as a [vault secret](https://learning.postman.com/docs/sending-requests/postman-vault/postman-vault-secrets/) or an [environment variable](https://www.getpostman.com/docs/environments). The Postman API [collection](https://www.getpostman.com/docs/collections) will use it to make API calls.
+
+### SCIM authentication
+
+While all other endpoints in this collection require a Postman API key, the SCIM endpoints require a [SCIM API key](https://learning.postman.com/docs/administration/scim-provisioning/scim-provisioning-overview/#generating-scim-api-key).
+
+### Authentication error response
+
+If an API key is missing, malformed, or invalid, you will receive an HTTP `401 Unauthorized` response code.
+
+## Rate and usage limits
+
+API access [rate limits](https://learning.postman.com/docs/developer/postman-api/postman-api-rate-limits/) apply at a per-user basis in unit time. The limit is **300 requests per minute**. Postman Monitors, as well as the GET `/collections`, GET `/workspaces`, and GET `/workspaces/{id}` endpoints have a rate limit of **10 calls in 10 seconds**.
+
+Depending on your [plan](https://www.postman.com/pricing/), you may also have [usage limits](https://learning.postman.com/docs/billing/resource-usage/). Every API response includes headers to help you identify the status of your use limits. For more information, see [Track Postman API call limits](https://learning.postman.com/docs/developer/postman-api/postman-api-rate-limits/).
+
+When you reach your rate or usage limits, the API returns the following HTTP `429 Too Many Requests` status code with one of the following error responses:
+
+- `rateLimited` — Rate limits reached. The response returns the time after which you can resume calls to the Postman API. The response header also includes the `X-RateLimit-RetryAfter` and `Retry-After` responses when you go over your limit, which returns the seconds remaining until you can make another request.
+    
+- `serviceLimitExhausted` — Postman API service limits reached. You will need to contact your Postman Team Admin for assistance.
+    
+
+## Support
+
+For help regarding accessing the Postman API, you can:
+
+- Visit [Postman Support](https://support.postman.com/hc/en-us) or our [Community and Support](https://www.postman.com/community/) sites.
+    
+- Reach out to the [Postman community](https://community.postman.com/).
+    
+- Submit a help request to [Postman support](https://support.postman.com/hc/en-us/requests/new/).
+    
+
+## Policies
+
+- [Postman Terms of Service](http://www.postman.com/legal/terms/)
+    
+- [Postman Privacy Policy](https://www.postman.com/legal/privacy-policy/)
+Total Endpoints: 223
+
+HTTP Methods:
+  GET      :  95
+  POST     :  53
+  PUT      :  38
+  PATCH    :   9
+  DELETE   :  28
+
+==============================================================================================================
+                                            ENDPOINTS BY RESOURCE                                             
+==============================================================================================================
+
+【 API 】 — 30 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/apis/:apiId
+  GET       {{baseUrl}}/apis/:apiId/collections/:collectionId/comments
+  GET       {{baseUrl}}/apis/:apiId/collections/:collectionUid
+  GET       {{baseUrl}}/apis/:apiId/comments
+  GET       {{baseUrl}}/apis/:apiId/schemas/:schemaId
+  GET       {{baseUrl}}/apis/:apiId/schemas/:schemaId/files
+  GET       {{baseUrl}}/apis/:apiId/schemas/:schemaId/files/:filePath
+  GET       {{baseUrl}}/apis/:apiId/tags
+  GET       {{baseUrl}}/apis/:apiId/tasks/:taskId
+  GET       {{baseUrl}}/apis/:apiId/versions
+  GET       {{baseUrl}}/apis/:apiId/versions/:versionId
+  GET       {{baseUrl}}/apis?workspaceId={{workspaceId}}
+  POST      {{baseUrl}}/apis/:apiId/collections
+  POST      {{baseUrl}}/apis/:apiId/collections/:collectionId/comments
+  POST      {{baseUrl}}/apis/:apiId/comments
+  POST      {{baseUrl}}/apis/:apiId/schemas
+  POST      {{baseUrl}}/apis/:apiId/versions
+  POST      {{baseUrl}}/apis?workspaceId={{workspaceId}}
+  PUT       {{baseUrl}}/apis/:apiId
+  PUT       {{baseUrl}}/apis/:apiId/collections/:collectionId/comments/:commentId
+  PUT       {{baseUrl}}/apis/:apiId/collections/:collectionUid/sync-with-schema-tasks
+  PUT       {{baseUrl}}/apis/:apiId/comments/:commentId
+  PUT       {{baseUrl}}/apis/:apiId/schemas/:schemaId/files/:filePath
+  PUT       {{baseUrl}}/apis/:apiId/tags
+  PUT       {{baseUrl}}/apis/:apiId/versions/:versionId
+  DELETE    {{baseUrl}}/apis/:apiId
+  DELETE    {{baseUrl}}/apis/:apiId/collections/:collectionId/comments/:commentId
+  DELETE    {{baseUrl}}/apis/:apiId/comments/:commentId
+  DELETE    {{baseUrl}}/apis/:apiId/schemas/:schemaId/files/:filePath
+  DELETE    {{baseUrl}}/apis/:apiId/versions/:versionId
+
+【 API Security 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  POST      {{baseUrl}}/security/api-validation
+
+【 Audit Logs 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/audit/logs
+
+【 Billing 】 — 2 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/accounts
+  GET       {{baseUrl}}/accounts/:accountId/invoices?status=PAID
+
+【 Collections 】 — 59 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/collection-access-keys
+  GET       {{baseUrl}}/collection-duplicate-tasks/:taskId
+  GET       {{baseUrl}}/collection-merges-tasks/:taskId
+  GET       {{baseUrl}}/collection-updates-tasks/:taskId
+  GET       {{baseUrl}}/collections/:collectionId
+  GET       {{baseUrl}}/collections/:collectionId/folders/:folderId
+  GET       {{baseUrl}}/collections/:collectionId/forks
+  GET       {{baseUrl}}/collections/:collectionId/requests/:requestId
+  GET       {{baseUrl}}/collections/:collectionId/responses/:responseId
+  GET       {{baseUrl}}/collections/:collectionId/roles
+  GET       {{baseUrl}}/collections/:collectionId/source-status
+  GET       {{baseUrl}}/collections/:collectionId/transformations
+  GET       {{baseUrl}}/collections/:collectionUid/comments
+  GET       {{baseUrl}}/collections/:collectionUid/folders/:folderUid/comments
+  GET       {{baseUrl}}/collections/:collectionUid/requests/:requestUid/comments
+  GET       {{baseUrl}}/collections/:collectionUid/responses/:responseUid/comments
+  GET       {{baseUrl}}/collections/:collectionUid/tags
+  GET       {{baseUrl}}/collections/:collectiondUid/pull-requests
+  GET       {{baseUrl}}/collections/collection-forks
+  GET       {{baseUrl}}/collections?workspace=
+  POST      {{baseUrl}}/collection-folders-transfers
+  POST      {{baseUrl}}/collection-requests-transfers
+  POST      {{baseUrl}}/collection-responses-transfers
+  POST      {{baseUrl}}/collections/:collectionId/duplicates
+  POST      {{baseUrl}}/collections/:collectionId/folders
+  POST      {{baseUrl}}/collections/:collectionId/requests
+  POST      {{baseUrl}}/collections/:collectionId/responses?request={{parentRequestId}}
+  POST      {{baseUrl}}/collections/:collectionUid/comments
+  POST      {{baseUrl}}/collections/:collectionUid/folders/:folderUid/comments
+  POST      {{baseUrl}}/collections/:collectionUid/requests/:requestUid/comments
+  POST      {{baseUrl}}/collections/:collectionUid/responses/:responseUid/comments
+  POST      {{baseUrl}}/collections/:collectiondUid/pull-requests
+  POST      {{baseUrl}}/collections/fork/:collectionId?workspace={{workspaceId}}
+  POST      {{baseUrl}}/collections?workspace={{workspaceId}}
+  PUT       {{baseUrl}}/collection-merges
+  PUT       {{baseUrl}}/collections/:collectionId
+  PUT       {{baseUrl}}/collections/:collectionId
+  PUT       {{baseUrl}}/collections/:collectionId/folders/:folderId
+  PUT       {{baseUrl}}/collections/:collectionId/public-documentations
+  PUT       {{baseUrl}}/collections/:collectionId/pulls
+  PUT       {{baseUrl}}/collections/:collectionId/requests/:requestId
+  PUT       {{baseUrl}}/collections/:collectionId/responses/:responseId
+  PUT       {{baseUrl}}/collections/:collectionUid/comments/:commentId
+  PUT       {{baseUrl}}/collections/:collectionUid/folders/:folderUid/comments/:commentId
+  PUT       {{baseUrl}}/collections/:collectionUid/requests/:requestUid/comments/:commentId
+  PUT       {{baseUrl}}/collections/:collectionUid/responses/:responseUid/comments/:commentId
+  PUT       {{baseUrl}}/collections/:collectionUid/tags
+  PATCH     {{baseUrl}}/collections/:collectionId
+  PATCH     {{baseUrl}}/collections/:collectionId/roles
+  DELETE    {{baseUrl}}/collection-access-keys/:keyId
+  DELETE    {{baseUrl}}/collections/:collectionId
+  DELETE    {{baseUrl}}/collections/:collectionId/folders/:folderId
+  DELETE    {{baseUrl}}/collections/:collectionId/public-documentations
+  DELETE    {{baseUrl}}/collections/:collectionId/requests/:requestId
+  DELETE    {{baseUrl}}/collections/:collectionId/responses/:responseId
+  DELETE    {{baseUrl}}/collections/:collectionUid/comments/:commentId
+  DELETE    {{baseUrl}}/collections/:collectionUid/folders/:folderUid/comments/:commentId
+  DELETE    {{baseUrl}}/collections/:collectionUid/requests/:requestUid/comments/:commentId
+  DELETE    {{baseUrl}}/collections/:collectionUid/responses/:responseUid/comments/:commentId
+
+【 Comments 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  POST      {{baseUrl}}/comments-resolutions/:threadId
+
+【 DEPRECATED 】 — 32 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       https://api.getpostman.com/apis
+  GET       https://api.getpostman.com/apis/{{apiId}}
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/contracttest
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/documentation
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/environment
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/integrationtest
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/monitor
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/relations
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/releases
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/releases/{{apiRel...
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/schemas/{{schemaI...
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/test
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/testsuite
+  GET       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/unclassified
+  POST      https://api.getpostman.com/apis
+  POST      https://api.getpostman.com/apis/{{apiId}}/versions
+  POST      https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/relations
+  POST      https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/releases
+  POST      https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/schemas
+  POST      https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/schemas/{{schemaI...
+  POST      {{baseUrl}}/collections/merge
+  POST      {{baseUrl}}/import/exported
+  PUT       https://api.getpostman.com/apis/{{apiId}}
+  PUT       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}
+  PUT       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/:relationType/:en...
+  PUT       https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/schemas/{{schemaI...
+  PATCH     https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/releases/{{apiRel...
+  DELETE    https://api.getpostman.com/apis/{{apiId}}
+  DELETE    https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}
+  DELETE    https://api.getpostman.com/apis/{{apiId}}/versions/{{apiVersionId}}/releases/{{apiRel...
+
+【 Environments 】 — 10 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/environments
+  GET       {{baseUrl}}/environments/:environmentId
+  GET       {{baseUrl}}/environments/:environmentUid/forks
+  POST      {{baseUrl}}/environments/:environmentUid/forks?workspace={{workspaceId}}
+  POST      {{baseUrl}}/environments/:environmentUid/merges
+  POST      {{baseUrl}}/environments/:environmentUid/pulls
+  POST      {{baseUrl}}/environments?workspace={{workspaceId}}
+  PUT       {{baseUrl}}/environments/:environmentId
+  PATCH     {{baseUrl}}/environments/:environmentId
+  DELETE    {{baseUrl}}/environments/:environmentId
+
+【 Groups 】 — 2 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/groups
+  GET       {{baseUrl}}/groups/:groupId
+
+【 Import 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  POST      {{baseUrl}}/import/openapi?workspace={{workspaceId}}
+
+【 Mocks 】 — 13 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/mocks
+  GET       {{baseUrl}}/mocks/:mockId
+  GET       {{baseUrl}}/mocks/:mockId/call-logs
+  GET       {{baseUrl}}/mocks/:mockId/server-responses
+  GET       {{baseUrl}}/mocks/:mockId/server-responses/:serverResponseId
+  POST      {{baseUrl}}/mocks/:mockId/publish
+  POST      {{baseUrl}}/mocks/:mockId/server-responses
+  POST      {{baseUrl}}/mocks?workspace=
+  PUT       {{baseUrl}}/mocks/:mockId
+  PUT       {{baseUrl}}/mocks/:mockId/server-responses/:serverResponseId
+  DELETE    {{baseUrl}}/mocks/:mockId
+  DELETE    {{baseUrl}}/mocks/:mockId/server-responses/:serverResponseId
+  DELETE    {{baseUrl}}/mocks/:mockId/unpublish
+
+【 Monitors 】 — 8 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/monitors
+  GET       {{baseUrl}}/monitors/:monitorId
+  GET       {{baseUrl}}/runners/:runnerId/instances
+  GET       {{baseUrl}}/runners/:runnerId/metrics
+  POST      {{baseUrl}}/monitors/:monitorId/run
+  POST      {{baseUrl}}/monitors?workspace={{workspaceId}}
+  PUT       {{baseUrl}}/monitors/:monitorId
+  DELETE    {{baseUrl}}/monitors/:monitorId
+
+【 Postbot 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  POST      {{baseUrl}}/postbot/generations/tool
+
+【 Private API Network 】 — 6 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/network/private
+  GET       {{baseUrl}}/network/private/network-entity/request/all
+  POST      {{baseUrl}}/network/private
+  PUT       {{baseUrl}}/network/private/:elementType/:elementId
+  PUT       {{baseUrl}}/network/private/network-entity/request/:requestId
+  DELETE    {{baseUrl}}/network/private/:elementType/:elementId
+
+【 Pull Requests 】 — 3 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/pull-requests/:pullRequestId
+  POST      {{baseUrl}}/pull-requests/:pullRequestId/tasks
+  PUT       {{baseUrl}}/pull-requests/:pullRequestId
+
+【 SCIM 】 — 12 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/scim/v2/Groups
+  GET       {{baseUrl}}/scim/v2/Groups/:groupId
+  GET       {{baseUrl}}/scim/v2/ResourceTypes
+  GET       {{baseUrl}}/scim/v2/ServiceProviderConfig
+  GET       {{baseUrl}}/scim/v2/Users
+  GET       {{baseUrl}}/scim/v2/Users/:userId
+  POST      {{baseUrl}}/scim/v2/Groups
+  POST      {{baseUrl}}/scim/v2/Users
+  PUT       {{baseUrl}}/scim/v2/Users/:userId
+  PATCH     {{baseUrl}}/scim/v2/Groups/:groupId
+  PATCH     {{baseUrl}}/scim/v2/Users/:userId
+  DELETE    {{baseUrl}}/scim/v2/Groups/:groupId
+
+【 Secret Scanner 】 — 4 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/detected-secrets/:secretId/locations?workspaceId={{workspaceId}}
+  GET       {{baseUrl}}/secret-types
+  POST      {{baseUrl}}/detected-secrets-queries
+  PUT       {{baseUrl}}/detected-secrets/:secretId
+
+【 Specs 】 — 18 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/:elementType/:elementId/tasks/:taskId
+  GET       {{baseUrl}}/collections/:collectionUid/generations/:elementType
+  GET       {{baseUrl}}/specs/:specId
+  GET       {{baseUrl}}/specs/:specId/definitions
+  GET       {{baseUrl}}/specs/:specId/files
+  GET       {{baseUrl}}/specs/:specId/files/:filePath
+  GET       {{baseUrl}}/specs/:specId/generations/:elementType
+  GET       {{baseUrl}}/specs?workspaceId={{workspaceId}}
+  POST      {{baseUrl}}/collections/:collectionUid/generations/:elementType
+  POST      {{baseUrl}}/specs/:specId/files
+  POST      {{baseUrl}}/specs/:specId/generations/:elementType
+  POST      {{baseUrl}}/specs?workspaceId={{workspaceId}}
+  PUT       {{baseUrl}}/collections/:collectionUid/synchronizations?specId={{specId}}
+  PUT       {{baseUrl}}/specs/:specId/synchronizations?collectionUid={{collectionUid}}
+  PATCH     {{baseUrl}}/specs/:specId
+  PATCH     {{baseUrl}}/specs/:specId/files/:filePath
+  DELETE    {{baseUrl}}/specs/:specId
+  DELETE    {{baseUrl}}/specs/:specId/files/:filePath
+
+【 Tags 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/tags/:slugId/entities
+
+【 Users 】 — 3 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/me
+  GET       {{baseUrl}}/users
+  GET       {{baseUrl}}/users/:userId
+
+【 Webhooks 】 — 1 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  POST      {{baseUrl}}/webhooks?workspace={{workspaceId}}
+
+【 Workspaces 】 — 14 endpoint(s)
+--------------------------------------------------------------------------------------------------------------
+  GET       {{baseUrl}}/workspaces
+  GET       {{baseUrl}}/workspaces-roles
+  GET       {{baseUrl}}/workspaces/:workspaceId
+  GET       {{baseUrl}}/workspaces/:workspaceId/activities
+  GET       {{baseUrl}}/workspaces/:workspaceId/global-variables
+  GET       {{baseUrl}}/workspaces/:workspaceId/roles
+  GET       {{baseUrl}}/workspaces/:workspaceId/tags
+  POST      {{baseUrl}}/workspaces
+  POST      {{baseUrl}}/workspaces/:workspaceId/element-transfers
+  PUT       {{baseUrl}}/workspaces/:workspaceId
+  PUT       {{baseUrl}}/workspaces/:workspaceId/global-variables
+  PUT       {{baseUrl}}/workspaces/:workspaceId/tags
+  PATCH     {{baseUrl}}/workspaces/:workspaceId/roles
+  DELETE    {{baseUrl}}/workspaces/:workspaceId
+
+==============================================================================================================

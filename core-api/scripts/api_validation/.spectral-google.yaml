@@ -1,0 +1,132 @@
+extends: oas
+rules:
+  # Naming & Style Rules (Google API Design)
+  paths-kebab-case:
+    description: Paths should be kebab-case
+    message: Path should be kebab-case (e.g., /user-profiles instead of /userProfiles)
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: ^/([a-z0-9]+-)*[a-z0-9]*(/[{]?[a-zA-Z0-9_-]+[}]?)?(/[{]?[a-zA-Z0-9_-]+[}]?)*$
+
+  operation-operationId-unique:
+    description: Each operation must have a unique operationId
+    message: operationId must be unique across the API
+    severity: error
+    given: $.paths.*[?(@property === 'get' || @property === 'put' || @property === 'post' || @property === 'delete' || @property === 'options' || @property === 'head' || @property === 'patch' || @property === 'trace')]
+    then:
+      - field: operationId
+        function: required
+
+  operation-summary:
+    description: Every operation should have a summary
+    message: Operation should have a summary
+    severity: error
+    given: $.paths.*[?(@property === 'get' || @property === 'put' || @property === 'post' || @property === 'delete' || @property === 'options' || @property === 'head' || @property === 'patch' || @property === 'trace')]
+    then:
+      - field: summary
+        function: truthy
+
+  operation-tags:
+    description: Every operation should have tags
+    message: Operation should have at least one tag
+    severity: warn
+    given: $.paths.*[?(@property === 'get' || @property === 'put' || @property === 'post' || @property === 'delete' || @property === 'options' || @property === 'head' || @property === 'patch' || @property === 'trace')]
+    then:
+      - field: tags
+        function: truthy
+
+  parameter-names-camelCase:
+    description: Parameter names should be camelCase
+    message: Parameter name should be camelCase
+    severity: warn
+    given: $.paths.*.*.parameters[*].name
+    then:
+      function: pattern
+      functionOptions:
+        match: ^[a-z][a-zA-Z0-9]*$
+
+  schema-names-pascal-case:
+    description: Schema names should be PascalCase
+    message: Schema name should be PascalCase
+    severity: error
+    given: $.components.schemas[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: ^[A-Z][a-zA-Z0-9]*$
+
+  schema-properties-camelCase:
+    description: Schema properties should be camelCase
+    message: Property name should be camelCase
+    severity: warn
+    given: $.components.schemas.*.properties[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: ^[a-z][a-zA-Z0-9]*$
+
+  # Content-Type Rules
+  request-body-content-type:
+    description: Request bodies should have Content-Type for POST/PUT/PATCH
+    message: Request body should specify Content-Type (typically application/json)
+    severity: error
+    given: $.paths.*[?(@property === 'post' || @property === 'put' || @property === 'patch')].requestBody
+    then:
+      - field: content
+        function: truthy
+
+  response-content-type:
+    description: Responses should specify Content-Type when returning content
+    message: Response should specify content type
+    severity: warn
+    given: $.paths.*[?(@property === 'get' || @property === 'post')].responses[?(@property !== 'default' && @property !== '204' && @property !== '304')].content
+    then:
+      function: truthy
+
+  # Required Fields & Metadata
+  info-version:
+    description: API info must have version
+    message: Info object should have a version
+    severity: error
+    given: $.info
+    then:
+      - field: version
+        function: truthy
+
+  info-contact:
+    description: API info should have contact information
+    message: Info object should have contact information
+    severity: warn
+    given: $.info
+    then:
+      - field: contact
+        function: truthy
+
+  security-defined:
+    description: API should define security schemes
+    message: API should define at least one security scheme
+    severity: warn
+    given: $.components.securitySchemes
+    then:
+      function: truthy
+
+  servers-defined:
+    description: API should define servers
+    message: API should define at least one server
+    severity: warn
+    given: $.servers
+    then:
+      function: truthy
+
+  # Response Rules
+  operation-responses:
+    description: Operation should have responses defined
+    message: Operation must have at least one response defined
+    severity: error
+    given: $.paths.*[?(@property === 'get' || @property === 'put' || @property === 'post' || @property === 'delete' || @property === 'options' || @property === 'head' || @property === 'patch' || @property === 'trace')]
+    then:
+      - field: responses
+        function: truthy
