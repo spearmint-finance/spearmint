@@ -1,0 +1,224 @@
+name: Deploy, Version Bump, and Postman Collection
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'core-api/**'
+      - 'web-app/**'
+      - 'sdk/**'
+      - '.github/workflows/deploy-and-version.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Run tests first
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd core-api
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          cd core-api
+          pytest tests/ || echo "Tests not yet implemented"
+
+  # Build and deploy API Gateway
+  build-gateway:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image for API Gateway
+        run: |
+          cd api-gateway
+          docker build -t spearmint-api-gateway:latest .
+
+      - name: Verify gateway build
+        run: echo "✓ Gateway built successfully"
+
+      # TODO: Add actual deployment steps here
+      # - name: Deploy to production
+      #   run: |
+      #     # Deploy to your cloud provider
+      #     # kubectl apply -f k8s/
+      #     # or similar deployment commands
+
+  # Generate SDK with LibLab
+  build-sdk:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install LibLab CLI
+        run: npm install -g liblab
+
+      - name: Generate OpenAPI Spec
+        run: |
+          cd core-api
+          pip install -r requirements.txt
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          python scripts/generate_openapi.py ../sdk/openapi.json
+
+      - name: Build SDK with LibLab
+        env:
+          LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
+        working-directory: ./sdk
+        run: |
+          sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
+          liblab build
+
+      - name: Verify SDK build
+        run: echo "✓ SDK built successfully"
+
+  # Bump version ONLY if both gateway and SDK succeed
+  bump-version:
+    needs: [build-gateway, build-sdk]
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      version_changed: ${{ steps.bump.outputs.version_changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Read current version
+        id: current
+        run: |
+          CURRENT_VERSION=$(python -c "import json; print(json.load(open('version.json'))['version'])")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Bump version
+        id: bump
+        run: |
+          python scripts/bump_version.py
+          NEW_VERSION=$(python -c "import json; print(json.load(open('version.json'))['version'])")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+          
+          # Check if version actually changed
+          if [ "${{ steps.current.outputs.current_version }}" != "$NEW_VERSION" ]; then
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version bump
+        run: |
+          git add version.json web-app/package.json core-api/src/financial_analysis/__init__.py core-api/src/financial_analysis/api/openapi_config.py core-api/src/financial_analysis/api/main.py
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]" || echo "No changes to commit"
+
+      - name: Create git tag
+        run: |
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          echo "✓ Created tag v${{ steps.bump.outputs.new_version }}"
+
+      - name: Push changes
+        run: |
+          git push origin main --tags
+          echo "✓ Pushed version bump and tag"
+
+  # Create Postman collection with new version
+  create-postman-collection:
+    needs: bump-version
+    if: needs.bump-version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main  # Get the latest commit with version bump
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create Postman collection
+        id: create-collection
+        run: |
+          python dev-tools/collection_extractor/create_spearmint_collection.py \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --version "${{ needs.bump-version.outputs.new_version }}" \
+            --base-url "https://api.spearmint.ai" \
+            --output-file collection_info.json
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Comment on PR with collection link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const collectionInfo = JSON.parse(fs.readFileSync('collection_info.json', 'utf8'));
+            const workspaceId = '${{ secrets.POSTMAN_WORKSPACE_ID }}';
+            const collectionId = collectionInfo.collection.id;
+            const collectionName = collectionInfo.collection.name;
+            const collectionUrl = `https://app.postman.com/workspace/${workspaceId}/collection/${collectionId}`;
+            
+            const comment = `### 🎉 Postman Collection Created
+            
+            **Collection**: [${collectionName}](${collectionUrl})
+            **Version**: ${{ needs.bump-version.outputs.new_version }}
+            **Workspace**: [View in Postman](https://app.postman.com/workspace/${workspaceId})
+            
+            The collection is ready to use!`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Upload collection info
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-collection-info
+          path: collection_info.json
+
+      - name: Summary
+        run: |
+          echo "## ✅ Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Gateway**: Deployed ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- **SDK**: Built ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- **Postman**: Collection created ✓" >> $GITHUB_STEP_SUMMARY

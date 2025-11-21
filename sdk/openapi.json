@@ -227,7 +227,8 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 {
                   "type": "null"
@@ -249,7 +250,8 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 {
                   "type": "null"
@@ -1533,7 +1535,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1627,7 +1629,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1710,7 +1712,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1818,7 +1820,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1901,7 +1903,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1995,7 +1997,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2078,7 +2080,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2161,7 +2163,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2272,7 +2274,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2369,7 +2371,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2463,7 +2465,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -3516,7 +3518,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3610,7 +3612,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3704,7 +3706,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/src__financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -5269,7 +5271,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2025-11-20",
+              "default": "2025-11-21",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"
@@ -5887,7 +5889,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Opening Balance",
@@ -6008,6 +6011,7 @@
           },
           "opening_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Opening Balance"
           },
           "opening_balance_date": {
@@ -6035,7 +6039,8 @@
           "current_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6058,7 +6063,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6069,7 +6075,8 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6121,6 +6128,7 @@
           },
           "current_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Balance"
           },
           "balance_date": {
@@ -6146,7 +6154,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6157,7 +6166,8 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6546,7 +6556,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Total Balance"
@@ -6567,7 +6578,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6581,7 +6593,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6714,6 +6727,7 @@
           },
           "total_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Balance"
           },
           "balance_type": {
@@ -6723,7 +6737,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6734,7 +6749,8 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6913,12 +6929,14 @@
           },
           "total": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total"
           },
           "cash": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6929,7 +6947,8 @@
           "investments": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6956,16 +6975,19 @@
         "properties": {
           "net_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow (income - expenses)"
           },
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income"
           },
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses"
           },
@@ -7041,16 +7063,19 @@
           },
           "income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income",
             "description": "Income for period"
           },
           "expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses",
             "description": "Expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow for period"
           },
@@ -7311,6 +7336,7 @@
         "properties": {
           "total": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total",
             "description": "Total amount for category"
           },
@@ -7321,6 +7347,7 @@
           },
           "average": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average",
             "description": "Average transaction amount"
           },
@@ -7359,6 +7386,7 @@
           },
           "total_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Amount",
             "description": "Total amount for category"
           },
@@ -7369,6 +7397,7 @@
           },
           "average_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Amount",
             "description": "Average transaction amount"
           },
@@ -7417,11 +7446,13 @@
           },
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income"
           },
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses"
           },
@@ -9096,6 +9127,7 @@
           },
           "amount_difference": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -9156,6 +9188,7 @@
         "properties": {
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expense amount"
           },
@@ -9166,6 +9199,7 @@
           },
           "average_transaction": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -9437,16 +9471,19 @@
           },
           "average_daily_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Income",
             "description": "Average daily income"
           },
           "average_daily_expense": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Expense",
             "description": "Average daily expense"
           },
           "net_daily_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Daily Cash Flow",
             "description": "Net daily cash flow"
           },
@@ -9499,16 +9536,19 @@
         "properties": {
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income for period"
           },
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow (income - expenses)"
           },
@@ -9807,7 +9847,8 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Quantity"
@@ -9835,7 +9876,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9849,7 +9891,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9918,12 +9961,14 @@
           },
           "quantity": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Quantity"
           },
           "cost_basis": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9934,7 +9979,8 @@
           "current_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9982,7 +10028,8 @@
           "gain_loss": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -10403,6 +10450,7 @@
         "properties": {
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income amount"
           },
@@ -10413,6 +10461,7 @@
           },
           "average_transaction": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -10884,22 +10933,27 @@
         "properties": {
           "assets": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Assets"
           },
           "liabilities": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liabilities"
           },
           "net_worth": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Worth"
           },
           "liquid_assets": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liquid Assets"
           },
           "investments": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Investments"
           },
           "as_of_date": {
@@ -10994,12 +11048,14 @@
           },
           "total_value": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Value"
           },
           "total_cost_basis": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11010,7 +11066,8 @@
           "total_gain_loss": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11097,6 +11154,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -11180,7 +11238,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Statement Balance"
@@ -11191,7 +11250,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11205,7 +11265,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11316,16 +11377,19 @@
           },
           "statement_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Statement Balance"
           },
           "calculated_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Calculated Balance"
           },
           "statement_cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11336,7 +11400,8 @@
           "calculated_cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11347,7 +11412,8 @@
           "statement_investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11358,7 +11424,8 @@
           "calculated_investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11369,7 +11436,8 @@
           "discrepancy_amount": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11859,6 +11927,7 @@
           },
           "min_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Min Balance"
           },
           "coverage_by_person": {
@@ -11872,7 +11941,8 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 "type": "object"
               },
@@ -11928,7 +11998,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11976,7 +12047,8 @@
           },
           "deltas": {
             "additionalProperties": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
             },
             "type": "object",
             "title": "Deltas"
@@ -12062,14 +12134,17 @@
           },
           "income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income"
           },
           "expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses"
           },
           "net_cf": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cf"
           },
           "by_person": {
@@ -12077,7 +12152,8 @@
               {
                 "additionalProperties": {
                   "additionalProperties": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                   },
                   "type": "object"
                 },
@@ -12493,6 +12569,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Total amount"
           },
@@ -12560,7 +12637,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Amount",
@@ -12815,6 +12893,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount (can be negative for expenses)"
           },
@@ -13017,7 +13096,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Amount",
@@ -13048,6 +13128,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount"
           },
           "created_at": {
@@ -13082,6 +13163,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -13170,7 +13252,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -13369,6 +13452,7 @@
           },
           "amount_difference": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -13434,6 +13518,7 @@
           },
           "value": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Value",
             "description": "Value for the period"
           },
@@ -13572,7 +13657,7 @@
           ]
         }
       },
-      "src__financial_analysis__api__schemas__analysis__AnalysisModeEnum": {
+      "financial_analysis__api__schemas__analysis__AnalysisModeEnum": {
         "type": "string",
         "enum": [
           "analysis",
@@ -13582,7 +13667,7 @@
         "title": "AnalysisModeEnum",
         "description": "Analysis mode."
       },
-      "src__financial_analysis__api__schemas__report__AnalysisModeEnum": {
+      "financial_analysis__api__schemas__report__AnalysisModeEnum": {
         "type": "string",
         "enum": [
           "analysis",

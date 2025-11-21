@@ -1,0 +1,17 @@
+# Pre-commit hooks configuration
+# Install: pip install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # OpenAPI validation hook
+  - repo: local
+    hooks:
+      - id: openapi-validation
+        name: OpenAPI Validation
+        entry: python core-api/scripts/api_validation/api_validation.py --generate --output sdk/openapi.json
+        language: system
+        files: ^core-api/src/financial_analysis/api/.*\.py$
+        stages: [commit, push]
+        pass_filenames: false
+        verbose: true

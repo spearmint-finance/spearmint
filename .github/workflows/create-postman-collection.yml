@@ -1,0 +1,81 @@
+name: Create Postman Collection on Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'version.json'
+      - '.github/workflows/create-postman-collection.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to use for the collection'
+        required: true
+
+jobs:
+  create-collection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Extract version from version.json
+        id: version
+        run: |
+          if [ -f "version.json" ]; then
+            VERSION=$(python -c "import json; print(json.load(open('version.json'))['version'])")
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Extracted version from version.json: $VERSION"
+          else
+            echo "Error: version.json not found!"
+            exit 1
+          fi
+
+      - name: Create Postman collection
+        id: create-collection
+        run: |
+          python dev-tools/collection_extractor/create_spearmint_collection.py \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --version "${{ steps.version.outputs.version }}" \
+            --base-url "https://api.spearmint.ai" \
+            --output-file collection_info.json
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      - name: Comment PR with collection link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const collectionInfo = JSON.parse(fs.readFileSync('collection_info.json', 'utf8'));
+            const workspaceId = '${{ secrets.POSTMAN_WORKSPACE_ID }}';
+            const collectionId = collectionInfo.collection.id;
+            const collectionName = collectionInfo.collection.name;
+            const collectionUrl = `https://app.postman.com/workspace/${workspaceId}/collections/${collectionId}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ Postman Collection Created\n\n**Collection**: ${collectionName}\n**Link**: [View in Postman](${collectionUrl})`
+            });
+
+      - name: Upload collection info
+        uses: actions/upload-artifact@v3
+        with:
+          name: postman-collection-info
+          path: collection_info.json
+
+      - name: Report collection details
+        run: |
+          if [ -f "collection_info.json" ]; then
+            echo "Collection created successfully!"
+            python -c "import json; data = json.load(open('collection_info.json')); print(f'Collection: {data[\"collection\"][\"name\"]}'); print(f'ID: {data[\"collection\"][\"id\"]}')"
+          fi
