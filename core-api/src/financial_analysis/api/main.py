@@ -56,7 +56,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 @app.get("/api/health", tags=["system"])
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "version": "0.0.2"}
+    return {"status": "healthy", "version": "0.0.3"}
 
 
 # Import routers
@@ -87,7 +87,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Financial Analysis API",
-        "version": "0.0.2",
+        "version": "0.0.3",
         "docs": "/api/docs"
     }
 
