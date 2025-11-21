@@ -16,7 +16,7 @@ from financial_analysis.database.models import (
 )
 from financial_analysis.database.seed_data import seed_classifications
 from financial_analysis.api.main import app
-from financial_analysis.database.base import get_db
+from financial_analysis.api.dependencies import get_db
 
 
 @pytest.fixture
