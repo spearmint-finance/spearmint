@@ -6,7 +6,10 @@ import { defineConfig, devices } from "@playwright/test";
  * See https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: "./tests",
+  testDir: "./tests/playwright/tests",
+
+  // Put all Playwright artifacts (screenshots, videos, traces, etc.) here:
+  outputDir: "tests/playwright/test-results/artifacts",
 
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -22,15 +25,24 @@ export default defineConfig({
 
   /* Reporter to use */
   reporter: [
-    ["html", { outputFolder: "playwright-report", open: "never" }],
+    [
+      "html",
+      {
+        outputFolder: "./tests/playwright/test-results/playwright-report",
+        open: "never",
+      },
+    ],
     ["list"],
-    ["json", { outputFile: "test-results/results.json" }],
+    ["json", { outputFile: "./tests/playwright/test-results/results.json" }],
   ],
 
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: "http://localhost:5173",
+    baseURL: "http://localhost:8080",
+
+    /* Disable cache to ensure fresh content */
+    serviceWorkers: "block",
 
     /* Collect trace when retrying the failed test */
     trace: "on-first-retry",
@@ -96,7 +108,7 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Run your local dev server before starting the tests 
   webServer: {
     command: "npm run dev",
     url: "http://localhost:5173",
@@ -104,5 +116,5 @@ export default defineConfig({
     timeout: 120000,
     stdout: "ignore",
     stderr: "pipe",
-  },
+  },*/
 });

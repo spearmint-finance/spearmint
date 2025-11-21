@@ -1,38 +1,37 @@
-import { 
-    Configuration, 
-    TransactionsApi, 
-    AccountsApi, 
-    ReportsApi, 
-    ClassificationsApi,
-    MaintenanceApi,
-    AnalysisApi,
-    ProjectionsApi,
-    ScenariosApi,
-    ImportApi,
-    CategoriesApi,
-    RelationshipsApi,
-    PersonsApi,
-    SplitsApi
-} from "@spearmint-money/sdk";
+import { SpearmintApi } from "@spearmint-finance/sdk";
 
-const basePath = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+// The SDK already includes /api in all paths, so baseUrl should be the root origin
+// For Docker: use window.location.origin (e.g., http://localhost:8080)
+// For dev with Vite proxy: use window.location.origin (e.g., http://localhost:5173)
+// The SDK will append /api/* to this base URL
+const baseUrl =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:8080");
 
-const config = new Configuration({
-    basePath: basePath,
-    // Add middleware/interceptors here if the SDK supports it (middleware in openapi-generator fetch)
-    // or generated fetchApi implementation.
+// Initialize the SDK with configuration
+const sdk = new SpearmintApi({
+  baseUrl: baseUrl,
+  // Add token here if authentication is needed
+  // token: 'YOUR_TOKEN',
 });
 
-export const transactionsApi = new TransactionsApi(config);
-export const accountsApi = new AccountsApi(config);
-export const reportsApi = new ReportsApi(config);
-export const classificationsApi = new ClassificationsApi(config);
-export const maintenanceApi = new MaintenanceApi(config);
-export const analysisApi = new AnalysisApi(config);
-export const projectionsApi = new ProjectionsApi(config);
-export const scenariosApi = new ScenariosApi(config);
-export const importApi = new ImportApi(config);
-export const categoriesApi = new CategoriesApi(config);
-export const relationshipsApi = new RelationshipsApi(config);
-export const personsApi = new PersonsApi(config);
-export const splitsApi = new SplitsApi(config);
+// Export individual service instances for backward compatibility
+export const systemApi = sdk.system;
+export const transactionsApi = sdk.transactions;
+export const accountsApi = sdk.accounts;
+export const reportsApi = sdk.reports;
+export const classificationsApi = sdk.classifications;
+export const maintenanceApi = sdk.maintenance;
+export const analysisApi = sdk.analysis;
+export const projectionsApi = sdk.projections;
+export const scenariosApi = sdk.scenarios;
+export const importApi = sdk.import_;
+export const categoriesApi = sdk.categories;
+export const relationshipsApi = sdk.relationships;
+export const personsApi = sdk.persons;
+export const splitsApi = sdk.splits;
+
+// Also export the main SDK instance for direct access
+export default sdk;
