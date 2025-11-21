@@ -1,5 +1,7 @@
 # Spearmint Financial Analysis
 
+[![npm version](https://img.shields.io/npm/v/@spearmint-finance/sdk)](https://www.npmjs.com/package/@spearmint-finance/sdk)
+
 A comprehensive financial analysis application designed to provide deep insights into personal or business financial health through intelligent transaction classification, trend analysis, and predictive forecasting.
 
 ## Overview
