@@ -35,8 +35,9 @@ jobs:
 
       - name: Run tests
         run: |
+          set -e
           cd core-api
-          pytest tests/ || echo "Tests not yet implemented"
+          pytest tests/ -v --tb=short
 
   # Build and deploy API Gateway
   build-gateway:
@@ -48,6 +49,7 @@ jobs:
 
       - name: Build Docker image for API Gateway
         run: |
+          set -e
           cd api-gateway
           docker build -t spearmint-api-gateway:latest .
 
@@ -79,8 +81,10 @@ jobs:
 
       - name: Generate OpenAPI Spec
         run: |
+          set -e
           cd core-api
           pip install -r requirements.txt
+          pip install -e .
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           python scripts/generate_openapi.py ../sdk/openapi.json
 
@@ -89,6 +93,7 @@ jobs:
           LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
         working-directory: ./sdk
         run: |
+          set -e
           sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
           liblab build
 
@@ -143,7 +148,11 @@ jobs:
       - name: Commit version bump
         run: |
           git add version.json web-app/package.json core-api/src/financial_analysis/__init__.py core-api/src/financial_analysis/api/openapi_config.py core-api/src/financial_analysis/api/main.py
-          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]" || echo "No changes to commit"
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          fi
 
       - name: Create git tag
         run: |
