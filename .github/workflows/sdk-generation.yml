@@ -1,12 +1,6 @@
 name: SDK Generation (LibLab)
 
 on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'core-api/**'
-      - 'sdk/liblab.config.json'
-      - '.github/workflows/sdk-generation.yml'
   workflow_dispatch:
 
 permissions:
