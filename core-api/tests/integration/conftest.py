@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from financial_analysis.database.models import Base, Category, Transaction, TransactionClassification
 from financial_analysis.api.dependencies import get_db
+from financial_analysis.database.seed_data import seed_classifications as project_seed_classifications
 
 
 # Test database URL (in-memory SQLite with shared cache for better session isolation)
@@ -54,8 +55,8 @@ def test_db_session(test_db_engine):
     )
     session = TestingSessionLocal()
 
-    # Seed system classifications
-    seed_classifications(session)
+    # Seed system classifications using the project's canonical seeder
+    project_seed_classifications(session)
 
     yield session
 
@@ -105,55 +106,7 @@ def client(test_db_session):
     app.dependency_overrides.clear()
 
 
-def seed_classifications(session: Session):
-    """Seed system classifications."""
-    classifications = [
-        TransactionClassification(
-            classification_id=1,
-            classification_name="Standard Transaction",
-            classification_code="STANDARD",
-            description="Standard income or expense transaction",
-            is_system_classification=True,
-            exclude_from_income_calc=False,
-            exclude_from_expense_calc=False,
-            exclude_from_cashflow_calc=False
-        ),
-        TransactionClassification(
-            classification_id=2,
-            classification_name="Transfer",
-            classification_code="TRANSFER",
-            description="Transfer between accounts",
-            is_system_classification=True,
-            exclude_from_income_calc=True,
-            exclude_from_expense_calc=True,
-            exclude_from_cashflow_calc=True
-        ),
-        TransactionClassification(
-            classification_id=3,
-            classification_name="Credit Card Payment",
-            classification_code="CC_PAYMENT",
-            description="Payment to credit card",
-            is_system_classification=True,
-            exclude_from_income_calc=False,
-            exclude_from_expense_calc=True,
-            exclude_from_cashflow_calc=False
-        ),
-        TransactionClassification(
-            classification_id=4,
-            classification_name="Credit Card Receipt",
-            classification_code="CC_RECEIPT",
-            description="Receipt from credit card payment",
-            is_system_classification=True,
-            exclude_from_income_calc=True,
-            exclude_from_expense_calc=False,
-            exclude_from_cashflow_calc=False
-        ),
-    ]
     
-    for classification in classifications:
-        session.add(classification)
-    
-    session.commit()
 
 
 @pytest.fixture(scope="function")
