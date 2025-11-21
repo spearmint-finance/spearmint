@@ -12,8 +12,8 @@ from sqlalchemy.orm import sessionmaker, Session, scoped_session
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
-from src.financial_analysis.database.models import Base, Category, Transaction, TransactionClassification
-from src.financial_analysis.api.dependencies import get_db
+from financial_analysis.database.models import Base, Category, Transaction, TransactionClassification
+from financial_analysis.api.dependencies import get_db
 
 
 # Test database URL (in-memory SQLite with shared cache for better session isolation)
@@ -72,8 +72,8 @@ def client(test_db_session):
     Solution: Monkey-patch the session's commit method to use flush instead during tests.
     This allows services to "commit" (which becomes a flush) without creating isolation.
     """
-    from src.financial_analysis.api.main import app
-    from src.financial_analysis.api.dependencies import get_db
+    from financial_analysis.api.main import app
+    from financial_analysis.api.dependencies import get_db
 
     # Save the original commit method
     original_commit = test_db_session.commit

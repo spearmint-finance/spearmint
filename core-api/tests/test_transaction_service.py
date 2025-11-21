@@ -6,11 +6,11 @@ from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.financial_analysis.database.base import Base
-from src.financial_analysis.database.models import Category, TransactionClassification
-from src.financial_analysis.database.seed_data import seed_classifications
-from src.financial_analysis.services.transaction_service import TransactionService, TransactionFilter
-from src.financial_analysis.utils.validators import ValidationError
+from financial_analysis.database.base import Base
+from financial_analysis.database.models import Category, TransactionClassification
+from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.services.transaction_service import TransactionService, TransactionFilter
+from financial_analysis.utils.validators import ValidationError
 
 
 @pytest.fixture

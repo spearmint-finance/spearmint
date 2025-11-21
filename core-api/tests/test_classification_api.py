@@ -9,13 +9,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from src.financial_analysis.database.base import Base
-from src.financial_analysis.database.models import (
+from financial_analysis.database.base import Base
+from financial_analysis.database.models import (
     Transaction, Category, TransactionClassification, ClassificationRule
 )
-from src.financial_analysis.database.seed_data import seed_classifications
-from src.financial_analysis.api.main import app
-from src.financial_analysis.database.base import get_db
+from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.api.main import app
+from financial_analysis.database.base import get_db
 
 
 @pytest.fixture

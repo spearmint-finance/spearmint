@@ -7,7 +7,7 @@ error codes, and exception handlers.
 
 import pytest
 from fastapi import status
-from src.financial_analysis.api.error_handlers import (
+from financial_analysis.api.error_handlers import (
     ErrorCategory,
     ErrorCode,
     ValidationDetail,
