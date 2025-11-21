@@ -16,7 +16,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.orm import Session
 
-from ...database.base import get_db
+from ..dependencies import get_db
 from ...services.account_service import AccountService
 from ..schemas.account import (
     AccountCreate,

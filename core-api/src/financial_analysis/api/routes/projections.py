@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date
 
-from ...database.base import get_db
+from ..dependencies import get_db
 from ...services.projection_service import ProjectionService, ProjectionMethod
 from ..schemas.projection import (
     ProjectionRequest,

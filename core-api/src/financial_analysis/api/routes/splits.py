@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from ...database.base import get_db
+from ..dependencies import get_db
 from ...database.models import Transaction, TransactionSplit, Person
 from ..schemas.split import TransactionSplitCreate, TransactionSplitRead
 

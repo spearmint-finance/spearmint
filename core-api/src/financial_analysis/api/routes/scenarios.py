@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ...database.base import get_db
+from ..dependencies import get_db
 from ..schemas.scenario import ScenarioPreviewRequest, ScenarioPreviewResponse
 
 # ScenarioService will be implemented in services; import when available

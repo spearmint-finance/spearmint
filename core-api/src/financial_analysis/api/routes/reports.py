@@ -9,7 +9,7 @@ from typing import Optional
 from datetime import date, timedelta
 import io
 
-from ...database.base import get_db
+from ..dependencies import get_db
 from ...services.report_service import ReportService, ReportFormat, AnalysisMode
 from ..schemas.report import (
     ReportRequest,
