@@ -11,13 +11,13 @@ from ..schemas.person import PersonCreate, PersonRead
 router = APIRouter(prefix="/persons", tags=["persons"])
 
 
-@router.get("/", response_model=List[PersonRead])
+@router.get("", response_model=List[PersonRead])
 def list_persons(db: Session = Depends(get_db)):
     persons = db.query(Person).order_by(Person.name.asc()).all()
     return persons
 
 
-@router.post("/", response_model=PersonRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PersonRead, status_code=status.HTTP_201_CREATED)
 def create_person(payload: PersonCreate, db: Session = Depends(get_db)):
     # Check uniqueness
     existing = db.query(Person).filter(Person.name == payload.name).first()
