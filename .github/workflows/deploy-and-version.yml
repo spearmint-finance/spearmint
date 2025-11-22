@@ -62,33 +62,45 @@ jobs:
           pip install -e .
           export PYTHONPATH=$PYTHONPATH:$(pwd)
           python scripts/generate_openapi.py ../sdk/openapi.json
+          echo "✓ OpenAPI spec generated successfully"
 
-      - name: Validate OpenAPI Spec Structure
+      - name: Validate OpenAPI Spec Structure (Syntax & Schema)
         run: |
           set -e
           cd core-api
           pip install openapi-spec-validator
+          echo "Running OpenAPI structure validation..."
           python scripts/api_validation/api_validation.py --file ../sdk/openapi.json
+          echo "✓ OpenAPI structure validation passed"
 
       - name: Install Postman CLI
         run: |
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
           echo "$HOME/.postman/bin" >> $GITHUB_PATH
+          echo "✓ Postman CLI installed"
 
       - name: Login to Postman
         run: |
           export PATH="$HOME/.postman/bin:$PATH"
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+          echo "✓ Logged in to Postman"
 
-      - name: Validate spec against Postman governance rules
+      - name: Validate spec against Postman governance & security rules
         id: validate
         run: |
+          set -e
           export PATH="$HOME/.postman/bin:$PATH"
+          echo "Running Postman governance and security validation..."
+          echo "Workspace ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}"
+          echo "Fail severity: ERROR"
+          echo ""
           python dev-tools/validate_spec.py \
             --spec-file sdk/openapi.json \
             --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
             --fail-severity ERROR \
             --output-file spec-validation-results.json
+          echo ""
+          echo "✓ Postman validation completed"
 
       - name: Upload OpenAPI spec artifact
         uses: actions/upload-artifact@v4
@@ -110,14 +122,25 @@ jobs:
         run: |
           echo "## 📋 OpenAPI Spec Validation Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validations Performed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✅ **OpenAPI Structure Validation** - Syntax and schema validation" >> $GITHUB_STEP_SUMMARY
+          echo "2. 🔍 **Postman Governance Rules** - API design standards" >> $GITHUB_STEP_SUMMARY
+          echo "3. 🔒 **Postman Security Rules** - OWASP API Security Top 10" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f spec-validation-results.json ]; then
             VIOLATIONS=$(python -c "import json; data=json.load(open('spec-validation-results.json')); print(len(data.get('violations', [])))")
             if [ "$VIOLATIONS" -eq 0 ]; then
-              echo "✅ **PASSED** - No governance or security violations found!" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "❌ **FAILED** - Found $VIOLATIONS violation(s)" >> $GITHUB_STEP_SUMMARY
+              echo "### ✅ **ALL VALIDATIONS PASSED**" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              echo "### Violations:" >> $GITHUB_STEP_SUMMARY
+              echo "No governance or security violations found!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ❌ **VALIDATION FAILED**" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "Found **$VIOLATIONS violation(s)** in Postman governance/security checks:" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
               python -c "
           import json
           data = json.load(open('spec-validation-results.json'))
@@ -130,7 +153,9 @@ jobs:
           " >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "⚠️ Validation results file not found" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **WARNING**: Validation results file not found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The Postman validation may have failed to run or produce output." >> $GITHUB_STEP_SUMMARY
           fi
 
   # STEP 2: Deploy API Gateway (only if tests and spec validation pass)
