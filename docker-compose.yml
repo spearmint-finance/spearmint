@@ -33,11 +33,13 @@ services:
   web-app:
     build:
       context: .
-      dockerfile: web-app/Dockerfile
-    # For local dev, we might prefer running 'npm run dev' instead of nginx
-    # but for the Docker composition, we treat it as a built artifact.
-    # To enable hot-reload for frontend, we'd need a dev-specific Dockerfile
-    # or run npm locally outside docker.
+      dockerfile: web-app/Dockerfile.dev  # Use dev Dockerfile for hot reload
+    volumes:
+      - ./web-app/src:/app/src           # Mount source code for hot reload
+      - ./web-app/public:/app/public     # Mount public assets
+      - /app/node_modules                # Prevent overwriting node_modules
+    ports:
+      - "5173:5173"                      # Expose Vite dev server
     environment:
       - VITE_API_URL=http://localhost:8080
 
