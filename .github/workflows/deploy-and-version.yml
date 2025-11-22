@@ -15,8 +15,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Run tests first
-  test:
+  # STEP 1: Run integration tests (can run in parallel with spec generation)
+  integration-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,43 +33,18 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
-      - name: Run tests
+      - name: Run integration tests
         run: |
           set -e
           cd core-api
           export PYTHONPATH=$PYTHONPATH:$(pwd)/src
           pytest tests/ -v --tb=short
 
-  # Build and deploy API Gateway
-  build-gateway:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Build Docker image for API Gateway
-        run: |
-          set -e
-          cd api-gateway
-          docker build -t spearmint-api-gateway:latest .
-
-      - name: Verify gateway build
-        run: echo "✓ Gateway built successfully"
-
-      # TODO: Add actual deployment steps here
-      # - name: Deploy to production
-      #   run: |
-      #     # Deploy to your cloud provider
-      #     # kubectl apply -f k8s/
-      #     # or similar deployment commands
-
-  # Generate SDK with LibLab
-  build-sdk:
-    needs: test
+  # STEP 1: Generate and validate OpenAPI spec (runs in parallel with tests)
+  generate-and-validate-spec:
     runs-on: ubuntu-latest
     outputs:
-      sdk_built: ${{ steps.build.outputs.success }}
+      spec_valid: ${{ steps.validate.outcome == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,15 +53,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install LibLab CLI
-        run: npm install -g liblab
 
       - name: Generate OpenAPI Spec
         run: |
@@ -104,26 +70,25 @@ jobs:
           pip install openapi-spec-validator
           python scripts/api_validation/api_validation.py --file ../sdk/openapi.json
 
-      - name: Build SDK with LibLab
-        id: build
-        env:
-          LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
-        working-directory: ./sdk
+      - name: Install Postman CLI
         run: |
-          set -e
-          sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
-          liblab build
-          echo "success=true" >> $GITHUB_OUTPUT
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+          echo "$HOME/.postman/bin" >> $GITHUB_PATH
 
-      - name: Verify SDK build
-        run: echo "✓ SDK built successfully"
+      - name: Login to Postman
+        run: |
+          export PATH="$HOME/.postman/bin:$PATH"
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
 
-      - name: Upload SDK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: typescript-sdk
-          path: sdk/output/typescript/
-          retention-days: 7
+      - name: Validate spec against Postman governance rules
+        id: validate
+        run: |
+          export PATH="$HOME/.postman/bin:$PATH"
+          python dev-tools/validate_spec.py \
+            --spec-file sdk/openapi.json \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --fail-severity ERROR \
+            --output-file spec-validation-results.json
 
       - name: Upload OpenAPI spec artifact
         uses: actions/upload-artifact@v4
@@ -131,58 +96,6 @@ jobs:
           name: openapi-spec
           path: sdk/openapi.json
           retention-days: 7
-
-  # Validate OpenAPI spec against Postman governance rules
-  validate-spec:
-    needs: build-sdk
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Download OpenAPI spec artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: openapi-spec
-          path: sdk/
-
-      - name: Install Postman CLI
-        run: |
-          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
-          # Add Postman CLI to PATH
-          echo "$HOME/.postman/bin" >> $GITHUB_PATH
-
-      - name: Verify Postman CLI installation
-        run: |
-          export PATH="$HOME/.postman/bin:$PATH"
-          postman --version
-
-      - name: Login to Postman
-        run: |
-          export PATH="$HOME/.postman/bin:$PATH"
-          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-
-      - name: Validate spec against governance rules
-        id: validate
-        run: |
-          export PATH="$HOME/.postman/bin:$PATH"
-          echo "PATH: $PATH"
-          echo "Checking postman command..."
-          which postman || echo "postman not found in PATH"
-          postman --version || echo "postman --version failed"
-          echo ""
-          echo "Running validation..."
-          python dev-tools/validate_spec.py \
-            --spec-file sdk/openapi.json \
-            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
-            --fail-severity WARNING \
-            --output-file spec-validation-results.json || echo "Validation script exited with code $?"
-        continue-on-error: true
 
       - name: Upload validation results
         if: always()
@@ -220,19 +133,84 @@ jobs:
             echo "⚠️ Validation results file not found" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Report validation status
-        if: always()
-        run: |
-          if [ "${{ steps.validate.outcome }}" == "failure" ]; then
-            echo "⚠️ Spec validation found issues - see validation results above"
-            echo "Continuing deployment (validation is informational only)"
-          else
-            echo "✅ Spec validation passed!"
-          fi
+  # STEP 2: Deploy API Gateway (only if tests and spec validation pass)
+  deploy-gateway:
+    needs: [integration-tests, generate-and-validate-spec]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  # Bump version ONLY if gateway and SDK succeed (spec validation is informational)
+      - name: Build Docker image for API Gateway
+        run: |
+          set -e
+          cd api-gateway
+          docker build -t spearmint-api-gateway:latest .
+
+      - name: Verify gateway deployment
+        run: echo "✓ Gateway deployed successfully"
+
+      # TODO: Add actual deployment steps here
+      # - name: Deploy to production
+      #   run: |
+      #     # Deploy to your cloud provider
+      #     # kubectl apply -f k8s/
+      #     # or similar deployment commands
+
+  # STEP 3: Build SDK with LibLab (only if gateway deployed successfully)
+  build-sdk:
+    needs: deploy-gateway
+    runs-on: ubuntu-latest
+    outputs:
+      sdk_built: ${{ steps.build.outputs.success }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download OpenAPI spec artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: sdk/
+
+      - name: Install LibLab CLI
+        run: npm install -g liblab
+
+      - name: Build SDK with LibLab
+        id: build
+        env:
+          LIBLAB_TOKEN: ${{ secrets.LIBLAB_TOKEN }}
+        working-directory: ./sdk
+        run: |
+          set -e
+          sed -i 's|"specFilePath": ".*"|"specFilePath": "./openapi.json"|' liblab.config.json
+          liblab build
+          echo "success=true" >> $GITHUB_OUTPUT
+
+      - name: Verify SDK build
+        run: echo "✓ SDK built successfully"
+
+      - name: Upload SDK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-sdk
+          path: sdk/output/typescript/
+          retention-days: 7
+
+  # STEP 4: Bump version (only if SDK built successfully)
   bump-version:
-    needs: [build-gateway, build-sdk]
+    needs: build-sdk
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
@@ -294,7 +272,7 @@ jobs:
           git push origin main --tags
           echo "✓ Pushed version bump and tag"
 
-  # Publish SDK to npm
+  # STEP 5a: Publish SDK to npm (runs in parallel with collection and spec publishing)
   publish-sdk:
     needs: bump-version
     if: needs.bump-version.outputs.version_changed == 'true'
@@ -346,7 +324,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # Create Postman collection with new version
+  # STEP 5b: Create Postman collection (runs in parallel with SDK and spec publishing)
   create-postman-collection:
     needs: bump-version
     if: needs.bump-version.outputs.version_changed == 'true'
@@ -417,7 +395,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📦 **npm package**: [@spearmint-finance/sdk@${{ needs.bump-version.outputs.new_version }}](https://www.npmjs.com/package/@spearmint-finance/sdk)" >> $GITHUB_STEP_SUMMARY
 
-  # Publish OpenAPI spec to Postman Spec Hub
+  # STEP 5c: Publish OpenAPI spec to Postman Spec Hub (runs in parallel with SDK and collection)
   publish-spec:
     needs: bump-version
     if: needs.bump-version.outputs.version_changed == 'true'
