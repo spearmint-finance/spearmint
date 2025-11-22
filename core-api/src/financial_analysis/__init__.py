@@ -5,6 +5,6 @@ A comprehensive financial analysis application with intelligent transaction clas
 trend analysis, and predictive forecasting.
 """
 
-__version__ = "0.0.13"
+__version__ = "0.0.14"
 __author__ = "Harry Mower"
 
