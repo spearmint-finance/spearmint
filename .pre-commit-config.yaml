@@ -4,6 +4,19 @@
 # Run manually: pre-commit run --all-files
 
 repos:
+  # Comprehensive pre-commit test suite with detailed logging
+  - repo: local
+    hooks:
+      - id: precommit-test-suite
+        name: Pre-Commit Test Suite (with logging)
+        entry: python dev-tools/run_precommit_tests.py
+        language: system
+        files: ^(core-api/src/financial_analysis/api/.*\.py|sdk/openapi\.json)$
+        stages: [commit, push]
+        pass_filenames: false
+        verbose: true
+
+  # Individual hooks (can be run separately if needed)
   # OpenAPI generation hook
   - repo: local
     hooks:
@@ -12,7 +25,7 @@ repos:
         entry: python core-api/scripts/api_validation/api_validation.py --generate --output sdk/openapi.json
         language: system
         files: ^core-api/src/financial_analysis/api/.*\.py$
-        stages: [commit, push]
+        stages: [manual]
         pass_filenames: false
         verbose: true
 
@@ -24,6 +37,6 @@ repos:
         entry: python dev-tools/validate_spec.py --spec-file sdk/openapi.json --fail-severity WARNING
         language: system
         files: ^sdk/openapi\.json$
-        stages: [commit, push]
+        stages: [manual]
         pass_filenames: false
         verbose: true
