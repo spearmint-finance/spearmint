@@ -4,6 +4,8 @@
 
 A comprehensive financial analysis application designed to provide deep insights into personal or business financial health through intelligent transaction classification, trend analysis, and predictive forecasting.
 
+> **Note:** This project includes automated pre-commit testing to ensure code quality and API specification validation.
+
 ## Overview
 
 This tool imports transaction data from Excel files, stores it in a relational database, and provides powerful analysis capabilities including:
