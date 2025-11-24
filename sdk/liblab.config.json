@@ -39,7 +39,6 @@
       "npmOrg": "spearmint-finance",
       "npmName": "sdk"
     }
-    
   },
   "publishing": {
     "githubOrg": ""

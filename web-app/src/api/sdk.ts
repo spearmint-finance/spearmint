@@ -1,9 +1,32 @@
 import { SpearmintApi } from "@spearmint-finance/sdk";
 
-// The SDK already includes /api in all paths, so baseUrl should be the root origin
-// For Docker: use window.location.origin (e.g., http://localhost:8080)
-// For dev with Vite proxy: use window.location.origin (e.g., http://localhost:5173)
-// The SDK will append /api/* to this base URL
+// SDK Base URL Configuration (3-tier priority):
+// 1. VITE_API_URL environment variable (if set)
+// 2. window.location.origin (browser's current URL)
+// 3. Fallback: http://localhost:8080 (API Gateway)
+//
+// The SDK appends /api/* to the baseUrl for all requests.
+//
+// Local Development (Vite proxy - RECOMMENDED):
+//   - VITE_API_URL unset → uses window.location.origin (http://localhost:5173)
+//   - SDK calls: http://localhost:5173/api/transactions
+//   - Vite proxy forwards to: http://localhost:8000/api/transactions
+//   - Flow: SDK → Vite Proxy → Core API
+//
+// Local Development (Direct API - ALTERNATIVE):
+//   - VITE_API_URL=http://localhost:8000/api
+//   - SDK calls: http://localhost:8000/api/transactions
+//   - Flow: SDK → Core API (bypasses proxy)
+//
+// Docker Development (API Gateway):
+//   - VITE_API_URL=http://localhost:8080
+//   - SDK calls: http://localhost:8080/api/transactions
+//   - Flow: SDK → API Gateway → Core API
+//
+// Production:
+//   - VITE_API_URL unset → uses window.location.origin (https://example.com)
+//   - SDK calls: https://example.com/api/transactions
+//   - Flow: SDK → API Gateway → Core API
 const baseUrl =
   import.meta.env.VITE_API_URL ||
   (typeof window !== "undefined"

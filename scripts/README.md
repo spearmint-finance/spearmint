@@ -4,6 +4,75 @@ Utility scripts for managing the Spearmint application.
 
 ---
 
+## 🚀 Local Development Setup
+
+### `setup-local-dev.ps1` / `setup-local-dev.sh`
+
+**One-command setup for complete local development environment with SDK hot reload.**
+
+This script automates the entire setup process:
+- ✅ Creates Python virtual environment
+- ✅ Installs backend dependencies
+- ✅ Initializes database
+- ✅ Installs frontend dependencies
+- ✅ Generates SDK from OpenAPI spec
+- ✅ Links SDK to web-app with npm link
+- ✅ Configures environment for Vite Proxy
+
+**Quick Start:**
+
+```bash
+# Windows (PowerShell)
+.\scripts\setup-local-dev.ps1
+
+# Linux/macOS
+./scripts/setup-local-dev.sh
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-SkipBackend` / `--skip-backend` | Skip backend setup (Python venv, dependencies, DB) |
+| `-SkipFrontend` / `--skip-frontend` | Skip frontend setup (npm install) |
+| `-SkipSDK` / `--skip-sdk` | Skip SDK generation and linking |
+| `-SkipEnv` / `--skip-env` | Skip environment configuration (.env file) |
+| `-Help` / `--help` | Show help message |
+
+**Examples:**
+
+```bash
+# Full setup (recommended for first-time setup)
+.\scripts\setup-local-dev.ps1
+
+# Skip backend if already set up
+.\scripts\setup-local-dev.ps1 -SkipBackend
+
+# Skip SDK generation
+.\scripts\setup-local-dev.ps1 -SkipSDK
+
+# Only set up frontend
+.\scripts\setup-local-dev.ps1 -SkipBackend -SkipSDK -SkipEnv
+```
+
+**After Setup:**
+
+```bash
+# Terminal 1 - Start Backend
+.\start_api.ps1
+
+# Terminal 2 - Start Frontend
+cd web-app
+.\start_frontend.bat
+```
+
+**See Also:**
+- Complete Guide: `dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md`
+- Quick Start: `LOCAL_DEVELOPMENT_QUICKSTART.md`
+- SDK Guide: `LOCAL_SDK_DEVELOPMENT.md`
+
+---
+
 ## 🐳 Docker Compose Scripts
 
 ### `restart-docker.ps1` / `restart-docker.sh` / `restart-docker.bat`
