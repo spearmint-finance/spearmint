@@ -111,17 +111,18 @@ class PreCommitTestRunner:
         print(f"Log directory: {self.log_dir}")
         print("="*80)
         
-        # Test 1: OpenAPI Generation
+        # Test 1: OpenAPI Spec Validation (Structure)
+        # Note: We validate the existing spec, not regenerate it
+        # Regeneration should be done manually or in a separate workflow
         test1 = self.run_test(
-            name="OpenAPI Generation",
+            name="OpenAPI Spec Validation (Structure)",
             command=[
                 "python",
                 "core-api/scripts/api_validation/api_validation.py",
-                "--generate",
-                "--output", "sdk/openapi.json"
+                "--file", "sdk/openapi.json"
             ],
-            description="Generate OpenAPI spec from FastAPI application",
-            timeout=60  # 60 seconds should be enough for generation
+            description="Validate existing OpenAPI spec structure",
+            timeout=30  # 30 seconds for validation
         )
         self.results["tests"].append(test1)
 

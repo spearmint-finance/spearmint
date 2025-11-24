@@ -1,11 +1,9 @@
-# Ignore timestamped test reports
+# Ignore all test reports (timestamped and latest)
 test_report_*.json
 test_report_*.md
 spec_validation_*.json
-
-# Keep the latest reports for quick reference
-!latest_report.json
-!latest_report.md
+latest_report.json
+latest_report.md
 
 # Keep this .gitignore file
 !.gitignore
