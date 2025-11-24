@@ -14,17 +14,19 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 
 class PreCommitTestRunner:
     """Runs pre-commit tests and generates detailed reports."""
-    
-    def __init__(self, log_dir: str = "dev-tools/commit-testing-log"):
+
+    def __init__(self, log_dir: str = "dev-tools/commit-testing-log", verbose: bool = False):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.verbose = verbose
         self.results = {
             "timestamp": datetime.now().isoformat(),
             "tests": [],
@@ -35,12 +37,27 @@ class PreCommitTestRunner:
                 "skipped": 0
             }
         }
+        # Use ASCII characters for Windows compatibility
+        self.spinner_chars = ['|', '/', '-', '\\']
+        self.spinner_idx = 0
     
+    def show_progress(self, message: str):
+        """Show a spinner progress indicator."""
+        if not self.verbose:
+            self.spinner_idx = (self.spinner_idx + 1) % len(self.spinner_chars)
+            spinner = self.spinner_chars[self.spinner_idx]
+            # Use \r to overwrite the line
+            print(f"\r{spinner} {message}...", end='', flush=True)
+
     def run_test(self, name: str, command: list, description: str = "", timeout: int = 120) -> dict:
         """Run a single test and capture results."""
-        print(f"\n{'='*80}")
-        print(f"Running: {name}")
-        print(f"{'='*80}")
+        if self.verbose:
+            print(f"\n{'='*80}")
+            print(f"Running: {name}")
+            print(f"{'='*80}")
+        else:
+            # Just show a simple progress message
+            print(f"\r{self.spinner_chars[0]} Running: {name}...", end='', flush=True)
 
         test_result = {
             "name": name,
@@ -68,34 +85,50 @@ class PreCommitTestRunner:
             test_result["exit_code"] = result.returncode
             test_result["stdout"] = result.stdout
             test_result["stderr"] = result.stderr
-            
+
             if result.returncode == 0:
                 test_result["status"] = "passed"
-                print(f"[PASSED] {name}")
+                if self.verbose:
+                    print(f"[PASSED] {name}")
+                else:
+                    print(f"\r[OK] {name}                    ")  # Extra spaces to clear spinner
             else:
                 test_result["status"] = "failed"
-                print(f"[FAILED] {name} (exit code: {result.returncode})")
-            
-            # Print output
-            if result.stdout:
-                print("\nStdout:")
-                print(result.stdout)
-            if result.stderr:
-                print("\nStderr:")
-                print(result.stderr)
+                if self.verbose:
+                    print(f"[FAILED] {name} (exit code: {result.returncode})")
+                else:
+                    print(f"\r[FAILED] {name} (exit code: {result.returncode})                    ")
+
+            # Print output only in verbose mode
+            if self.verbose:
+                if result.stdout:
+                    print("\nStdout:")
+                    print(result.stdout)
+                if result.stderr:
+                    print("\nStderr:")
+                    print(result.stderr)
                 
         except subprocess.TimeoutExpired:
             test_result["status"] = "failed"
             test_result["stderr"] = f"Test timed out after {timeout} seconds"
-            print(f"[FAILED] {name} - Timeout after {timeout} seconds")
+            if self.verbose:
+                print(f"[FAILED] {name} - Timeout after {timeout} seconds")
+            else:
+                print(f"\r[FAILED] {name} - Timeout                    ")
         except FileNotFoundError as e:
             test_result["status"] = "failed"
             test_result["stderr"] = f"Command not found: {e}"
-            print(f"[FAILED] {name} - Command not found: {e}")
+            if self.verbose:
+                print(f"[FAILED] {name} - Command not found: {e}")
+            else:
+                print(f"\r[FAILED] {name} - Command not found                    ")
         except Exception as e:
             test_result["status"] = "failed"
             test_result["stderr"] = str(e)
-            print(f"[FAILED] {name} - Error: {e}")
+            if self.verbose:
+                print(f"[FAILED] {name} - Error: {e}")
+            else:
+                print(f"\r[FAILED] {name} - Error                    ")
         
         end_time = datetime.now()
         test_result["duration_seconds"] = (end_time - start_time).total_seconds()
@@ -104,12 +137,16 @@ class PreCommitTestRunner:
     
     def run_all_tests(self):
         """Run all pre-commit tests."""
-        print("\n" + "="*80)
-        print("PRE-COMMIT TEST SUITE")
-        print("="*80)
-        print(f"Timestamp: {self.results['timestamp']}")
-        print(f"Log directory: {self.log_dir}")
-        print("="*80)
+        if self.verbose:
+            print("\n" + "="*80)
+            print("PRE-COMMIT TEST SUITE")
+            print("="*80)
+            print(f"Timestamp: {self.results['timestamp']}")
+            print(f"Log directory: {self.log_dir}")
+            print("="*80)
+        else:
+            # Compact header for non-verbose mode
+            print("\nRunning pre-commit tests...")
         
         # Test 1: OpenAPI Spec Validation (Structure)
         # Note: We validate the existing spec, not regenerate it
@@ -158,7 +195,8 @@ class PreCommitTestRunner:
         json_file = self.log_dir / f"test_report_{self.timestamp}.json"
         with open(json_file, 'w', encoding='utf-8') as f:
             json.dump(self.results, f, indent=2)
-        print(f"\n[OK] JSON report saved to: {json_file}")
+        if self.verbose:
+            print(f"\n[OK] JSON report saved to: {json_file}")
 
         # Save Markdown report
         md_file = self.log_dir / f"test_report_{self.timestamp}.md"
@@ -198,7 +236,8 @@ class PreCommitTestRunner:
 
                 f.write("---\n\n")
 
-        print(f"[OK] Markdown report saved to: {md_file}")
+        if self.verbose:
+            print(f"[OK] Markdown report saved to: {md_file}")
 
         # Save latest report (symlink or copy)
         latest_json = self.log_dir / "latest_report.json"
@@ -209,24 +248,38 @@ class PreCommitTestRunner:
         shutil.copy2(json_file, latest_json)
         shutil.copy2(md_file, latest_md)
 
-        print(f"[OK] Latest reports updated")
+        if self.verbose:
+            print(f"[OK] Latest reports updated")
 
     def print_summary(self):
         """Print test summary to console."""
-        print("\n" + "="*80)
-        print("TEST SUMMARY")
-        print("="*80)
-        print(f"Total Tests:  {self.results['summary']['total']}")
-        print(f"Passed:       {self.results['summary']['passed']}")
-        print(f"Failed:       {self.results['summary']['failed']}")
-        print(f"Skipped:      {self.results['summary']['skipped']}")
-        print("="*80)
+        if self.verbose:
+            print("\n" + "="*80)
+            print("TEST SUMMARY")
+            print("="*80)
+            print(f"Total Tests:  {self.results['summary']['total']}")
+            print(f"Passed:       {self.results['summary']['passed']}")
+            print(f"Failed:       {self.results['summary']['failed']}")
+            print(f"Skipped:      {self.results['summary']['skipped']}")
+            print("="*80)
+        else:
+            # Compact summary
+            passed = self.results['summary']['passed']
+            failed = self.results['summary']['failed']
+            total = self.results['summary']['total']
+            print(f"\n{passed}/{total} tests passed")
 
         if self.results['summary']['failed'] > 0:
-            print("\n[FAILED] Some tests failed!")
+            if self.verbose:
+                print("\n[FAILED] Some tests failed!")
+            else:
+                print("[FAILED] Some tests failed")
             return False
         else:
-            print("\n[PASSED] All tests passed!")
+            if self.verbose:
+                print("\n[PASSED] All tests passed!")
+            else:
+                print("[PASSED] All tests passed")
             return True
 
 
@@ -239,11 +292,16 @@ def main():
         default='dev-tools/commit-testing-log',
         help='Directory to save test logs (default: dev-tools/commit-testing-log)'
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Show detailed output (default: compact mode with progress indicators)'
+    )
 
     args = parser.parse_args()
 
     # Run tests
-    runner = PreCommitTestRunner(log_dir=args.log_dir)
+    runner = PreCommitTestRunner(log_dir=args.log_dir, verbose=args.verbose)
     runner.run_all_tests()
     runner.save_report()
     success = runner.print_summary()
