@@ -11,8 +11,7 @@ repos:
         name: Pre-Commit Test Suite (with logging)
         entry: python dev-tools/run_precommit_tests.py
         language: system
-        files: ^(core-api/src/financial_analysis/api/.*\.py|sdk/openapi\.json)$
-        stages: [commit, push]
+        always_run: true
         pass_filenames: false
         verbose: true
 
