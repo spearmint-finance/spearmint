@@ -101,38 +101,61 @@ See [Product Requirements Document](.product/analyzer.prd) for comprehensive spe
 
 ## Getting Started
 
-### Quick Start (Full Stack)
+### ⚡ Quick Setup (Recommended)
 
-See [FULLSTACK_QUICKSTART.md](FULLSTACK_QUICKSTART.md) for detailed instructions.
+**One-command setup for local development:**
 
-**Terminal 1 - Backend:**
 ```bash
-venv\Scripts\activate
-start_api.bat
-# Backend runs on http://localhost:8000
+# Windows (PowerShell)
+.\scripts\setup-local-dev.ps1
+
+# Linux/macOS
+./scripts/setup-local-dev.sh
 ```
 
-**Terminal 2 - Frontend:**
+This automated script sets up:
+- ✅ Python virtual environment and backend dependencies
+- ✅ Database initialization
+- ✅ Frontend dependencies
+- ✅ SDK generation and linking for hot reload
+- ✅ Environment configuration
+
+**After setup, start development servers:**
+
 ```bash
-cd frontend
-start_frontend.bat
+# Terminal 1 - Backend
+.\start_api.ps1
+# Backend runs on http://localhost:8000
+
+# Terminal 2 - Frontend
+cd web-app
+.\start_frontend.bat
 # Frontend runs on http://localhost:5173
 ```
 
-### First Time Setup
+**See Also:**
+- Complete Guide: [dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md](dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md)
+- Quick Start: [LOCAL_DEVELOPMENT_QUICKSTART.md](LOCAL_DEVELOPMENT_QUICKSTART.md)
+- SDK Development: [LOCAL_SDK_DEVELOPMENT.md](LOCAL_SDK_DEVELOPMENT.md)
+
+---
+
+### 📋 Manual Setup (Alternative)
+
+If you prefer manual setup, see [FULLSTACK_QUICKSTART.md](FULLSTACK_QUICKSTART.md) for detailed instructions.
 
 **Backend:**
 ```bash
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
+cd core-api
 pip install -r requirements.txt
 python -m src.financial_analysis.database.init_db
-python verify_setup.py
 ```
 
 **Frontend:**
 ```bash
-cd frontend
+cd web-app
 npm install
 npm run build
 ```
