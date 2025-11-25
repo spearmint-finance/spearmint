@@ -289,6 +289,10 @@ jobs:
 
       - name: Create git tag
         run: |
+          # Delete the tag if it already exists (in case of retry)
+          git tag -d "v${{ steps.bump.outputs.new_version }}" 2>/dev/null || true
+          git push origin --delete "v${{ steps.bump.outputs.new_version }}" 2>/dev/null || true
+          # Create the tag
           git tag "v${{ steps.bump.outputs.new_version }}"
           echo "✓ Created tag v${{ steps.bump.outputs.new_version }}"
 
