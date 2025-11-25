@@ -10,6 +10,13 @@ A full-stack financial analysis application that imports Excel transaction data,
 - **Analysis View** - Excludes transfers/internal transactions for accurate financial calculations
 - **Complete View** - Shows all transactions for reconciliation and auditing
 
+## Workflow Status
+
+✅ **Pre-commit hooks** - Integrated
+✅ **API validation** - Full pipeline (Structural + Spectral + Postman Governance)
+✅ **CI/CD pipeline** - Automated deployment and versioning
+✅ **Postman integration** - SDK generation, collection creation, spec publishing with retry logic
+
 ## Tech Stack
 
 **Backend:**
