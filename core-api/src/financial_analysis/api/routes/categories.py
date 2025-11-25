@@ -1,4 +1,9 @@
 """Category API endpoints."""
+"""
+Category API endpoints.
+
+Provides CRUD operations for categories and category rules.
+"""
 
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
