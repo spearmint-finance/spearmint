@@ -98,13 +98,16 @@ def create_spec_payload(spec_name: str, spec_type: str, spec_content: str, file_
     Returns:
         Dictionary representing the spec creation payload
     """
+    # Postman Spec Hub requires at least one file marked as ROOT for creation.
+    # Even single-file specs must include a ROOT file type.
     return {
         "name": spec_name,
         "type": spec_type,
         "files": [
             {
                 "path": file_path,
-                "content": spec_content
+                "content": spec_content,
+                "type": "ROOT"
             }
         ]
     }
