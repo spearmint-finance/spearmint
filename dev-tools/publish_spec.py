@@ -18,6 +18,7 @@ import argparse
 import urllib.request
 import urllib.error
 from datetime import datetime
+import time
 
 
 def read_openapi_spec(spec_file: str) -> str:
@@ -154,19 +155,41 @@ def publish_spec(api_key: str, workspace_id: str, spec_name: str, spec_file: str
         method='POST'
     )
     
-    try:
-        with urllib.request.urlopen(req) as response:
-            response_data = json.loads(response.read().decode('utf-8'))
-            return response_data
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode('utf-8')
+    max_retries = 3
+    retry_delay = 2  # Start with 2 seconds
+    
+    for attempt in range(max_retries):
         try:
-            error_json = json.loads(error_body)
-            raise Exception(f"Postman API error (HTTP {e.code}): {error_json}") from None
-        except json.JSONDecodeError:
-            raise Exception(f"Postman API error (HTTP {e.code}): {error_body}") from None
-    except urllib.error.URLError as e:
-        raise Exception(f"Network error: {e.reason}") from None
+            with urllib.request.urlopen(req) as response:
+                response_data = json.loads(response.read().decode('utf-8'))
+                return response_data
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            try:
+                error_json = json.loads(error_body)
+                error_msg = f"Postman API error (HTTP {e.code}): {error_json}"
+            except json.JSONDecodeError:
+                error_msg = f"Postman API error (HTTP {e.code}): {error_body}"
+            
+            # Retry on server errors (5xx) and connection issues
+            if e.code >= 500 and attempt < max_retries - 1:
+                print(f"  ⚠️  {error_msg}")
+                print(f"  ⏳ Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                continue
+            
+            raise Exception(error_msg) from None
+        except urllib.error.URLError as e:
+            # Retry on connection errors
+            if attempt < max_retries - 1:
+                print(f"  ⚠️  Network error: {e.reason}")
+                print(f"  ⏳ Retrying in {retry_delay} seconds... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                continue
+            
+            raise Exception(f"Network error: {e.reason}") from None
 
 
 def main():
