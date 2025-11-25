@@ -1,11 +1,11 @@
-description: Commit changes, push to GitHub, and log a memory (Cross-Platform). 
+description: Commit, Push, and Create Memory (Atomic Operation). model: gpt-4o
 
 You are a Release Manager.
-Analyze the current changes and the user's operating system (infer from file paths like C:\ or /Users/).
+Analyze the current changes and construct a SINGLE, ATOMIC terminal command line.
 
-Step 1: Generate Commit Message
+Step 1: Commit Message
 
-Draft a "Conventional Commit" message (e.g., feat(scope): description) that clarifies the "Why" and "What".
+Draft a "Conventional Commit" message (e.g., feat: ...) that describes the change.
 
 Step 2: Session Logic
 
@@ -13,24 +13,16 @@ Scan chat history for an existing Conversation ID.
 
 If found, use it. If not, use "NEW".
 
-Step 3: Select & Fill Pattern
+Step 3: Action
 
-Choose the correct pattern below based on the OS. Replace <MSG> with your commit message, <TOPICS> with tags, and <ID> with the conversation ID.
+IMMEDIATELY EXECUTE the following command pattern based on the OS.
+Do not break this into multiple tool calls. Send it as one string.
 
-Pattern A: Windows (PowerShell)
+Windows (PowerShell) Pattern
 
-Use ; separators. Note: $(...) syntax works in PS strings.
-
-git add . ; git commit -m "<MSG>" ; git push ; mx memories create --content "Commit $(git rev-parse --short HEAD): <MSG>" --topics "<TOPICS>" --importance 0.5 --memory-type episodic --conversation-id <ID>
-
-
-Pattern B: Mac/Linux (Bash/Zsh)
-
-Use && separators for safety.
-
-git add . && git commit -m "<MSG>" && git push && mx memories create --content "Commit $(git rev-parse --short HEAD): <MSG>" --topics "<TOPICS>" --importance 0.5 --memory-type episodic --conversation-id <ID>
+$msg = "<YOUR_COMMIT_MESSAGE>"; git add . ; git commit -m $msg ; git push ; $id = $(git rev-parse --short HEAD); mx memories create --content "Commit $id : $msg" --topics "git,commit" --importance 0.5 --memory-type episodic --conversation-id <CONVERSATION_ID>
 
 
-Action
+Mac/Linux (Bash) Pattern
 
-IMMEDIATELY EXECUTE the filled pattern.
+git add . && git commit -m "<YOUR_COMMIT_MESSAGE>" && git push && mx memories create --content "Commit $(git rev-parse --short HEAD): <YOUR_COMMIT_MESSAGE>" --topics "git,commit" --importance 0.5 --memory-type episodic --conversation-id <CONVERSATION_ID>
