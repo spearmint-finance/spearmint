@@ -365,7 +365,10 @@ def generate_spec(output_path: str) -> bool:
         script_dir = Path(__file__).parent.parent
         generate_script = script_dir / 'generate_openapi.py'
         
-        cmd = [sys.executable, str(generate_script), output_path]
+        # Convert output_path to absolute path to avoid cwd confusion
+        output_path_abs = str(Path(output_path).resolve())
+        
+        cmd = [sys.executable, str(generate_script), output_path_abs]
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -374,7 +377,7 @@ def generate_spec(output_path: str) -> bool:
             cwd=str(script_dir)
         )
         if result.returncode == 0:
-            logger.info(f"✅ Spec generated to {output_path}")
+            logger.info(f"✅ Spec generated to {output_path_abs}")
             if result.stdout:
                 logger.info(result.stdout)
             return True

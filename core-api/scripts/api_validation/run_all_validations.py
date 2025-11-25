@@ -31,15 +31,19 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
 
 
 class PreCommitTestRunner:
-    """Runs pre-commit tests and generates detailed reports."""
+    """Runs pre-commit tests and generates detailed reports.
 
-    def __init__(self, log_dir: str = "core-api/scripts/api_validation/logs", verbose: bool = False, summary_only: bool = False, fail_on_spectral_error: bool = False):
+    Behavior change: Spectral errors now ALWAYS fail the suite (previously
+    gated behind --fail-on-spectral-error). The flag has been removed for
+    simplicity and policy enforcement.
+    """
+
+    def __init__(self, log_dir: str = "core-api/scripts/api_validation/logs", verbose: bool = False, summary_only: bool = False):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.verbose = verbose
         self.summary_only = summary_only
-        self.fail_on_spectral_error = fail_on_spectral_error
         self.results = {
             "timestamp": datetime.now().isoformat(),
             "tests": [],
@@ -106,12 +110,13 @@ class PreCommitTestRunner:
                 if self.verbose:
                     print(f"[PASSED] {name}")
                 else:
-                    # In terse mode, optionally append brief counters
-                    if self.summary_only:
-                        passed_ct, failed_ct, warn_ct = self._compute_brief_counts(name, test_result)
-                        print(f"\r[OK] {name} - {passed_ct}# PASSED | {failed_ct}# FAILED | {warn_ct}# WARNINGS                    ")
-                    else:
-                        print(f"\r[OK] {name}                    ")  # Extra spaces to clear spinner
+                    # Skip inline status in summary mode for Full Pipeline (will print after Spectral check)
+                    if "Full Pipeline" not in name:
+                        if self.summary_only:
+                            passed_ct, failed_ct, warn_ct = self._compute_brief_counts(name, test_result)
+                            print(f"\r[OK] {name} - {passed_ct}# PASSED | {failed_ct}# FAILED | {warn_ct}# WARNINGS                    ")
+                        else:
+                            print(f"\r[OK] {name}                    ")
             else:
                 test_result["status"] = "failed"
                 if self.verbose:
@@ -262,14 +267,41 @@ class PreCommitTestRunner:
             timeout=60  # 60 seconds for full validation pipeline
         )
 
-        # Optional: fail on Spectral errors if flag set and summary-only or full output provided
-        if self.fail_on_spectral_error and test1["status"] == "passed":
-            spectral_errors = self._extract_spectral_errors(test1["stdout"], test1["stderr"])
-            if spectral_errors is not None and spectral_errors > 0:
+        # Always evaluate Spectral summary and fail if errors > 0 (policy enforcement)
+        spectral_summary = self._extract_spectral_summary(test1["stdout"], test1["stderr"])
+        if spectral_summary:
+            test1["spectral_problems"] = spectral_summary.get("problems")
+            test1["spectral_errors"] = spectral_summary.get("errors")
+            test1["spectral_warnings"] = spectral_summary.get("warnings")
+            if test1["status"] == "passed" and spectral_summary.get("errors", 0) > 0:
                 test1["status"] = "failed"
-                test1["stderr"] += f"\nSpectral errors detected ({spectral_errors}); failing due to --fail-on-spectral-error"
+                test1["stderr"] += f"\nSpectral errors detected ({spectral_summary['errors']}); failing (policy)"
+                # Now print the final status line (we skipped it earlier for Full Pipeline)
                 if self.verbose:
-                    print(f"[FAILED] {test1['name']} - Spectral errors: {spectral_errors}")
+                    print(f"[FAILED] {test1['name']} - Spectral errors: {spectral_summary['errors']}")
+                else:
+                    if self.summary_only:
+                        # Compute counts but override failed count with Spectral errors
+                        passed_ct, _, warn_ct = self._compute_brief_counts(test1['name'], test1)
+                        print(f"\r[FAILED] {test1['name']} - {passed_ct}# PASSED | {spectral_summary['errors']}# ERRORS | {warn_ct}# WARNINGS                    ")
+                    else:
+                        print(f"\r[FAILED] {test1['name']} - Spectral errors: {spectral_summary['errors']}                    ")
+            else:
+                # No errors or already failed; print deferred status line for Full Pipeline
+                if not self.verbose and test1["status"] == "passed":
+                    if self.summary_only:
+                        passed_ct, failed_ct, warn_ct = self._compute_brief_counts(test1['name'], test1)
+                        print(f"\r[OK] {test1['name']} - {passed_ct}# PASSED | {failed_ct}# FAILED | {warn_ct}# WARNINGS                    ")
+                    else:
+                        print(f"\r[OK] {test1['name']}                    ")
+        else:
+            # No Spectral summary found; print deferred status line for Full Pipeline
+            if not self.verbose and test1["status"] == "passed":
+                if self.summary_only:
+                    passed_ct, failed_ct, warn_ct = self._compute_brief_counts(test1['name'], test1)
+                    print(f"\r[OK] {test1['name']} - {passed_ct}# PASSED | {failed_ct}# FAILED | {warn_ct}# WARNINGS                    ")
+                else:
+                    print(f"\r[OK] {test1['name']}                    ")
         self.results["tests"].append(test1)
 
         # Test 2: OpenAPI Spec Validation (Postman Governance)
@@ -391,7 +423,18 @@ class PreCommitTestRunner:
             print(f"[OK] Latest reports updated")
 
     def print_summary(self):
-        """Print test summary to console."""
+        """Print test summary to console, including Spectral counts."""
+        # Fetch spectral stats from first test if available
+        spectral_errors = None
+        spectral_warnings = None
+        spectral_problems = None
+        for t in self.results.get("tests", []):
+            if "spectral_errors" in t:
+                spectral_errors = t.get("spectral_errors")
+                spectral_warnings = t.get("spectral_warnings")
+                spectral_problems = t.get("spectral_problems")
+                break
+
         if self.verbose:
             print("\n" + "="*80)
             print("TEST SUMMARY")
@@ -400,13 +443,16 @@ class PreCommitTestRunner:
             print(f"Passed:       {self.results['summary']['passed']}")
             print(f"Failed:       {self.results['summary']['failed']}")
             print(f"Skipped:      {self.results['summary']['skipped']}")
+            if spectral_errors is not None:
+                print("-"*80)
+                print(f"Spectral: {spectral_errors} errors, {spectral_warnings} warnings (problems: {spectral_problems})")
             print("="*80)
         else:
-            # Compact summary
             passed = self.results['summary']['passed']
-            failed = self.results['summary']['failed']
             total = self.results['summary']['total']
             print(f"\n{passed}/{total} tests passed")
+            if spectral_errors is not None:
+                print(f"Spectral: {spectral_errors} errors, {spectral_warnings} warnings")
 
         if self.results['summary']['failed'] > 0:
             if self.verbose:
@@ -421,20 +467,25 @@ class PreCommitTestRunner:
                 print("[PASSED] All tests passed")
             return True
 
-    def _extract_spectral_errors(self, stdout: str, stderr: str) -> int | None:
-        """Parse Spectral summary line to extract error count.
+    def _extract_spectral_summary(self, stdout: str, stderr: str) -> dict | None:
+        """Extract Spectral summary metrics: problems, errors, warnings.
 
-        Returns int errors or None if summary not found.
+        Returns dict {problems, errors, warnings} or None if not found.
         """
         combined = "\n".join([stdout or "", stderr or ""])
-        # Look for 'Spectral summary:' line
         for line in combined.splitlines():
-            if "Spectral summary:" in line:
-                # Example: Spectral summary: ✖ 760 problems (12 errors, 748 warnings, 0 infos, 0 hints)
-                match = re.search(r"\((\d+) errors", line)
-                if match:
+            if "problems" in line and "errors" in line and "warnings" in line:
+                # Normalize line (strip leading label like 'Spectral summary:')
+                summary_part = line.split(":", 1)[-1].strip() if ":" in line else line.strip()
+                # Regex capture
+                m = re.search(r"(\d+)\s+problems\s*\(\s*(\d+)\s+errors,\s*(\d+)\s+warnings", summary_part)
+                if m:
                     try:
-                        return int(match.group(1))
+                        return {
+                            "problems": int(m.group(1)),
+                            "errors": int(m.group(2)),
+                            "warnings": int(m.group(3)),
+                        }
                     except ValueError:
                         return None
         return None
@@ -460,12 +511,6 @@ def main():
         action='store_true',
         help='Suppress detailed Spectral/Postman outputs and show only summary lines'
     )
-    parser.add_argument(
-        '--fail-on-spectral-error',
-        action='store_true',
-        help='Fail pipeline if Spectral reports one or more errors (even if script exits 0)'
-    )
-
     args = parser.parse_args()
 
     # Run tests
@@ -473,7 +518,6 @@ def main():
         log_dir=args.log_dir,
         verbose=args.verbose,
         summary_only=args.summary_only,
-        fail_on_spectral_error=args.fail_on_spectral_error,
     )
     runner.run_all_tests()
     runner.save_report()
