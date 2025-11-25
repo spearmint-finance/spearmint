@@ -94,7 +94,7 @@ jobs:
           echo "Workspace ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}"
           echo "Fail severity: ERROR"
           echo ""
-          python dev-tools/validate_spec.py \
+          python core-api/scripts/api_validation/postman_validation.py \
             --spec-file sdk/openapi.json \
             --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
             --fail-severity ERROR \

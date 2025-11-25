@@ -50,16 +50,18 @@ logger = logging.getLogger(__name__)
 class SpecValidator:
     """Manages OpenAPI spec validation and linting workflow."""
 
-    def __init__(self, spec_path: str, ruleset: Optional[str] = None):
-        """
-        Initialize validator.
+    def __init__(self, spec_path: str, ruleset: Optional[str] = None, summary_only: bool = False):
+        """Initialize validator.
 
         Args:
             spec_path: Path to OpenAPI spec file (JSON or YAML)
             ruleset: Path to Spectral ruleset file (default: .spectral-google.yaml)
+            summary_only: If True, suppress detailed Spectral output and log only a
+                high-level summary line (similar to Postman summary-only mode).
         """
         self.spec_path = Path(spec_path).resolve()
-        
+        self.summary_only = summary_only
+
         # Resolve ruleset path: prefer explicit arg, then look in same dir as this script, then repo root, then current dir
         if ruleset:
             self.ruleset = Path(ruleset).resolve()
@@ -74,7 +76,7 @@ class SpecValidator:
                 Path('.spectral-google.yaml').resolve(),   # current working dir
             ]
             self.ruleset = next((p for p in candidates if p.exists()), candidates[0])
-        
+
         self.spec_dir = self.spec_path.parent
         self.bundled_spec_path: Optional[Path] = None
 
@@ -190,9 +192,13 @@ class SpecValidator:
             return True  # Non-fatal
 
         try:
+            # Try spectral directly (global install)
+            # On Windows, use spectral.cmd; on Unix, use spectral
+            import platform
+            spectral_cmd = 'spectral.cmd' if platform.system() == 'Windows' else 'spectral'
+
             cmd = [
-                'npx',
-                '@stoplight/spectral-cli',
+                spectral_cmd,
                 'lint',
                 str(lint_path),
                 '--ruleset',
@@ -207,16 +213,30 @@ class SpecValidator:
                 timeout=60
             )
 
+            summary_mode = getattr(self, "summary_only", False)
+
             if result.returncode == 0:
                 logger.info("✅ Spectral linting passed.")
                 if result.stdout:
-                    logger.info(f"Spectral output:\n{result.stdout}")
+                    if summary_mode:
+                        # Log only the final Spectral summary line (e.g. counts),
+                        # suppressing the full per-issue listing.
+                        lines = [line for line in result.stdout.splitlines() if line.strip()]
+                        if lines:
+                            logger.info(f"Spectral summary: {lines[-1]}")
+                    else:
+                        logger.info(f"Spectral output:\n{result.stdout}")
                 return True
             else:
-                logger.warning(f"⚠️ Spectral linting detected issues.")
+                logger.warning("⚠️ Spectral linting detected issues.")
                 if result.stdout:
-                    logger.warning(f"Spectral output:\n{result.stdout}")
-                if result.stderr:
+                    if summary_mode:
+                        lines = [line for line in result.stdout.splitlines() if line.strip()]
+                        if lines:
+                            logger.warning(f"Spectral summary: {lines[-1]}")
+                    else:
+                        logger.warning(f"Spectral output:\n{result.stdout}")
+                if result.stderr and not summary_mode:
                     logger.warning(f"Stderr:\n{result.stderr}")
                 return True  # Non-fatal; issues noted but continue
         except FileNotFoundError:
@@ -421,13 +441,18 @@ Examples:
     parser.add_argument(
         '--ruleset',
         type=str,
-        default='.spectral-google.yaml',
-        help='Path to Spectral ruleset (default: .spectral-google.yaml)'
+        default=None,
+        help='Path to Spectral ruleset (default: auto-detect .spectral-google.yaml)'
     )
     parser.add_argument(
         '--verbose',
         action='store_true',
         help='Enable verbose logging'
+    )
+    parser.add_argument(
+        '--summary-only',
+        action='store_true',
+        help='Suppress detailed Spectral output and print only a high-level summary'
     )
 
     args = parser.parse_args()
@@ -453,7 +478,11 @@ Examples:
             sys.exit(1)
 
     # Run validation
-    validator = SpecValidator(spec_path, ruleset=args.ruleset)
+    validator = SpecValidator(
+        spec_path,
+        ruleset=args.ruleset,
+        summary_only=args.summary_only,
+    )
     success = validator.run_full_validation()
 
     sys.exit(0 if success else 1)
