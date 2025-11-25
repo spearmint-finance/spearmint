@@ -1,0 +1,24 @@
+{
+  "name": "spearmint-validation-tools",
+  "version": "1.0.0",
+  "description": "API validation tools for Spearmint project",
+  "private": true,
+  "scripts": {
+    "lint:spec": "spectral lint sdk/openapi.json --ruleset core-api/scripts/api_validation/.spectral-google.yaml",
+    "validate:spec": "python core-api/scripts/api_validation/api_validation.py --file sdk/openapi.json",
+    "validate:postman": "python core-api/scripts/api_validation/postman_validation.py --spec-file sdk/openapi.json",
+    "validate:all": "python core-api/scripts/api_validation/run_all_validations.py"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "^6.11.0"
+  },
+  "keywords": [
+    "openapi",
+    "validation",
+    "spectral",
+    "api-design"
+  ],
+  "author": "Spearmint Finance",
+  "license": "UNLICENSED"
+}
+
