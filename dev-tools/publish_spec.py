@@ -155,7 +155,7 @@ def publish_spec(api_key: str, workspace_id: str, spec_name: str, spec_file: str
         method='POST'
     )
     
-    max_retries = 3
+    max_retries = 5
     retry_delay = 2  # Start with 2 seconds
     
     for attempt in range(max_retries):
