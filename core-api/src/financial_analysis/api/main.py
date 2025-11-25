@@ -55,7 +55,11 @@ app.add_exception_handler(Exception, general_exception_handler)
 # Health check endpoint
 @app.get("/api/health", tags=["system"])
 async def health_check():
-    """Health check endpoint."""
+    """Health check endpoint.
+    
+    Returns basic health status and API version information.
+    Used by monitoring systems and load balancers to verify API availability.
+    """
     return {"status": "healthy", "version": "0.0.17"}
 
 
