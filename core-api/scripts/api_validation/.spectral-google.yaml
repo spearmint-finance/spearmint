@@ -1,4 +1,4 @@
-extends: oas
+extends: spectral:oas
 rules:
   # Naming & Style Rules (Google API Design)
   paths-kebab-case:
@@ -18,7 +18,7 @@ rules:
     given: $.paths.*[?(@property === 'get' || @property === 'put' || @property === 'post' || @property === 'delete' || @property === 'options' || @property === 'head' || @property === 'patch' || @property === 'trace')]
     then:
       - field: operationId
-        function: required
+        function: truthy
 
   operation-summary:
     description: Every operation should have a summary

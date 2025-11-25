@@ -46,7 +46,7 @@ The OpenAPI specification (`sdk/openapi.json`) is automatically validated agains
    ```bash
    # Linux/macOS
    curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
-   
+
    # Windows (PowerShell)
    iwr https://dl-cli.pstmn.io/install/win64.ps1 | iex
    ```
@@ -60,7 +60,7 @@ The OpenAPI specification (`sdk/openapi.json`) is automatically validated agains
    ```bash
    # Linux/macOS
    export POSTMAN_WORKSPACE_ID="your-workspace-id"
-   
+
    # Windows (PowerShell)
    $env:POSTMAN_WORKSPACE_ID="your-workspace-id"
    ```
@@ -179,6 +179,62 @@ python dev-tools/validate_spec.py \
   --spec-file sdk/openapi.json \
   --output-file validation-results.json
 ```
+
+## Full API Validation Pipeline (Spectral + Postman)
+
+The full API validation suite (structural checks, Spectral rules, and Postman governance) is orchestrated by:
+
+- `core-api/scripts/api_validation/run_all_validations.py`
+
+This script runs all validations in one go and writes JSON/Markdown reports to `core-api/scripts/api_validation/logs/`.
+
+### Running from PowerShell
+
+From the repository root, after activating your Python virtual environment:
+
+```powershell
+$env:POSTMAN_WORKSPACE_ID = "your-workspace-id-here"   # optional but recommended
+python core-api\scripts\api_validation\run_all_validations.py --verbose
+```
+
+On Linux/macOS (bash):
+
+```bash
+export POSTMAN_WORKSPACE_ID="your-workspace-id-here"   # optional but recommended
+python core-api/scripts/api_validation/run_all_validations.py --verbose
+```
+
+### Compact Mode and Spectral Failure Control
+
+The orchestrator now supports two additional flags:
+
+```powershell
+# Show only summary lines for Spectral/Postman (suppresses per-issue listings)
+python core-api\scripts\api_validation\run_all_validations.py --summary-only
+
+# Fail pipeline when Spectral reports >=1 errors (even if underlying script exits 0)
+python core-api\scripts\api_validation\run_all_validations.py --fail-on-spectral-error
+
+# Combine flags (quiet output but still fail on error severity violations)
+python core-api\scripts\api_validation\run_all_validations.py --summary-only --fail-on-spectral-error --verbose
+```
+
+Behavior details:
+- `--summary-only` passes the flag to both underlying validation scripts so Spectral and Postman governance each emit a single summary line instead of hundreds of rule messages.
+- `--fail-on-spectral-error` parses the Spectral summary output (e.g. `Spectral summary: ✖ 760 problems (12 errors, 748 warnings, ...)`). If the error count > 0 the orchestrator marks the test failed and exits with code 1.
+- Without `--summary-only`, full Spectral per-issue output is printed; Postman output will remain governed by its own verbosity settings.
+- Flags can be used independently or together.
+
+Recommended usage in CI for strict governance:
+```bash
+python core-api/scripts/api_validation/run_all_validations.py --summary-only --fail-on-spectral-error
+```
+
+Local exploratory runs (need full detail):
+```bash
+python core-api/scripts/api_validation/run_all_validations.py --verbose
+```
+
 
 ## Troubleshooting
 

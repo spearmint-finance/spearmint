@@ -4,12 +4,12 @@
 # Run manually: pre-commit run --all-files
 
 repos:
-  # Comprehensive pre-commit test suite with detailed logging
+  # Comprehensive API validation test suite with detailed logging
   - repo: local
     hooks:
-      - id: precommit-test-suite
-        name: Pre-Commit Test Suite (with logging)
-        entry: python dev-tools/run_precommit_tests.py
+      - id: api-validation-suite
+        name: API Validation Suite (Structural + Spectral + Postman)
+        entry: python core-api/scripts/api_validation/run_all_validations.py
         language: system
         always_run: true
         pass_filenames: false
@@ -33,7 +33,7 @@ repos:
     hooks:
       - id: openapi-spec-validation
         name: OpenAPI Spec Validation (Postman)
-        entry: python dev-tools/validate_spec.py --spec-file sdk/openapi.json --fail-severity WARNING
+        entry: python core-api/scripts/api_validation/postman_validation.py --spec-file sdk/openapi.json --fail-severity WARNING
         language: system
         files: ^sdk/openapi\.json$
         stages: [manual]
