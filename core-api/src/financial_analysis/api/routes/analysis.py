@@ -1,4 +1,8 @@
-"""Analysis API endpoints."""
+"""Analysis API endpoints.
+
+Provides endpoints for income, expense, cash flow, and financial health analysis.  
+
+"""
 
 from typing import Optional
 from datetime import date
