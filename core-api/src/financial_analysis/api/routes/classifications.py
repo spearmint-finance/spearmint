@@ -1,5 +1,10 @@
 """
 API routes for classification management.
+
+Provides endpoints for:
+- Managing transaction classifications  
+- Managing classification rules
+- Auto-classifying transactions using rules
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
