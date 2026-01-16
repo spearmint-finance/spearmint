@@ -19,7 +19,8 @@ from ..schemas.report import (
     IncomeDetailReportResponse,
     ExpenseDetailReportResponse,
     ReconciliationReportResponse,
-    BalanceReportResponse
+    BalanceReportResponse,
+    CapExReportResponse
 )
 
 router = APIRouter()
@@ -230,6 +231,53 @@ def get_reconciliation_report(
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=reconciliation_report.csv"}
         )
-    
+
+    return report_data
+
+
+@router.get(
+    "/reports/capex",
+    response_model=CapExReportResponse,
+    summary="Generate Capital Expense (CapEx) Report",
+    description="""
+    Generate a report of all capital expense transactions.
+
+    Capital expenses are large asset purchases (vehicles, property improvements, equipment)
+    that are tracked separately from regular operating expenses.
+
+    This report includes:
+    - Total CapEx for the period
+    - Breakdown by category (Vehicle, Equipment, Home Improvement, etc.)
+    - Full list of CapEx transactions
+
+    CapEx transactions are identified by their classification code (CAPEX, CAPITAL_EXPENSE, etc.)
+    or classification name containing 'Capital Expense'.
+    """
+)
+def get_capex_report(
+    start_date: Optional[date] = Query(None, description="Start date (default: 1 year ago)"),
+    end_date: Optional[date] = Query(None, description="End date (default: today)"),
+    format: ReportFormatEnum = Query(
+        ReportFormatEnum.JSON,
+        description="Export format: 'json' or 'csv'"
+    ),
+    db: Session = Depends(get_db)
+):
+    """Generate a capital expense report."""
+    service = ReportService(db)
+
+    report_data = service.generate_capex_report(
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    if format == ReportFormatEnum.CSV:
+        csv_data = service.export_to_csv(report_data)
+        return StreamingResponse(
+            io.StringIO(csv_data),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=capex_report.csv"}
+        )
+
     return report_data
 
