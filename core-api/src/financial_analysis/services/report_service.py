@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from .analysis_service import AnalysisService, AnalysisMode, DateRange
-from ..database.models import Transaction, Category, Account
+from ..database.models import Transaction, Category, Account, TransactionClassification
 
 
 class ReportFormat(str, Enum):
@@ -133,7 +133,10 @@ class ReportService:
         expense_data = self.analysis_service.analyze_expenses(date_range=date_range, mode=mode)
         cashflow_data = self.analysis_service.analyze_cash_flow(date_range=date_range, mode=mode)
         health_data = self.analysis_service.get_financial_health_indicators(date_range=date_range)
-        
+
+        # Get total CapEx for the period
+        total_capex = self.get_total_capex(start_date=start_date, end_date=end_date)
+
         return {
             "report_type": "summary",
             "period": {
@@ -183,7 +186,8 @@ class ReportService:
                 "average_daily_income": float(health_data.average_daily_income),
                 "average_daily_expense": float(health_data.average_daily_expense),
                 "average_daily_cashflow": float(health_data.net_daily_cash_flow)
-            }
+            },
+            "total_capex": total_capex
         }
     
     def generate_income_detail_report(
@@ -326,13 +330,149 @@ class ReportService:
             ]
         }
     
+    def generate_capex_report(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate a Capital Expense (CapEx) report.
+
+        CapEx transactions are identified by:
+        - Classification code containing 'CAPEX' or 'CAPITAL_EXPENSE'
+        - OR classification name = 'Capital Expense'
+
+        Args:
+            start_date: Start of reporting period (default: 1 year ago)
+            end_date: End of reporting period (default: today)
+
+        Returns:
+            Dictionary containing CapEx report data
+        """
+        # Set default dates (1 year for CapEx since they're less frequent)
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=365)
+
+        # Query CapEx transactions
+        # Join with classification and category
+        query = self.db.query(Transaction).join(
+            TransactionClassification,
+            Transaction.classification_id == TransactionClassification.classification_id
+        ).outerjoin(
+            Category,
+            Transaction.category_id == Category.category_id
+        ).filter(
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date
+        ).filter(
+            # Match CapEx classifications by code or name
+            (TransactionClassification.classification_code.ilike('%CAPEX%')) |
+            (TransactionClassification.classification_code == 'CAPITAL_EXPENSE') |
+            (TransactionClassification.classification_name == 'Capital Expense')
+        ).order_by(Transaction.transaction_date.desc())
+
+        transactions = query.all()
+
+        # Calculate totals
+        total_capex = sum(abs(tx.amount) for tx in transactions)
+        transaction_count = len(transactions)
+        average_transaction = total_capex / transaction_count if transaction_count > 0 else Decimal(0)
+
+        # Group by category
+        category_totals: Dict[str, Dict[str, Any]] = {}
+        for tx in transactions:
+            cat_name = tx.category.category_name if tx.category else "Uncategorized"
+            if cat_name not in category_totals:
+                category_totals[cat_name] = {"total": Decimal(0), "count": 0}
+            category_totals[cat_name]["total"] += abs(tx.amount)
+            category_totals[cat_name]["count"] += 1
+
+        # Build category summary with percentages
+        by_category = []
+        for cat_name, data in sorted(category_totals.items(), key=lambda x: x[1]["total"], reverse=True):
+            percentage = (float(data["total"]) / float(total_capex) * 100) if total_capex > 0 else 0
+            by_category.append({
+                "category": cat_name,
+                "total": float(data["total"]),
+                "count": data["count"],
+                "percentage": round(percentage, 2)
+            })
+
+        # Build transaction list
+        tx_list = [
+            {
+                "transaction_id": tx.transaction_id,
+                "date": tx.transaction_date.isoformat(),
+                "description": tx.description,
+                "amount": float(tx.amount),
+                "category": tx.category.category_name if tx.category else "Uncategorized",
+                "classification": tx.classification.classification_name if tx.classification else "Unknown",
+                "notes": tx.notes
+            }
+            for tx in transactions
+        ]
+
+        return {
+            "report_type": "capex",
+            "period": {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "days": (end_date - start_date).days + 1
+            },
+            "summary": {
+                "total_capex": float(total_capex),
+                "transaction_count": transaction_count,
+                "average_transaction": float(average_transaction)
+            },
+            "by_category": by_category,
+            "transactions": tx_list
+        }
+
+    def get_total_capex(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> float:
+        """
+        Get the total capital expenditure for a period.
+
+        This is a lightweight method for use in summary reports.
+
+        Args:
+            start_date: Start date
+            end_date: End date
+
+        Returns:
+            Total CapEx amount as float
+        """
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+
+        result = self.db.query(func.sum(func.abs(Transaction.amount))).join(
+            TransactionClassification,
+            Transaction.classification_id == TransactionClassification.classification_id
+        ).filter(
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date
+        ).filter(
+            (TransactionClassification.classification_code.ilike('%CAPEX%')) |
+            (TransactionClassification.classification_code == 'CAPITAL_EXPENSE') |
+            (TransactionClassification.classification_name == 'Capital Expense')
+        ).scalar()
+
+        return float(result) if result else 0.0
+
     def export_to_csv(self, report_data: Dict[str, Any]) -> str:
         """
         Export report data to CSV format.
-        
+
         Args:
             report_data: Report data dictionary
-            
+
         Returns:
             CSV string
         """
@@ -357,7 +497,16 @@ class ReportService:
             )
             writer.writeheader()
             writer.writerows(report_data["categories"])
-        
+
+        elif report_type == "capex":
+            # Export CapEx transactions as CSV
+            writer = csv.DictWriter(
+                output,
+                fieldnames=["transaction_id", "date", "description", "amount", "category", "classification", "notes"]
+            )
+            writer.writeheader()
+            writer.writerows(report_data["transactions"])
+
         else:
             # For summary and other reports, create a simple key-value CSV
             writer = csv.writer(output)

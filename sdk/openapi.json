@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.15"
+    "version": "0.0.23"
   },
   "servers": [
     {
@@ -22,7 +22,7 @@
           "system"
         ],
         "summary": "Health Check",
-        "description": "Health check endpoint.",
+        "description": "Health check endpoint.\n\nReturns basic health status and API version information.\nUsed by monitoring systems and load balancers to verify API availability.",
         "operationId": "health_check_api_health_get",
         "responses": {
           "200": {
@@ -1253,7 +1253,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/BodyImportTransactionsApiImportPost"
+                "$ref": "#/components/schemas/Body_import_transactions_api_import_post"
               }
             }
           },
@@ -1535,7 +1535,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1629,7 +1629,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1712,7 +1712,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1820,7 +1820,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1903,7 +1903,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1997,7 +1997,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2080,7 +2080,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2163,7 +2163,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2274,7 +2274,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2371,7 +2371,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2465,7 +2465,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -3518,7 +3518,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3612,7 +3612,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3706,7 +3706,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/Analysismodeenum",
+              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3814,6 +3814,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReconciliationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/capex": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Generate Capital Expense (CapEx) Report",
+        "description": "Generate a report of all capital expense transactions.\n\n    Capital expenses are large asset purchases (vehicles, property improvements, equipment)\n    that are tracked separately from regular operating expenses.\n\n    This report includes:\n    - Total CapEx for the period\n    - Breakdown by category (Vehicle, Equipment, Home Improvement, etc.)\n    - Full list of CapEx transactions\n\n    CapEx transactions are identified by their classification code (CAPEX, CAPITAL_EXPENSE, etc.)\n    or classification name containing 'Capital Expense'.",
+        "operationId": "get_capex_report_api_reports_capex_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (default: 1 year ago)",
+              "title": "Start Date"
+            },
+            "description": "Start date (default: 1 year ago)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (default: today)",
+              "title": "End Date"
+            },
+            "description": "End date (default: today)"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormatEnum",
+              "description": "Export format: 'json' or 'csv'",
+              "default": "json"
+            },
+            "description": "Export format: 'json' or 'csv'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapExReportResponse"
                 }
               }
             }
@@ -5271,7 +5354,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2025-11-24",
+              "default": "2026-01-16",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"
@@ -5779,23 +5862,20 @@
             "title": "Account Type"
           },
           "balance": {
-            "type": "string",
-            "title": "Balance",
-            "format": "decimal"
+            "type": "number",
+            "title": "Balance"
           },
           "transaction_count": {
             "type": "integer",
             "title": "Transaction Count"
           },
           "income_sum": {
-            "type": "string",
-            "title": "Income Sum",
-            "format": "decimal"
+            "type": "number",
+            "title": "Income Sum"
           },
           "expense_sum": {
-            "type": "string",
-            "title": "Expense Sum",
-            "format": "decimal"
+            "type": "number",
+            "title": "Expense Sum"
           }
         },
         "type": "object",
@@ -5889,8 +5969,7 @@
           "opening_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -6317,6 +6396,16 @@
         "title": "AccuracyMetrics",
         "description": "Projection accuracy metrics."
       },
+      "AnalysisModeEnum-Output": {
+        "type": "string",
+        "enum": [
+          "analysis",
+          "with_capital",
+          "complete"
+        ],
+        "title": "AnalysisModeEnum",
+        "description": "Analysis mode."
+      },
       "ApplyCategoryRulesRequest": {
         "properties": {
           "transaction_ids": {
@@ -6547,8 +6636,7 @@
           "total_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -6570,8 +6658,7 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -6586,8 +6673,7 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -6796,19 +6882,16 @@
       "BalanceSummary": {
         "properties": {
           "total_assets": {
-            "type": "string",
-            "title": "Total Assets",
-            "format": "decimal"
+            "type": "number",
+            "title": "Total Assets"
           },
           "total_liabilities": {
-            "type": "string",
-            "title": "Total Liabilities",
-            "format": "decimal"
+            "type": "number",
+            "title": "Total Liabilities"
           },
           "net_worth": {
-            "type": "string",
-            "title": "Net Worth",
-            "format": "decimal"
+            "type": "number",
+            "title": "Net Worth"
           }
         },
         "type": "object",
@@ -6819,6 +6902,34 @@
         ],
         "title": "BalanceSummary",
         "description": "High-level balance summary."
+      },
+      "Body_import_transactions_api_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Excel file to import"
+          },
+          "mode": {
+            "type": "string",
+            "pattern": "^(full|incremental|update)$",
+            "title": "Mode",
+            "description": "Import mode",
+            "default": "incremental"
+          },
+          "skip_duplicates": {
+            "type": "boolean",
+            "title": "Skip Duplicates",
+            "description": "Skip duplicate transactions",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_transactions_api_import_post"
       },
       "BulkClassifyRequest": {
         "properties": {
@@ -6943,6 +7054,204 @@
         "title": "CalculatedBalance",
         "description": "Schema for calculated balance response."
       },
+      "CapExCategorySummary": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total",
+            "description": "Total CapEx amount for this category"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of transactions"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of total CapEx"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "total",
+          "count",
+          "percentage"
+        ],
+        "title": "CapExCategorySummary",
+        "description": "CapEx totals grouped by category."
+      },
+      "CapExReportResponse": {
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "title": "Report Type",
+            "description": "Type of report",
+            "default": "capex"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod",
+            "description": "Report period"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CapExSummary",
+            "description": "CapEx summary statistics"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CapExCategorySummary"
+            },
+            "type": "array",
+            "title": "By Category",
+            "description": "CapEx grouped by category"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/CapExTransaction"
+            },
+            "type": "array",
+            "title": "Transactions",
+            "description": "List of CapEx transactions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "summary",
+          "by_category",
+          "transactions"
+        ],
+        "title": "CapExReportResponse",
+        "description": "Response for capital expense report.",
+        "example": {
+          "by_category": [
+            {
+              "category": "Vehicle Purchase",
+              "count": 1,
+              "percentage": 77.78,
+              "total": 35000.0
+            },
+            {
+              "category": "Home Improvement",
+              "count": 2,
+              "percentage": 22.22,
+              "total": 10000.0
+            }
+          ],
+          "period": {
+            "days": 365,
+            "end_date": "2025-12-31",
+            "start_date": "2025-01-01"
+          },
+          "report_type": "capex",
+          "summary": {
+            "average_transaction": 15000.0,
+            "total_capex": 45000.0,
+            "transaction_count": 3
+          },
+          "transactions": [
+            {
+              "amount": -35000.0,
+              "category": "Vehicle Purchase",
+              "classification": "Capital Expense",
+              "date": "2025-03-15",
+              "description": "2025 Toyota Camry",
+              "notes": "New car purchase",
+              "transaction_id": 1234
+            }
+          ]
+        }
+      },
+      "CapExSummary": {
+        "properties": {
+          "total_capex": {
+            "type": "number",
+            "title": "Total Capex",
+            "description": "Total capital expenditure amount"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count",
+            "description": "Number of CapEx transactions"
+          },
+          "average_transaction": {
+            "type": "number",
+            "title": "Average Transaction",
+            "description": "Average CapEx transaction amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_capex",
+          "transaction_count",
+          "average_transaction"
+        ],
+        "title": "CapExSummary",
+        "description": "Summary statistics for CapEx report."
+      },
+      "CapExTransaction": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Transaction date"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount (negative for expenses)"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "classification": {
+            "type": "string",
+            "title": "Classification",
+            "description": "Classification name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Transaction notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "description",
+          "amount",
+          "category",
+          "classification"
+        ],
+        "title": "CapExTransaction",
+        "description": "Individual capital expense transaction."
+      },
       "CashFlowResponse": {
         "properties": {
           "net_cash_flow": {
@@ -7000,7 +7309,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -7019,11 +7328,11 @@
           "expense_count": 3,
           "income_count": 2,
           "mode": "analysis",
-          "net_cash_flow": "8150.00",
+          "net_cash_flow": 8150.0,
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
-          "total_expenses": "1850.00",
-          "total_income": "10000.00"
+          "total_expenses": 1850.0,
+          "total_income": 10000.0
         }
       },
       "CashFlowTrendPoint": {
@@ -7089,7 +7398,7 @@
             "description": "Period granularity"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -7110,16 +7419,14 @@
             "description": "Projection date"
           },
           "projected_income": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Income",
-            "description": "Projected income for the day",
-            "format": "decimal"
+            "description": "Projected income for the day"
           },
           "projected_expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Expenses",
-            "description": "Projected expenses for the day",
-            "format": "decimal"
+            "description": "Projected expenses for the day"
           },
           "projected_cashflow": {
             "type": "number",
@@ -7175,16 +7482,14 @@
             "description": "Confidence level"
           },
           "projected_income": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Income",
-            "description": "Total projected income",
-            "format": "decimal"
+            "description": "Total projected income"
           },
           "projected_expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Expenses",
-            "description": "Total projected expenses",
-            "format": "decimal"
+            "description": "Total projected expenses"
           },
           "projected_cashflow": {
             "type": "number",
@@ -7239,15 +7544,15 @@
           "confidence_level": 0.95,
           "daily_projections": [],
           "historical_period": {
-            "average_daily": "50.00",
+            "average_daily": 50.0,
             "days": 365,
             "end_date": "2024-12-31",
             "start_date": "2024-01-01"
           },
           "method": "linear_regression",
           "projected_cashflow": 4500.0,
-          "projected_expenses": "14000.00",
-          "projected_income": "18500.00",
+          "projected_expenses": 14000.0,
+          "projected_income": 18500.0,
           "projection_period": {
             "days": 90,
             "end_date": "2025-03-31",
@@ -7258,25 +7563,25 @@
             "best_case": {
               "cashflow": 8000.0,
               "description": "Optimistic scenario with high income and low expenses",
-              "expenses": "12000.00",
-              "income": "20000.00"
+              "expenses": 12000.0,
+              "income": 20000.0
             },
             "expected": {
               "cashflow": 4500.0,
               "description": "Most likely outcome based on historical trends",
-              "expenses": "14000.00",
-              "income": "18500.00"
+              "expenses": 14000.0,
+              "income": 18500.0
             },
             "range": {
               "cashflow_range": 7000.0,
-              "expense_range": "4000.00",
-              "income_range": "3000.00"
+              "expense_range": 4000.0,
+              "income_range": 3000.0
             },
             "worst_case": {
               "cashflow": 1000.0,
               "description": "Conservative scenario with low income and high expenses",
-              "expenses": "16000.00",
-              "income": "17000.00"
+              "expenses": 16000.0,
+              "income": 17000.0
             }
           }
         }
@@ -7284,22 +7589,19 @@
       "CashflowSummary": {
         "properties": {
           "net_cashflow": {
-            "type": "string",
+            "type": "number",
             "title": "Net Cashflow",
-            "description": "Net cash flow (income - expenses)",
-            "format": "decimal"
+            "description": "Net cash flow (income - expenses)"
           },
           "total_income": {
-            "type": "string",
+            "type": "number",
             "title": "Total Income",
-            "description": "Total income",
-            "format": "decimal"
+            "description": "Total income"
           },
           "total_expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Total Expenses",
-            "description": "Total expenses",
-            "format": "decimal"
+            "description": "Total expenses"
           }
         },
         "type": "object",
@@ -7381,10 +7683,9 @@
             "description": "Average transaction amount"
           },
           "percentage_of_total": {
-            "type": "string",
+            "type": "number",
             "title": "Percentage Of Total",
-            "description": "Percentage of total income/expenses",
-            "format": "decimal"
+            "description": "Percentage of total income/expenses"
           },
           "percentage_of_all": {
             "type": "number",
@@ -7463,7 +7764,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -7480,33 +7781,33 @@
         "example": {
           "expense_categories": [
             {
-              "average_amount": "1500.00",
+              "average_amount": 1500.0,
               "category_id": 2,
               "category_name": "Rent",
               "category_type": "Expense",
               "percentage_of_all": 12.7,
-              "percentage_of_total": "81.08",
-              "total_amount": "1500.00",
+              "percentage_of_total": 81.08,
+              "total_amount": 1500.0,
               "transaction_count": 1
             }
           ],
           "income_categories": [
             {
-              "average_amount": "5000.00",
+              "average_amount": 5000.0,
               "category_id": 1,
               "category_name": "Salary",
               "category_type": "Income",
               "percentage_of_all": 84.4,
-              "percentage_of_total": "100.00",
-              "total_amount": "10000.00",
+              "percentage_of_total": 100.0,
+              "total_amount": 10000.0,
               "transaction_count": 2
             }
           ],
           "mode": "analysis",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
-          "total_expenses": "1850.00",
-          "total_income": "10000.00"
+          "total_expenses": 1850.0,
+          "total_income": 10000.0
         }
       },
       "CategoryCreate": {
@@ -7572,10 +7873,9 @@
             "description": "Category name"
           },
           "total": {
-            "type": "string",
+            "type": "number",
             "title": "Total",
-            "description": "Total amount",
-            "format": "decimal"
+            "description": "Total amount"
           },
           "count": {
             "type": "integer",
@@ -7777,8 +8077,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -7790,8 +8089,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -7916,8 +8214,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -7929,8 +8226,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8077,8 +8373,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8090,8 +8385,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8139,10 +8433,9 @@
             "description": "Category name"
           },
           "amount": {
-            "type": "string",
+            "type": "number",
             "title": "Amount",
-            "description": "Total amount for the category",
-            "format": "decimal"
+            "description": "Total amount for the category"
           },
           "percentage": {
             "type": "number",
@@ -8498,8 +8791,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8511,8 +8803,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8644,8 +8935,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8657,8 +8947,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8807,8 +9096,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -8820,8 +9108,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9036,10 +9323,9 @@
             "description": "Projection date"
           },
           "projected_value": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Value",
-            "description": "Projected value for the day",
-            "format": "decimal"
+            "description": "Projected value for the day"
           },
           "lower_bound": {
             "type": "number",
@@ -9241,7 +9527,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -9257,19 +9543,19 @@
         "title": "ExpenseAnalysisResponse",
         "description": "Response for expense analysis.",
         "example": {
-          "average_transaction": "616.67",
+          "average_transaction": 616.67,
           "breakdown_by_category": {
             "Groceries": {
-              "average": "175.00",
+              "average": 175.0,
               "count": 2,
               "percentage": 18.92,
-              "total": "350.00"
+              "total": 350.0
             },
             "Rent": {
-              "average": "1500.00",
+              "average": 1500.0,
               "count": 1,
               "percentage": 81.08,
-              "total": "1500.00"
+              "total": 1500.0
             }
           },
           "mode": "analysis",
@@ -9277,13 +9563,13 @@
           "period_start": "2025-01-01",
           "top_categories": [
             {
-              "amount": "1500.00",
+              "amount": 1500.0,
               "category": "Rent",
               "count": 1,
               "percentage": 81.08
             }
           ],
-          "total_expenses": "1850.00",
+          "total_expenses": 1850.0,
           "transaction_count": 3
         }
       },
@@ -9304,10 +9590,9 @@
             "description": "Analysis mode used"
           },
           "total_expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Total Expenses",
-            "description": "Total expenses",
-            "format": "decimal"
+            "description": "Total expenses"
           },
           "transaction_count": {
             "type": "integer",
@@ -9315,10 +9600,9 @@
             "description": "Number of transactions"
           },
           "average_transaction": {
-            "type": "string",
+            "type": "number",
             "title": "Average Transaction",
-            "description": "Average transaction amount",
-            "format": "decimal"
+            "description": "Average transaction amount"
           },
           "categories": {
             "items": {
@@ -9368,10 +9652,9 @@
             "description": "Confidence level"
           },
           "projected_total": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Total",
-            "description": "Total projected expenses",
-            "format": "decimal"
+            "description": "Total projected expenses"
           },
           "confidence_interval": {
             "$ref": "#/components/schemas/ConfidenceInterval",
@@ -9408,10 +9691,9 @@
       "ExpenseSummary": {
         "properties": {
           "total": {
-            "type": "string",
+            "type": "number",
             "title": "Total",
-            "description": "Total expenses",
-            "format": "decimal"
+            "description": "Total expenses"
           },
           "transaction_count": {
             "type": "integer",
@@ -9419,10 +9701,9 @@
             "description": "Number of expense transactions"
           },
           "average_transaction": {
-            "type": "string",
+            "type": "number",
             "title": "Average Transaction",
-            "description": "Average expense transaction",
-            "format": "decimal"
+            "description": "Average expense transaction"
           },
           "top_categories": {
             "items": {
@@ -9448,8 +9729,7 @@
           "income_to_expense_ratio": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9524,10 +9804,10 @@
         "title": "FinancialHealthResponse",
         "description": "Response for financial health indicators.",
         "example": {
-          "average_daily_expense": "30.83",
-          "average_daily_income": "166.67",
-          "income_to_expense_ratio": "5.41",
-          "net_daily_cash_flow": "135.84",
+          "average_daily_expense": 30.83,
+          "average_daily_income": 166.67,
+          "income_to_expense_ratio": 5.41,
+          "net_daily_cash_flow": 135.84,
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
           "savings_rate": 0.815
@@ -9618,7 +9898,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -9640,22 +9920,22 @@
         "example": {
           "expense_count": 3,
           "financial_health": {
-            "average_daily_expense": "30.83",
-            "average_daily_income": "166.67",
-            "income_to_expense_ratio": "5.41",
-            "net_daily_cash_flow": "135.84",
+            "average_daily_expense": 30.83,
+            "average_daily_income": 166.67,
+            "income_to_expense_ratio": 5.41,
+            "net_daily_cash_flow": 135.84,
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
             "savings_rate": 0.815
           },
           "income_count": 2,
           "mode": "analysis",
-          "net_cash_flow": "8150.00",
+          "net_cash_flow": 8150.0,
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
           "recent_transactions": [
             {
-              "amount": "5000.00",
+              "amount": 5000.0,
               "category": "Salary",
               "description": "Monthly salary",
               "transaction_date": "2025-01-15",
@@ -9665,7 +9945,7 @@
           ],
           "top_expense_categories": [
             {
-              "amount": "1500.00",
+              "amount": 1500.0,
               "category": "Rent",
               "count": 1,
               "percentage": 81.08
@@ -9673,14 +9953,14 @@
           ],
           "top_income_categories": [
             {
-              "amount": "10000.00",
+              "amount": 10000.0,
               "category": "Salary",
               "count": 2,
               "percentage": 100.0
             }
           ],
-          "total_expenses": "1850.00",
-          "total_income": "10000.00"
+          "total_expenses": 1850.0,
+          "total_income": 10000.0
         }
       },
       "FixResult": {
@@ -9730,8 +10010,7 @@
           "income_to_expense_ratio": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9753,22 +10032,19 @@
             "description": "Savings rate as percentage"
           },
           "average_daily_income": {
-            "type": "string",
+            "type": "number",
             "title": "Average Daily Income",
-            "description": "Average daily income",
-            "format": "decimal"
+            "description": "Average daily income"
           },
           "average_daily_expense": {
-            "type": "string",
+            "type": "number",
             "title": "Average Daily Expense",
-            "description": "Average daily expense",
-            "format": "decimal"
+            "description": "Average daily expense"
           },
           "average_daily_cashflow": {
-            "type": "string",
+            "type": "number",
             "title": "Average Daily Cashflow",
-            "description": "Average daily cash flow",
-            "format": "decimal"
+            "description": "Average daily cash flow"
           }
         },
         "type": "object",
@@ -9800,8 +10076,7 @@
           "total_income": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9813,8 +10088,7 @@
           "total_expenses": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -9824,10 +10098,9 @@
             "description": "Total expenses in period"
           },
           "average_daily": {
-            "type": "string",
+            "type": "number",
             "title": "Average Daily",
-            "description": "Average daily value",
-            "format": "decimal"
+            "description": "Average daily value"
           }
         },
         "type": "object",
@@ -9881,8 +10154,7 @@
           "cost_basis": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -9897,8 +10169,7 @@
           "current_value": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -10050,8 +10321,7 @@
           "gain_loss_percent": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -10511,7 +10781,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -10526,19 +10796,19 @@
         "title": "IncomeAnalysisResponse",
         "description": "Response for income analysis.",
         "example": {
-          "average_transaction": "5000.00",
+          "average_transaction": 5000.0,
           "breakdown_by_category": {
             "Salary": {
-              "average": "5000.00",
+              "average": 5000.0,
               "count": 2,
               "percentage": 100.0,
-              "total": "10000.00"
+              "total": 10000.0
             }
           },
           "mode": "analysis",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
-          "total_income": "10000.00",
+          "total_income": 10000.0,
           "transaction_count": 2
         }
       },
@@ -10559,10 +10829,9 @@
             "description": "Analysis mode used"
           },
           "total_income": {
-            "type": "string",
+            "type": "number",
             "title": "Total Income",
-            "description": "Total income",
-            "format": "decimal"
+            "description": "Total income"
           },
           "transaction_count": {
             "type": "integer",
@@ -10570,10 +10839,9 @@
             "description": "Number of transactions"
           },
           "average_transaction": {
-            "type": "string",
+            "type": "number",
             "title": "Average Transaction",
-            "description": "Average transaction amount",
-            "format": "decimal"
+            "description": "Average transaction amount"
           },
           "categories": {
             "items": {
@@ -10629,36 +10897,36 @@
         "description": "Response for income vs expense comparison.",
         "example": {
           "cash_flow": {
-            "expense_count": "3.00",
-            "income_count": "2.00",
+            "expense_count": 3,
+            "income_count": 2,
             "mode": "analysis",
-            "net_cash_flow": "8150.00",
+            "net_cash_flow": 8150.0,
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
-            "total_expenses": "1850.00",
-            "total_income": "10000.00"
+            "total_expenses": 1850.0,
+            "total_income": 10000.0
           },
           "comparison_metrics": {
-            "expense_to_income_percentage": "18.50",
-            "income_to_expense_ratio": "5.41"
+            "expense_to_income_percentage": 18.5,
+            "income_to_expense_ratio": 5.41
           },
           "expense_analysis": {
-            "average_transaction": "616.67",
+            "average_transaction": 616.67,
             "breakdown_by_category": {},
             "mode": "analysis",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
             "top_categories": [],
-            "total_expenses": "1850.00",
+            "total_expenses": 1850.0,
             "transaction_count": 3
           },
           "income_analysis": {
-            "average_transaction": "5000.00",
+            "average_transaction": 5000.0,
             "breakdown_by_category": {},
             "mode": "analysis",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
-            "total_income": "10000.00",
+            "total_income": 10000.0,
             "transaction_count": 2
           }
         }
@@ -10689,10 +10957,9 @@
             "description": "Confidence level"
           },
           "projected_total": {
-            "type": "string",
+            "type": "number",
             "title": "Projected Total",
-            "description": "Total projected income",
-            "format": "decimal"
+            "description": "Total projected income"
           },
           "confidence_interval": {
             "$ref": "#/components/schemas/ConfidenceInterval",
@@ -10734,11 +11001,11 @@
           "confidence_level": 0.95,
           "daily_projections": [],
           "historical_period": {
-            "average_daily": "205.48",
+            "average_daily": 205.48,
             "days": 365,
             "end_date": "2024-12-31",
             "start_date": "2024-01-01",
-            "total_income": "75000.00"
+            "total_income": 75000.0
           },
           "method": "linear_regression",
           "model_metrics": {
@@ -10747,7 +11014,7 @@
             "slope": 0.5,
             "std_error": 15.5
           },
-          "projected_total": "18500.00",
+          "projected_total": 18500.0,
           "projection_period": {
             "days": 90,
             "end_date": "2025-03-31",
@@ -10759,10 +11026,9 @@
       "IncomeSummary": {
         "properties": {
           "total": {
-            "type": "string",
+            "type": "number",
             "title": "Total",
-            "description": "Total income",
-            "format": "decimal"
+            "description": "Total income"
           },
           "transaction_count": {
             "type": "integer",
@@ -10770,10 +11036,9 @@
             "description": "Number of income transactions"
           },
           "average_transaction": {
-            "type": "string",
+            "type": "number",
             "title": "Average Transaction",
-            "description": "Average income transaction",
-            "format": "decimal"
+            "description": "Average income transaction"
           },
           "top_categories": {
             "items": {
@@ -10883,8 +11148,7 @@
           "smoothed_value": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -11252,8 +11516,7 @@
           "statement_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -11265,8 +11528,7 @@
           "statement_cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -11281,8 +11543,7 @@
           "statement_investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -11362,14 +11623,14 @@
           },
           "report_type": "reconciliation",
           "summary": {
-            "net_cashflow": "2300.00",
-            "total_expenses": "3200.00",
-            "total_income": "5500.00",
+            "net_cashflow": 2300.0,
+            "total_expenses": 3200.0,
+            "total_income": 5500.0,
             "transaction_count": 75
           },
           "transactions": [
             {
-              "amount": "5000.00",
+              "amount": 5000.0,
               "category": "Income",
               "classification": "Standard Transaction",
               "date": "2025-01-31",
@@ -11549,22 +11810,19 @@
       "ReconciliationSummary": {
         "properties": {
           "total_income": {
-            "type": "string",
+            "type": "number",
             "title": "Total Income",
-            "description": "Total income (all transactions)",
-            "format": "decimal"
+            "description": "Total income (all transactions)"
           },
           "total_expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Total Expenses",
-            "description": "Total expenses (all transactions)",
-            "format": "decimal"
+            "description": "Total expenses (all transactions)"
           },
           "net_cashflow": {
-            "type": "string",
+            "type": "number",
             "title": "Net Cashflow",
-            "description": "Net cash flow",
-            "format": "decimal"
+            "description": "Net cash flow"
           },
           "transaction_count": {
             "type": "integer",
@@ -11905,16 +12163,14 @@
       "ScenarioData": {
         "properties": {
           "income": {
-            "type": "string",
+            "type": "number",
             "title": "Income",
-            "description": "Projected income in scenario",
-            "format": "decimal"
+            "description": "Projected income in scenario"
           },
           "expenses": {
-            "type": "string",
+            "type": "number",
             "title": "Expenses",
-            "description": "Projected expenses in scenario",
-            "format": "decimal"
+            "description": "Projected expenses in scenario"
           },
           "cashflow": {
             "type": "number",
@@ -12020,8 +12276,7 @@
           "starting_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -12103,16 +12358,14 @@
             "description": "Range of cash flow across scenarios"
           },
           "income_range": {
-            "type": "string",
+            "type": "number",
             "title": "Income Range",
-            "description": "Range of income across scenarios",
-            "format": "decimal"
+            "description": "Range of income across scenarios"
           },
           "expense_range": {
-            "type": "string",
+            "type": "number",
             "title": "Expense Range",
-            "description": "Range of expenses across scenarios",
-            "format": "decimal"
+            "description": "Range of expenses across scenarios"
           }
         },
         "type": "object",
@@ -12262,6 +12515,18 @@
           "health_indicators": {
             "$ref": "#/components/schemas/HealthIndicators",
             "description": "Financial health indicators"
+          },
+          "total_capex": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Capex",
+            "description": "Total capital expenditure for the period"
           }
         },
         "type": "object",
@@ -12278,39 +12543,39 @@
         "description": "Response for summary report.",
         "example": {
           "cashflow": {
-            "net_cashflow": "2000.00",
-            "total_expenses": "3000.00",
-            "total_income": "5000.00"
+            "net_cashflow": 2000.0,
+            "total_expenses": 3000.0,
+            "total_income": 5000.0
           },
           "expenses": {
-            "average_transaction": "60.00",
+            "average_transaction": 60.0,
             "top_categories": [
               {
-                "amount": "800.00",
+                "amount": 800.0,
                 "category": "Groceries",
                 "percentage": 26.67
               }
             ],
-            "total": "3000.00",
+            "total": 3000.0,
             "transaction_count": 50
           },
           "health_indicators": {
-            "average_daily_cashflow": "64.52",
-            "average_daily_expense": "96.77",
-            "average_daily_income": "161.29",
-            "income_to_expense_ratio": "1.67",
+            "average_daily_cashflow": 64.52,
+            "average_daily_expense": 96.77,
+            "average_daily_income": 161.29,
+            "income_to_expense_ratio": 1.67,
             "savings_rate": 40.0
           },
           "income": {
-            "average_transaction": "500.00",
+            "average_transaction": 500.0,
             "top_categories": [
               {
-                "amount": "4500.00",
+                "amount": 4500.0,
                 "category": "Salary",
                 "percentage": 90.0
               }
             ],
-            "total": "5000.00",
+            "total": 5000.0,
             "transaction_count": 10
           },
           "mode": "analysis",
@@ -12319,7 +12584,8 @@
             "end_date": "2025-01-31",
             "start_date": "2025-01-01"
           },
-          "report_type": "summary"
+          "report_type": "summary",
+          "total_capex": 0.0
         }
       },
       "TagInfo": {
@@ -12372,8 +12638,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -12385,8 +12650,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -12506,8 +12770,7 @@
           "amount_min": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -12519,8 +12782,7 @@
           "amount_max": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -12666,8 +12928,7 @@
           "amount": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -12839,10 +13100,9 @@
             "description": "Transaction type (Income/Expense)"
           },
           "amount": {
-            "type": "string",
+            "type": "number",
             "title": "Amount",
-            "description": "Transaction amount",
-            "format": "decimal"
+            "description": "Transaction amount"
           },
           "classification": {
             "type": "string",
@@ -13133,8 +13393,7 @@
           "amount": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -13290,8 +13549,7 @@
           "amount": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "decimal"
+                "type": "number"
               },
               {
                 "type": "string",
@@ -13594,7 +13852,7 @@
             "description": "Period granularity"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnumOutput",
+            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
             "description": "Analysis mode used"
           }
         },
@@ -13613,12 +13871,12 @@
             {
               "count": 1,
               "period": "2025-01",
-              "value": "5000.00"
+              "value": 5000.0
             },
             {
               "count": 1,
               "period": "2025-02",
-              "value": "5000.00"
+              "value": 5000.0
             }
           ]
         }
@@ -13699,7 +13957,7 @@
           ]
         }
       },
-      "AnalysisModeEnumOutput": {
+      "financial_analysis__api__schemas__analysis__AnalysisModeEnum": {
         "type": "string",
         "enum": [
           "analysis",
@@ -13709,35 +13967,7 @@
         "title": "AnalysisModeEnum",
         "description": "Analysis mode."
       },
-      "BodyImportTransactionsApiImportPost": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File",
-            "description": "Excel file to import"
-          },
-          "mode": {
-            "type": "string",
-            "pattern": "^(full|incremental|update)$",
-            "title": "Mode",
-            "description": "Import mode",
-            "default": "incremental"
-          },
-          "skip_duplicates": {
-            "type": "boolean",
-            "title": "Skip Duplicates",
-            "description": "Skip duplicate transactions",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_transactions_api_import_post"
-      },
-      "Analysismodeenum": {
+      "financial_analysis__api__schemas__report__AnalysisModeEnum": {
         "type": "string",
         "enum": [
           "analysis",
