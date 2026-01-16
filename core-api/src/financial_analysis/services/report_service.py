@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from .analysis_service import AnalysisService, AnalysisMode, DateRange
-from ..database.models import Transaction, Category, Account, TransactionClassification
+from ..database.models import Transaction, Category, Account, TransactionClassification, TransactionRelationship
 
 
 class ReportFormat(str, Enum):
@@ -137,6 +137,9 @@ class ReportService:
         # Get total CapEx for the period
         total_capex = self.get_total_capex(start_date=start_date, end_date=end_date)
 
+        # Get total outstanding receivables
+        total_receivables = self.get_total_receivables(start_date=start_date, end_date=end_date)
+
         return {
             "report_type": "summary",
             "period": {
@@ -187,7 +190,8 @@ class ReportService:
                 "average_daily_expense": float(health_data.average_daily_expense),
                 "average_daily_cashflow": float(health_data.net_daily_cash_flow)
             },
-            "total_capex": total_capex
+            "total_capex": total_capex,
+            "total_receivables": total_receivables
         }
     
     def generate_income_detail_report(
@@ -466,6 +470,235 @@ class ReportService:
 
         return float(result) if result else 0.0
 
+    def generate_receivables_report(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        include_reimbursed: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Generate a Receivables report for reimbursement tracking.
+
+        Receivables are transactions classified as REIMB_PAID that are awaiting
+        reimbursement. The report tracks:
+        - Outstanding receivables (not yet reimbursed)
+        - Recently reimbursed transactions
+        - Aging information
+
+        Args:
+            start_date: Start of reporting period (default: 90 days ago)
+            end_date: End of reporting period (default: today)
+            include_reimbursed: Include recently reimbursed transactions
+
+        Returns:
+            Dictionary containing receivables report data
+        """
+        # Set default dates (90 days for receivables tracking)
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=90)
+
+        # Get REIMB_PAID classification
+        reimb_paid = self.db.query(TransactionClassification).filter(
+            TransactionClassification.classification_code == 'REIMB_PAID'
+        ).first()
+
+        if not reimb_paid:
+            # Return empty report if classification doesn't exist
+            return self._empty_receivables_report(start_date, end_date)
+
+        # Query all REIMB_PAID transactions in the period
+        expense_query = self.db.query(Transaction).outerjoin(
+            Category,
+            Transaction.category_id == Category.category_id
+        ).filter(
+            Transaction.classification_id == reimb_paid.classification_id,
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date
+        ).order_by(Transaction.transaction_date.desc())
+
+        expenses = expense_query.all()
+
+        # Get all reimbursement relationships for these expenses
+        expense_ids = [tx.transaction_id for tx in expenses]
+
+        # Find linked reimbursements via TransactionRelationship
+        reimbursement_links = {}
+        if expense_ids:
+            relationships = self.db.query(TransactionRelationship).filter(
+                TransactionRelationship.relationship_type == 'REIMBURSEMENT_PAIR',
+                (TransactionRelationship.transaction_id_1.in_(expense_ids)) |
+                (TransactionRelationship.transaction_id_2.in_(expense_ids))
+            ).all()
+
+            for rel in relationships:
+                # Determine which is the expense and which is the reimbursement
+                if rel.transaction_id_1 in expense_ids:
+                    reimbursement_links[rel.transaction_id_1] = rel.transaction_id_2
+                else:
+                    reimbursement_links[rel.transaction_id_2] = rel.transaction_id_1
+
+        # Separate into outstanding and reimbursed
+        outstanding = []
+        recently_reimbursed = []
+        total_outstanding = Decimal(0)
+        total_reimbursed = Decimal(0)
+        days_outstanding_sum = 0
+        oldest_outstanding_days = 0
+
+        today = date.today()
+
+        for tx in expenses:
+            days_since = (today - tx.transaction_date).days
+            is_reimbursed = tx.transaction_id in reimbursement_links
+
+            tx_data = {
+                "transaction_id": tx.transaction_id,
+                "date": tx.transaction_date.isoformat(),
+                "description": tx.description,
+                "amount": float(tx.amount),
+                "category": tx.category.category_name if tx.category else "Uncategorized",
+                "classification": tx.classification.classification_name if tx.classification else "Unknown",
+                "days_outstanding": days_since,
+                "is_reimbursed": is_reimbursed,
+                "reimbursement_id": reimbursement_links.get(tx.transaction_id),
+                "notes": tx.notes
+            }
+
+            if is_reimbursed:
+                recently_reimbursed.append(tx_data)
+                total_reimbursed += abs(tx.amount)
+            else:
+                outstanding.append(tx_data)
+                total_outstanding += abs(tx.amount)
+                days_outstanding_sum += days_since
+                if days_since > oldest_outstanding_days:
+                    oldest_outstanding_days = days_since
+
+        outstanding_count = len(outstanding)
+        reimbursed_count = len(recently_reimbursed)
+        avg_days_outstanding = days_outstanding_sum / outstanding_count if outstanding_count > 0 else 0
+
+        # Group outstanding by category
+        category_totals: Dict[str, Dict[str, Any]] = {}
+        for tx in outstanding:
+            cat_name = tx["category"]
+            if cat_name not in category_totals:
+                category_totals[cat_name] = {"total": 0.0, "count": 0}
+            category_totals[cat_name]["total"] += abs(tx["amount"])
+            category_totals[cat_name]["count"] += 1
+
+        # Build category summary with percentages
+        by_category = []
+        for cat_name, data in sorted(category_totals.items(), key=lambda x: x[1]["total"], reverse=True):
+            percentage = (data["total"] / float(total_outstanding) * 100) if total_outstanding > 0 else 0
+            by_category.append({
+                "category": cat_name,
+                "total": data["total"],
+                "count": data["count"],
+                "percentage": round(percentage, 2)
+            })
+
+        return {
+            "report_type": "receivables",
+            "period": {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "days": (end_date - start_date).days + 1
+            },
+            "summary": {
+                "total_outstanding": float(total_outstanding),
+                "total_reimbursed": float(total_reimbursed),
+                "outstanding_count": outstanding_count,
+                "reimbursed_count": reimbursed_count,
+                "average_days_outstanding": round(avg_days_outstanding, 1),
+                "oldest_outstanding_days": oldest_outstanding_days
+            },
+            "by_category": by_category,
+            "outstanding": outstanding,
+            "recently_reimbursed": recently_reimbursed if include_reimbursed else []
+        }
+
+    def _empty_receivables_report(self, start_date: date, end_date: date) -> Dict[str, Any]:
+        """Return an empty receivables report structure."""
+        return {
+            "report_type": "receivables",
+            "period": {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "days": (end_date - start_date).days + 1
+            },
+            "summary": {
+                "total_outstanding": 0.0,
+                "total_reimbursed": 0.0,
+                "outstanding_count": 0,
+                "reimbursed_count": 0,
+                "average_days_outstanding": 0.0,
+                "oldest_outstanding_days": 0
+            },
+            "by_category": [],
+            "outstanding": [],
+            "recently_reimbursed": []
+        }
+
+    def get_total_receivables(
+        self,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None
+    ) -> float:
+        """
+        Get the total outstanding receivables amount.
+
+        This is a lightweight method for use in summary reports.
+
+        Args:
+            start_date: Start date
+            end_date: End date
+
+        Returns:
+            Total outstanding receivables amount as float
+        """
+        if not end_date:
+            end_date = date.today()
+        if not start_date:
+            start_date = end_date - timedelta(days=90)
+
+        reimb_paid = self.db.query(TransactionClassification).filter(
+            TransactionClassification.classification_code == 'REIMB_PAID'
+        ).first()
+
+        if not reimb_paid:
+            return 0.0
+
+        # Get all REIMB_PAID expense IDs
+        expenses = self.db.query(Transaction.transaction_id, Transaction.amount).filter(
+            Transaction.classification_id == reimb_paid.classification_id,
+            Transaction.transaction_date >= start_date,
+            Transaction.transaction_date <= end_date
+        ).all()
+
+        if not expenses:
+            return 0.0
+
+        expense_ids = [e.transaction_id for e in expenses]
+
+        # Find which ones are already linked
+        linked_ids = set()
+        relationships = self.db.query(TransactionRelationship).filter(
+            TransactionRelationship.relationship_type == 'REIMBURSEMENT_PAIR',
+            (TransactionRelationship.transaction_id_1.in_(expense_ids)) |
+            (TransactionRelationship.transaction_id_2.in_(expense_ids))
+        ).all()
+
+        for rel in relationships:
+            linked_ids.add(rel.transaction_id_1)
+            linked_ids.add(rel.transaction_id_2)
+
+        # Sum only unlinked (outstanding) expenses
+        total = sum(abs(e.amount) for e in expenses if e.transaction_id not in linked_ids)
+        return float(total)
+
     def export_to_csv(self, report_data: Dict[str, Any]) -> str:
         """
         Export report data to CSV format.
@@ -506,6 +739,16 @@ class ReportService:
             )
             writer.writeheader()
             writer.writerows(report_data["transactions"])
+
+        elif report_type == "receivables":
+            # Export receivables (outstanding) as CSV
+            writer = csv.DictWriter(
+                output,
+                fieldnames=["transaction_id", "date", "description", "amount", "category", "classification",
+                           "days_outstanding", "is_reimbursed", "reimbursement_id", "notes"]
+            )
+            writer.writeheader()
+            writer.writerows(report_data["outstanding"])
 
         else:
             # For summary and other reports, create a simple key-value CSV
