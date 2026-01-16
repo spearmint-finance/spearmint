@@ -120,6 +120,7 @@ class SummaryReportResponse(BaseModel):
     cashflow: CashflowSummary = Field(..., description="Cash flow summary")
     health_indicators: HealthIndicators = Field(..., description="Financial health indicators")
     total_capex: Optional[float] = Field(None, description="Total capital expenditure for the period")
+    total_receivables: Optional[float] = Field(None, description="Total outstanding receivables (expenses awaiting reimbursement)")
 
     class Config:
         json_schema_extra = {
@@ -331,5 +332,87 @@ class CapExReportResponse(BaseModel):
                         "notes": "New car purchase"
                     }
                 ]
+            }
+        }
+
+
+# Receivables Report Schemas
+class ReceivableTransaction(BaseModel):
+    """Individual receivable transaction (expense awaiting reimbursement)."""
+    transaction_id: int = Field(..., description="Transaction ID")
+    date: str = Field(..., description="Transaction date")
+    description: str = Field(..., description="Transaction description")
+    amount: float = Field(..., description="Amount paid (expense)")
+    category: str = Field(..., description="Category name")
+    classification: str = Field(..., description="Classification name")
+    days_outstanding: int = Field(..., description="Days since expense was paid")
+    is_reimbursed: bool = Field(..., description="Whether this has been reimbursed")
+    reimbursement_id: Optional[int] = Field(None, description="Linked reimbursement transaction ID if received")
+    notes: Optional[str] = Field(None, description="Transaction notes")
+
+
+class ReceivablesCategorySummary(BaseModel):
+    """Receivables totals grouped by category."""
+    category: str = Field(..., description="Category name")
+    total: float = Field(..., description="Total outstanding amount for this category")
+    count: int = Field(..., description="Number of transactions")
+    percentage: float = Field(..., description="Percentage of total receivables")
+
+
+class ReceivablesSummary(BaseModel):
+    """Summary statistics for Receivables report."""
+    total_outstanding: float = Field(..., description="Total amount awaiting reimbursement")
+    total_reimbursed: float = Field(..., description="Total amount already reimbursed in period")
+    outstanding_count: int = Field(..., description="Number of outstanding receivables")
+    reimbursed_count: int = Field(..., description="Number of reimbursed transactions")
+    average_days_outstanding: float = Field(..., description="Average days for outstanding receivables")
+    oldest_outstanding_days: int = Field(..., description="Days since oldest outstanding receivable")
+
+
+class ReceivablesReportResponse(BaseModel):
+    """Response for receivables (reimbursement tracking) report."""
+    report_type: str = Field(default="receivables", description="Type of report")
+    period: ReportPeriod = Field(..., description="Report period")
+    summary: ReceivablesSummary = Field(..., description="Receivables summary statistics")
+    by_category: List[ReceivablesCategorySummary] = Field(..., description="Outstanding grouped by category")
+    outstanding: List[ReceivableTransaction] = Field(..., description="List of outstanding receivables")
+    recently_reimbursed: List[ReceivableTransaction] = Field(..., description="Recently reimbursed transactions")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "report_type": "receivables",
+                "period": {
+                    "start_date": "2025-01-01",
+                    "end_date": "2025-12-31",
+                    "days": 365
+                },
+                "summary": {
+                    "total_outstanding": 1250.00,
+                    "total_reimbursed": 3500.00,
+                    "outstanding_count": 3,
+                    "reimbursed_count": 8,
+                    "average_days_outstanding": 15.5,
+                    "oldest_outstanding_days": 45
+                },
+                "by_category": [
+                    {"category": "Business Travel", "total": 800.00, "count": 2, "percentage": 64.0},
+                    {"category": "Office Supplies", "total": 450.00, "count": 1, "percentage": 36.0}
+                ],
+                "outstanding": [
+                    {
+                        "transaction_id": 1234,
+                        "date": "2025-03-15",
+                        "description": "Client dinner",
+                        "amount": -150.00,
+                        "category": "Business Travel",
+                        "classification": "Reimbursement Paid",
+                        "days_outstanding": 10,
+                        "is_reimbursed": False,
+                        "reimbursement_id": None,
+                        "notes": "Expense report submitted"
+                    }
+                ],
+                "recently_reimbursed": []
             }
         }

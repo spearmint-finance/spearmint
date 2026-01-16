@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.23"
+    "version": "0.0.24"
   },
   "servers": [
     {
@@ -3897,6 +3897,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CapExReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/receivables": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Generate Receivables (Reimbursement Tracking) Report",
+        "description": "Generate a report for tracking reimbursable expenses and their status.\n\n    This report helps you track:\n    - **Outstanding receivables**: Expenses paid that haven't been reimbursed yet\n    - **Recently reimbursed**: Expenses that have been successfully reimbursed\n    - **Aging information**: How long receivables have been outstanding\n\n    Receivables are identified by their classification:\n    - `REIMB_PAID`: Expense paid that will be reimbursed\n    - Linked via `REIMBURSEMENT_PAIR` relationship when reimbursement is received\n\n    Use this report to:\n    - Follow up on outstanding expense reports\n    - Track reimbursement turnaround time\n    - Identify stale receivables that need attention",
+        "operationId": "get_receivables_report_api_reports_receivables_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (default: 90 days ago)",
+              "title": "Start Date"
+            },
+            "description": "Start date (default: 90 days ago)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (default: today)",
+              "title": "End Date"
+            },
+            "description": "End date (default: today)"
+          },
+          {
+            "name": "include_reimbursed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include recently reimbursed transactions in the response",
+              "default": true,
+              "title": "Include Reimbursed"
+            },
+            "description": "Include recently reimbursed transactions in the response"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormatEnum",
+              "description": "Export format: 'json' or 'csv'",
+              "default": "json"
+            },
+            "description": "Export format: 'json' or 'csv'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivablesReportResponse"
                 }
               }
             }
@@ -11420,6 +11515,261 @@
         "title": "ProjectionPeriod",
         "description": "Projection period information."
       },
+      "ReceivableTransaction": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Transaction date"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Amount paid (expense)"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "classification": {
+            "type": "string",
+            "title": "Classification",
+            "description": "Classification name"
+          },
+          "days_outstanding": {
+            "type": "integer",
+            "title": "Days Outstanding",
+            "description": "Days since expense was paid"
+          },
+          "is_reimbursed": {
+            "type": "boolean",
+            "title": "Is Reimbursed",
+            "description": "Whether this has been reimbursed"
+          },
+          "reimbursement_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reimbursement Id",
+            "description": "Linked reimbursement transaction ID if received"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Transaction notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "description",
+          "amount",
+          "category",
+          "classification",
+          "days_outstanding",
+          "is_reimbursed"
+        ],
+        "title": "ReceivableTransaction",
+        "description": "Individual receivable transaction (expense awaiting reimbursement)."
+      },
+      "ReceivablesCategorySummary": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total",
+            "description": "Total outstanding amount for this category"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of transactions"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of total receivables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "total",
+          "count",
+          "percentage"
+        ],
+        "title": "ReceivablesCategorySummary",
+        "description": "Receivables totals grouped by category."
+      },
+      "ReceivablesReportResponse": {
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "title": "Report Type",
+            "description": "Type of report",
+            "default": "receivables"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod",
+            "description": "Report period"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReceivablesSummary",
+            "description": "Receivables summary statistics"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivablesCategorySummary"
+            },
+            "type": "array",
+            "title": "By Category",
+            "description": "Outstanding grouped by category"
+          },
+          "outstanding": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableTransaction"
+            },
+            "type": "array",
+            "title": "Outstanding",
+            "description": "List of outstanding receivables"
+          },
+          "recently_reimbursed": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableTransaction"
+            },
+            "type": "array",
+            "title": "Recently Reimbursed",
+            "description": "Recently reimbursed transactions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "summary",
+          "by_category",
+          "outstanding",
+          "recently_reimbursed"
+        ],
+        "title": "ReceivablesReportResponse",
+        "description": "Response for receivables (reimbursement tracking) report.",
+        "example": {
+          "by_category": [
+            {
+              "category": "Business Travel",
+              "count": 2,
+              "percentage": 64.0,
+              "total": 800.0
+            },
+            {
+              "category": "Office Supplies",
+              "count": 1,
+              "percentage": 36.0,
+              "total": 450.0
+            }
+          ],
+          "outstanding": [
+            {
+              "amount": -150.0,
+              "category": "Business Travel",
+              "classification": "Reimbursement Paid",
+              "date": "2025-03-15",
+              "days_outstanding": 10,
+              "description": "Client dinner",
+              "is_reimbursed": false,
+              "notes": "Expense report submitted",
+              "transaction_id": 1234
+            }
+          ],
+          "period": {
+            "days": 365,
+            "end_date": "2025-12-31",
+            "start_date": "2025-01-01"
+          },
+          "recently_reimbursed": [],
+          "report_type": "receivables",
+          "summary": {
+            "average_days_outstanding": 15.5,
+            "oldest_outstanding_days": 45,
+            "outstanding_count": 3,
+            "reimbursed_count": 8,
+            "total_outstanding": 1250.0,
+            "total_reimbursed": 3500.0
+          }
+        }
+      },
+      "ReceivablesSummary": {
+        "properties": {
+          "total_outstanding": {
+            "type": "number",
+            "title": "Total Outstanding",
+            "description": "Total amount awaiting reimbursement"
+          },
+          "total_reimbursed": {
+            "type": "number",
+            "title": "Total Reimbursed",
+            "description": "Total amount already reimbursed in period"
+          },
+          "outstanding_count": {
+            "type": "integer",
+            "title": "Outstanding Count",
+            "description": "Number of outstanding receivables"
+          },
+          "reimbursed_count": {
+            "type": "integer",
+            "title": "Reimbursed Count",
+            "description": "Number of reimbursed transactions"
+          },
+          "average_days_outstanding": {
+            "type": "number",
+            "title": "Average Days Outstanding",
+            "description": "Average days for outstanding receivables"
+          },
+          "oldest_outstanding_days": {
+            "type": "integer",
+            "title": "Oldest Outstanding Days",
+            "description": "Days since oldest outstanding receivable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_outstanding",
+          "total_reimbursed",
+          "outstanding_count",
+          "reimbursed_count",
+          "average_days_outstanding",
+          "oldest_outstanding_days"
+        ],
+        "title": "ReceivablesSummary",
+        "description": "Summary statistics for Receivables report."
+      },
       "RecentTransaction": {
         "properties": {
           "transaction_id": {
@@ -12527,6 +12877,18 @@
             ],
             "title": "Total Capex",
             "description": "Total capital expenditure for the period"
+          },
+          "total_receivables": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Receivables",
+            "description": "Total outstanding receivables (expenses awaiting reimbursement)"
           }
         },
         "type": "object",

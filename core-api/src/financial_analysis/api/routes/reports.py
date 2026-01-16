@@ -20,7 +20,8 @@ from ..schemas.report import (
     ExpenseDetailReportResponse,
     ReconciliationReportResponse,
     BalanceReportResponse,
-    CapExReportResponse
+    CapExReportResponse,
+    ReceivablesReportResponse
 )
 
 router = APIRouter()
@@ -281,3 +282,57 @@ def get_capex_report(
 
     return report_data
 
+
+@router.get(
+    "/reports/receivables",
+    response_model=ReceivablesReportResponse,
+    summary="Generate Receivables (Reimbursement Tracking) Report",
+    description="""
+    Generate a report for tracking reimbursable expenses and their status.
+
+    This report helps you track:
+    - **Outstanding receivables**: Expenses paid that haven't been reimbursed yet
+    - **Recently reimbursed**: Expenses that have been successfully reimbursed
+    - **Aging information**: How long receivables have been outstanding
+
+    Receivables are identified by their classification:
+    - `REIMB_PAID`: Expense paid that will be reimbursed
+    - Linked via `REIMBURSEMENT_PAIR` relationship when reimbursement is received
+
+    Use this report to:
+    - Follow up on outstanding expense reports
+    - Track reimbursement turnaround time
+    - Identify stale receivables that need attention
+    """
+)
+def get_receivables_report(
+    start_date: Optional[date] = Query(None, description="Start date (default: 90 days ago)"),
+    end_date: Optional[date] = Query(None, description="End date (default: today)"),
+    include_reimbursed: bool = Query(
+        True,
+        description="Include recently reimbursed transactions in the response"
+    ),
+    format: ReportFormatEnum = Query(
+        ReportFormatEnum.JSON,
+        description="Export format: 'json' or 'csv'"
+    ),
+    db: Session = Depends(get_db)
+):
+    """Generate a receivables (reimbursement tracking) report."""
+    service = ReportService(db)
+
+    report_data = service.generate_receivables_report(
+        start_date=start_date,
+        end_date=end_date,
+        include_reimbursed=include_reimbursed
+    )
+
+    if format == ReportFormatEnum.CSV:
+        csv_data = service.export_to_csv(report_data)
+        return StreamingResponse(
+            io.StringIO(csv_data),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=receivables_report.csv"}
+        )
+
+    return report_data

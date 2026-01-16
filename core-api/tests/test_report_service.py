@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
-from financial_analysis.database.models import Transaction, Category, TransactionClassification
+from financial_analysis.database.models import Transaction, Category, TransactionClassification, TransactionRelationship
 from financial_analysis.database.seed_data import seed_classifications
 from financial_analysis.services.report_service import ReportService, AnalysisMode
 
@@ -456,6 +456,21 @@ def test_summary_report_includes_total_capex(db_session, capex_data):
     assert report['total_capex'] == float(capex_data['total_capex'])
 
 
+def test_summary_report_includes_total_receivables(db_session, receivables_data):
+    """Test that summary report includes total_receivables field."""
+    service = ReportService(db_session)
+
+    report = service.generate_summary_report(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date'],
+        mode=AnalysisMode.ANALYSIS
+    )
+
+    # Verify total_receivables is included
+    assert 'total_receivables' in report
+    assert report['total_receivables'] == float(receivables_data['total_outstanding'])
+
+
 def test_capex_report_empty_when_no_capex_transactions(db_session, sample_data):
     """Test CapEx report returns empty results when no CapEx transactions exist."""
     service = ReportService(db_session)
@@ -515,3 +530,215 @@ def test_export_to_csv_capex(db_session, capex_data):
     lines = csv_output.strip().split('\n')
     assert len(lines) == capex_data['transaction_count'] + 1  # +1 for header
 
+
+# ==============================================================================
+# Receivables Report Tests
+# ==============================================================================
+
+
+@pytest.fixture
+def receivables_data(db_session):
+    """Create sample receivables data for testing."""
+    # Create a category for reimbursable expenses
+    expense_cat = Category(category_name="Business Travel", category_type="Expense")
+    db_session.add(expense_cat)
+    db_session.commit()
+
+    # Get reimbursement classifications
+    reimb_paid = db_session.query(TransactionClassification).filter(
+        TransactionClassification.classification_code == 'REIMB_PAID'
+    ).first()
+    reimb_received = db_session.query(TransactionClassification).filter(
+        TransactionClassification.classification_code == 'REIMB_RECEIVED'
+    ).first()
+
+    today = date.today()
+    start_date = today - timedelta(days=60)
+    end_date = today
+
+    # Create reimbursable expenses (REIMB_PAID)
+    expense1 = Transaction(
+        transaction_date=today - timedelta(days=30),
+        amount=Decimal('-150.00'),
+        transaction_type='Expense',
+        description='Client dinner - Chicago trip',
+        category_id=expense_cat.category_id,
+        classification_id=reimb_paid.classification_id
+    )
+    expense2 = Transaction(
+        transaction_date=today - timedelta(days=20),
+        amount=Decimal('-350.00'),
+        transaction_type='Expense',
+        description='Hotel for conference',
+        category_id=expense_cat.category_id,
+        classification_id=reimb_paid.classification_id
+    )
+    expense3 = Transaction(
+        transaction_date=today - timedelta(days=10),
+        amount=Decimal('-75.00'),
+        transaction_type='Expense',
+        description='Office supplies',
+        category_id=expense_cat.category_id,
+        classification_id=reimb_paid.classification_id
+    )
+    db_session.add_all([expense1, expense2, expense3])
+    db_session.commit()
+
+    # Create a reimbursement for expense1 (linked)
+    reimbursement1 = Transaction(
+        transaction_date=today - timedelta(days=15),
+        amount=Decimal('150.00'),
+        transaction_type='Income',
+        description='Expense reimbursement - Chicago trip',
+        category_id=expense_cat.category_id,
+        classification_id=reimb_received.classification_id
+    )
+    db_session.add(reimbursement1)
+    db_session.commit()
+
+    # Link expense1 and reimbursement1
+    relationship = TransactionRelationship(
+        transaction_id_1=expense1.transaction_id,
+        transaction_id_2=reimbursement1.transaction_id,
+        relationship_type='REIMBURSEMENT_PAIR',
+        description='Client dinner reimbursement'
+    )
+    db_session.add(relationship)
+    db_session.commit()
+
+    return {
+        'start_date': start_date,
+        'end_date': end_date,
+        'expense1': expense1,  # Reimbursed
+        'expense2': expense2,  # Outstanding
+        'expense3': expense3,  # Outstanding
+        'reimbursement1': reimbursement1,
+        'category': expense_cat,
+        'reimb_paid': reimb_paid,
+        'reimb_received': reimb_received,
+        'outstanding_count': 2,  # expense2 and expense3
+        'reimbursed_count': 1,   # expense1
+        'total_outstanding': Decimal('425.00'),  # 350 + 75
+        'total_reimbursed': Decimal('150.00')
+    }
+
+
+def test_generate_receivables_report(db_session, receivables_data):
+    """Test generating a receivables report."""
+    service = ReportService(db_session)
+
+    report = service.generate_receivables_report(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date']
+    )
+
+    assert report['report_type'] == 'receivables'
+    assert 'period' in report
+    assert 'summary' in report
+    assert 'by_category' in report
+    assert 'outstanding' in report
+    assert 'recently_reimbursed' in report
+
+    # Verify summary
+    summary = report['summary']
+    assert summary['outstanding_count'] == receivables_data['outstanding_count']
+    assert summary['reimbursed_count'] == receivables_data['reimbursed_count']
+    assert summary['total_outstanding'] == float(receivables_data['total_outstanding'])
+    assert summary['total_reimbursed'] == float(receivables_data['total_reimbursed'])
+    assert summary['oldest_outstanding_days'] >= 0
+    assert summary['average_days_outstanding'] >= 0
+
+
+def test_get_total_receivables(db_session, receivables_data):
+    """Test getting total outstanding receivables amount."""
+    service = ReportService(db_session)
+
+    total = service.get_total_receivables(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date']
+    )
+
+    # Should only include outstanding (unlinked) expenses
+    assert total == float(receivables_data['total_outstanding'])
+
+
+def test_receivables_report_empty_when_no_receivables(db_session):
+    """Test receivables report when there are no reimbursable expenses."""
+    service = ReportService(db_session)
+    today = date.today()
+
+    report = service.generate_receivables_report(
+        start_date=today - timedelta(days=30),
+        end_date=today
+    )
+
+    assert report['report_type'] == 'receivables'
+    assert report['summary']['outstanding_count'] == 0
+    assert report['summary']['reimbursed_count'] == 0
+    assert report['summary']['total_outstanding'] == 0.0
+    assert len(report['outstanding']) == 0
+    assert len(report['recently_reimbursed']) == 0
+
+
+def test_receivables_outstanding_list(db_session, receivables_data):
+    """Test that outstanding receivables list contains correct transactions."""
+    service = ReportService(db_session)
+
+    report = service.generate_receivables_report(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date']
+    )
+
+    outstanding = report['outstanding']
+    assert len(outstanding) == 2
+
+    # Check that outstanding transactions are not marked as reimbursed
+    for tx in outstanding:
+        assert tx['is_reimbursed'] is False
+        assert tx['reimbursement_id'] is None
+        assert tx['days_outstanding'] >= 0
+
+
+def test_receivables_reimbursed_list(db_session, receivables_data):
+    """Test that recently reimbursed list contains linked transactions."""
+    service = ReportService(db_session)
+
+    report = service.generate_receivables_report(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date'],
+        include_reimbursed=True
+    )
+
+    reimbursed = report['recently_reimbursed']
+    assert len(reimbursed) == 1
+
+    # Check that the transaction is marked as reimbursed
+    tx = reimbursed[0]
+    assert tx['is_reimbursed'] is True
+    assert tx['reimbursement_id'] == receivables_data['reimbursement1'].transaction_id
+
+
+def test_export_to_csv_receivables(db_session, receivables_data):
+    """Test CSV export for receivables report."""
+    service = ReportService(db_session)
+
+    report = service.generate_receivables_report(
+        start_date=receivables_data['start_date'],
+        end_date=receivables_data['end_date']
+    )
+
+    csv_output = service.export_to_csv(report)
+
+    # Verify CSV output
+    assert csv_output is not None
+    assert len(csv_output) > 0
+
+    # Check for CSV headers
+    assert 'transaction_id' in csv_output
+    assert 'date' in csv_output
+    assert 'days_outstanding' in csv_output
+    assert 'is_reimbursed' in csv_output
+
+    # Check that we have data rows (header + outstanding transactions)
+    lines = csv_output.strip().split('\n')
+    assert len(lines) == receivables_data['outstanding_count'] + 1  # +1 for header
