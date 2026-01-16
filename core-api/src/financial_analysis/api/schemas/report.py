@@ -119,7 +119,8 @@ class SummaryReportResponse(BaseModel):
     expenses: ExpenseSummary = Field(..., description="Expense summary")
     cashflow: CashflowSummary = Field(..., description="Cash flow summary")
     health_indicators: HealthIndicators = Field(..., description="Financial health indicators")
-    
+    total_capex: Optional[float] = Field(None, description="Total capital expenditure for the period")
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -157,7 +158,8 @@ class SummaryReportResponse(BaseModel):
                     "average_daily_income": 161.29,
                     "average_daily_expense": 96.77,
                     "average_daily_cashflow": 64.52
-                }
+                },
+                "total_capex": 0.00
             }
         }
 
@@ -263,3 +265,71 @@ class BalanceReportResponse(BaseModel):
     summary: BalanceSummary
     accounts: List[AccountBalanceDetail]
     potential_issues: List[str]
+
+
+# CapEx Report Schemas
+class CapExTransaction(BaseModel):
+    """Individual capital expense transaction."""
+    transaction_id: int = Field(..., description="Transaction ID")
+    date: str = Field(..., description="Transaction date")
+    description: str = Field(..., description="Transaction description")
+    amount: float = Field(..., description="Transaction amount (negative for expenses)")
+    category: str = Field(..., description="Category name")
+    classification: str = Field(..., description="Classification name")
+    notes: Optional[str] = Field(None, description="Transaction notes")
+
+
+class CapExCategorySummary(BaseModel):
+    """CapEx totals grouped by category."""
+    category: str = Field(..., description="Category name")
+    total: float = Field(..., description="Total CapEx amount for this category")
+    count: int = Field(..., description="Number of transactions")
+    percentage: float = Field(..., description="Percentage of total CapEx")
+
+
+class CapExSummary(BaseModel):
+    """Summary statistics for CapEx report."""
+    total_capex: float = Field(..., description="Total capital expenditure amount")
+    transaction_count: int = Field(..., description="Number of CapEx transactions")
+    average_transaction: float = Field(..., description="Average CapEx transaction amount")
+
+
+class CapExReportResponse(BaseModel):
+    """Response for capital expense report."""
+    report_type: str = Field(default="capex", description="Type of report")
+    period: ReportPeriod = Field(..., description="Report period")
+    summary: CapExSummary = Field(..., description="CapEx summary statistics")
+    by_category: List[CapExCategorySummary] = Field(..., description="CapEx grouped by category")
+    transactions: List[CapExTransaction] = Field(..., description="List of CapEx transactions")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "report_type": "capex",
+                "period": {
+                    "start_date": "2025-01-01",
+                    "end_date": "2025-12-31",
+                    "days": 365
+                },
+                "summary": {
+                    "total_capex": 45000.00,
+                    "transaction_count": 3,
+                    "average_transaction": 15000.00
+                },
+                "by_category": [
+                    {"category": "Vehicle Purchase", "total": 35000.00, "count": 1, "percentage": 77.78},
+                    {"category": "Home Improvement", "total": 10000.00, "count": 2, "percentage": 22.22}
+                ],
+                "transactions": [
+                    {
+                        "transaction_id": 1234,
+                        "date": "2025-03-15",
+                        "description": "2025 Toyota Camry",
+                        "amount": -35000.00,
+                        "category": "Vehicle Purchase",
+                        "classification": "Capital Expense",
+                        "notes": "New car purchase"
+                    }
+                ]
+            }
+        }
