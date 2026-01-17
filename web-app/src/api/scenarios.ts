@@ -5,7 +5,7 @@ export type ScenarioAdjusterIn = {
   target_person_id?: number | null;
   params?: Record<string, any>;
   start_date?: string | null; // YYYY-MM-DD
-  end_date?: string | null;   // YYYY-MM-DD
+  end_date?: string | null; // YYYY-MM-DD
 };
 
 export type ScenarioPreviewRequest = {
@@ -37,8 +37,8 @@ export type ScenarioPreviewResponse = {
 };
 
 export async function previewScenario(payload: ScenarioPreviewRequest) {
-  const response = await scenariosApi.previewScenario({
-    scenarioPreviewRequest: payload as any // The generated SDK type might differ slightly in strictness
-  });
-  return response as unknown as ScenarioPreviewResponse;
+  const response = await scenariosApi.previewScenarioApiScenariosPreviewPost(
+    payload as any // The generated SDK type might differ slightly in strictness
+  );
+  return response.data as unknown as ScenarioPreviewResponse;
 }
