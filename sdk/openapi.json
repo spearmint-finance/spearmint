@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.26"
+    "version": "0.0.27"
   },
   "servers": [
     {
@@ -23,7 +23,7 @@
         ],
         "summary": "Health Check",
         "description": "Health check endpoint.\n\nReturns basic health status and API version information.\nUsed by monitoring systems and load balancers to verify API availability.",
-        "operationId": "healthCheck",
+        "operationId": "health_check_api_health_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -43,7 +43,7 @@
         ],
         "summary": "Create Transaction",
         "description": "Create a new transaction.\n\nArgs:\n    transaction: Transaction data\n    db: Database session\n    \nReturns:\n    TransactionResponse: Created transaction",
-        "operationId": "createTransaction",
+        "operationId": "create_transaction_api_transactions_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -83,7 +83,7 @@
         ],
         "summary": "List Transactions",
         "description": "List transactions with optional filters.\n\nArgs:\n    Various filter parameters\n    db: Database session\n\nReturns:\n    TransactionListResponse: List of transactions",
-        "operationId": "listTransactions",
+        "operationId": "list_transactions_api_transactions_get",
         "parameters": [
           {
             "name": "start_date",
@@ -227,8 +227,7 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string",
-                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -250,8 +249,7 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string",
-                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -388,7 +386,7 @@
         ],
         "summary": "Get Transaction",
         "description": "Get transaction by ID.\n\nArgs:\n    transaction_id: Transaction ID\n    db: Database session\n    \nReturns:\n    TransactionResponse: Transaction data",
-        "operationId": "getTransaction",
+        "operationId": "get_transaction_api_transactions__transaction_id__get",
         "parameters": [
           {
             "name": "transaction_id",
@@ -429,7 +427,7 @@
         ],
         "summary": "Update Transaction",
         "description": "Update transaction.\n\nArgs:\n    transaction_id: Transaction ID\n    transaction: Updated transaction data\n    db: Database session\n    \nReturns:\n    TransactionResponse: Updated transaction",
-        "operationId": "updateTransaction",
+        "operationId": "update_transaction_api_transactions__transaction_id__put",
         "parameters": [
           {
             "name": "transaction_id",
@@ -498,7 +496,7 @@
         ],
         "summary": "Delete Transaction",
         "description": "Delete transaction.\n\nArgs:\n    transaction_id: Transaction ID\n    db: Database session\n    \nReturns:\n    SuccessResponse: Success message",
-        "operationId": "deleteTransaction",
+        "operationId": "delete_transaction_api_transactions__transaction_id__delete",
         "parameters": [
           {
             "name": "transaction_id",
@@ -541,7 +539,7 @@
         ],
         "summary": "Create Category",
         "description": "Create a new category.\n\nArgs:\n    category: Category data\n    db: Database session\n    \nReturns:\n    CategoryResponse: Created category",
-        "operationId": "createCategory",
+        "operationId": "create_category_api_categories_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -581,7 +579,7 @@
         ],
         "summary": "List Categories",
         "description": "List categories with optional filters.\n\nArgs:\n    category_type: Category type filter\n    parent_category_id: Parent category ID filter\n    include_transfer_categories: Include transfer categories\n    search_text: Search text\n    db: Database session\n    \nReturns:\n    CategoryListResponse: List of categories",
-        "operationId": "listCategories",
+        "operationId": "list_categories_api_categories_get",
         "parameters": [
           {
             "name": "category_type",
@@ -682,7 +680,7 @@
         ],
         "summary": "Get Category",
         "description": "Get category by ID.\n\nArgs:\n    category_id: Category ID\n    db: Database session\n    \nReturns:\n    CategoryResponse: Category data",
-        "operationId": "getCategory",
+        "operationId": "get_category_api_categories__category_id__get",
         "parameters": [
           {
             "name": "category_id",
@@ -723,7 +721,7 @@
         ],
         "summary": "Update Category",
         "description": "Update category.\n\nArgs:\n    category_id: Category ID\n    category: Updated category data\n    db: Database session\n    \nReturns:\n    CategoryResponse: Updated category",
-        "operationId": "updateCategory",
+        "operationId": "update_category_api_categories__category_id__put",
         "parameters": [
           {
             "name": "category_id",
@@ -774,7 +772,7 @@
         ],
         "summary": "Delete Category",
         "description": "Delete category.\n\nArgs:\n    category_id: Category ID\n    force: Force delete\n    db: Database session\n    \nReturns:\n    SuccessResponse: Success message",
-        "operationId": "deleteCategory",
+        "operationId": "delete_category_api_categories__category_id__delete",
         "parameters": [
           {
             "name": "category_id",
@@ -829,7 +827,7 @@
         ],
         "summary": "Get Root Categories",
         "description": "Get root categories (categories without parent).\n\nArgs:\n    category_type: Category type filter\n    db: Database session\n    \nReturns:\n    CategoryListResponse: List of root categories",
-        "operationId": "getRootCategories",
+        "operationId": "get_root_categories_api_categories_root_get",
         "parameters": [
           {
             "name": "category_type",
@@ -882,7 +880,7 @@
         ],
         "summary": "Get Child Categories",
         "description": "Get child categories of a parent category.\n\nArgs:\n    category_id: Parent category ID\n    db: Database session\n    \nReturns:\n    CategoryListResponse: List of child categories",
-        "operationId": "getChildCategories",
+        "operationId": "get_child_categories_api_categories__category_id__children_get",
         "parameters": [
           {
             "name": "category_id",
@@ -925,7 +923,7 @@
         ],
         "summary": "List Category Rules",
         "description": "List all category rules.\n\nArgs:\n    active_only: Only return active rules\n    category_id: Filter by category\n    db: Database session\n\nReturns:\n    CategoryRuleListResponse: List of category rules",
-        "operationId": "listCategoryRules",
+        "operationId": "list_category_rules_api_category_rules_get",
         "parameters": [
           {
             "name": "active_only",
@@ -987,7 +985,7 @@
         ],
         "summary": "Create Category Rule",
         "description": "Create a new category rule.\n\nArgs:\n    rule: Category rule data\n    db: Database session\n\nReturns:\n    CategoryRuleResponse: Created category rule",
-        "operationId": "createCategoryRule",
+        "operationId": "create_category_rule_api_category_rules_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -1029,7 +1027,7 @@
         ],
         "summary": "Get Category Rule",
         "description": "Get category rule by ID.\n\nArgs:\n    rule_id: Rule ID\n    db: Database session\n\nReturns:\n    CategoryRuleResponse: Category rule data",
-        "operationId": "getCategoryRule",
+        "operationId": "get_category_rule_api_category_rules__rule_id__get",
         "parameters": [
           {
             "name": "rule_id",
@@ -1070,7 +1068,7 @@
         ],
         "summary": "Update Category Rule",
         "description": "Update category rule.\n\nArgs:\n    rule_id: Rule ID\n    rule: Updated rule data\n    db: Database session\n\nReturns:\n    CategoryRuleResponse: Updated category rule",
-        "operationId": "updateCategoryRule",
+        "operationId": "update_category_rule_api_category_rules__rule_id__put",
         "parameters": [
           {
             "name": "rule_id",
@@ -1121,7 +1119,7 @@
         ],
         "summary": "Delete Category Rule",
         "description": "Delete category rule.\n\nArgs:\n    rule_id: Rule ID\n    db: Database session\n\nReturns:\n    SuccessResponse: Success message",
-        "operationId": "deleteCategoryRule",
+        "operationId": "delete_category_rule_api_category_rules__rule_id__delete",
         "parameters": [
           {
             "name": "rule_id",
@@ -1164,7 +1162,7 @@
         ],
         "summary": "Test Category Rule",
         "description": "Test a category rule against existing transactions.\n\nArgs:\n    request: Test rule request\n    db: Database session\n\nReturns:\n    TestCategoryRuleResponse: Test results",
-        "operationId": "testCategoryRule",
+        "operationId": "test_category_rule_api_category_rules_test_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1206,7 +1204,7 @@
         ],
         "summary": "Apply Category Rules",
         "description": "Apply category rules to transactions.\n\nArgs:\n    request: Apply rules request\n    db: Database session\n\nReturns:\n    ApplyCategoryRulesResponse: Application results",
-        "operationId": "applyCategoryRules",
+        "operationId": "apply_category_rules_api_category_rules_apply_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1247,8 +1245,8 @@
           "import"
         ],
         "summary": "Import Transactions",
-        "description": "Import transactions from Excel file.\n\nArgs:\n    file: Uploaded Excel file\n    mode: Import mode (full, incremental, update)\n    skip_duplicates: Whether to skip duplicates\n    db: Database session\n    \nReturns:\n    ImportResponse: Import result",
-        "operationId": "importTransactions",
+        "description": "Import transactions from Excel file.\n\nArgs:\n    file: Uploaded Excel file\n    mode: Import mode (full, incremental, update)\n    skip_duplicates: Whether to skip duplicates\n    profile_id: Optional import profile ID for column mappings\n    db: Database session\n\nReturns:\n    ImportResponse: Import result",
+        "operationId": "import_transactions_api_import_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -1290,7 +1288,7 @@
         ],
         "summary": "Import From File Path",
         "description": "Import transactions from file path (for local development).\n\nArgs:\n    file_path: Path to Excel file\n    request: Import request parameters\n    db: Database session\n    \nReturns:\n    ImportResponse: Import result",
-        "operationId": "importFromFilePath",
+        "operationId": "import_from_file_path_api_import_file_path_post",
         "parameters": [
           {
             "name": "file_path",
@@ -1343,7 +1341,7 @@
         ],
         "summary": "Get Import History",
         "description": "Get import history.\n\nReturns a list of past imports with statistics including:\n- Import date and file name\n- Total rows, successful rows, failed rows\n- Classification statistics\n- Success rate\n\nArgs:\n    limit: Maximum number of imports to return\n    offset: Number of imports to skip (for pagination)\n    db: Database session\n\nReturns:\n    ImportHistoryResponse: List of import history items",
-        "operationId": "getImportHistory",
+        "operationId": "get_import_history_api_import_history_get",
         "parameters": [
           {
             "name": "limit",
@@ -1404,7 +1402,7 @@
         ],
         "summary": "Get Import Detail",
         "description": "Get detailed information about a specific import.\n\nReturns detailed information including error logs and full statistics.\n\nArgs:\n    import_id: Import ID\n    db: Database session\n\nReturns:\n    ImportHistoryDetailResponse: Detailed import information",
-        "operationId": "getImportDetail",
+        "operationId": "get_import_detail_api_import_history__import_id__get",
         "parameters": [
           {
             "name": "import_id",
@@ -1447,7 +1445,7 @@
         ],
         "summary": "Get Import Status",
         "description": "Get real-time import status.\n\nThis endpoint provides progress tracking for ongoing imports.\nFor completed imports, it returns the final status.\n\nArgs:\n    import_id: Import ID\n    db: Database session\n\nReturns:\n    ImportStatusResponse: Import status and progress",
-        "operationId": "getImportStatus",
+        "operationId": "get_import_status_api_import_status__import_id__get",
         "parameters": [
           {
             "name": "import_id",
@@ -1483,6 +1481,277 @@
         }
       }
     },
+    "/api/import/profiles": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "summary": "List Import Profiles",
+        "description": "List all import profiles.\n\nArgs:\n    is_active: Optional filter by active status\n    db: Database session\n\nReturns:\n    ImportProfileListResponse: List of import profiles",
+        "operationId": "list_import_profiles_api_import_profiles_get",
+        "parameters": [
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by active status",
+              "title": "Is Active"
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Create Import Profile",
+        "description": "Create a new import profile.\n\nArgs:\n    profile: Profile creation data\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Created profile",
+        "operationId": "create_import_profile_api_import_profiles_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProfileCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/profiles/{profile_id}": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Get Import Profile",
+        "description": "Get a single import profile by ID.\n\nArgs:\n    profile_id: Profile ID\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Profile details",
+        "operationId": "get_import_profile_api_import_profiles__profile_id__get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Update Import Profile",
+        "description": "Update an import profile.\n\nArgs:\n    profile_id: Profile ID\n    profile: Profile update data\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Updated profile",
+        "operationId": "update_import_profile_api_import_profiles__profile_id__put",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Delete Import Profile",
+        "description": "Delete an import profile.\n\nArgs:\n    profile_id: Profile ID\n    db: Database session",
+        "operationId": "delete_import_profile_api_import_profiles__profile_id__delete",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/profiles/suggest": {
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Suggest Import Profiles",
+        "description": "Suggest matching import profiles based on file columns.\n\nAnalyzes the uploaded file's column headers and returns profiles\nthat match, sorted by match score.\n\nArgs:\n    file: Uploaded Excel file\n    db: Database session\n\nReturns:\n    List of profile suggestions with match scores",
+        "operationId": "suggest_import_profiles_api_import_profiles_suggest_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_suggest_import_profiles_api_import_profiles_suggest_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportProfileSuggestion"
+                  },
+                  "type": "array",
+                  "title": "Response Suggest Import Profiles Api Import Profiles Suggest Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analysis/income": {
       "get": {
         "tags": [
@@ -1490,7 +1759,7 @@
         ],
         "summary": "Get Income Analysis",
         "description": "Get income analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n    \nReturns:\n    IncomeAnalysisResponse: Income analysis results",
-        "operationId": "getIncomeAnalysis",
+        "operationId": "get_income_analysis_api_analysis_income_get",
         "parameters": [
           {
             "name": "start_date",
@@ -1573,7 +1842,7 @@
         ],
         "summary": "Get Income Trends",
         "description": "Get income trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    TrendsResponse: Income trend data",
-        "operationId": "getIncomeTrends",
+        "operationId": "get_income_trends_api_analysis_income_trends_get",
         "parameters": [
           {
             "name": "start_date",
@@ -1667,7 +1936,7 @@
         ],
         "summary": "Get Expense Analysis",
         "description": "Get expense analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    db: Database session\n    \nReturns:\n    ExpenseAnalysisResponse: Expense analysis results",
-        "operationId": "getExpenseAnalysis",
+        "operationId": "get_expense_analysis_api_analysis_expenses_get",
         "parameters": [
           {
             "name": "start_date",
@@ -1764,7 +2033,7 @@
         ],
         "summary": "Get Expense Trends",
         "description": "Get expense trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    TrendsResponse: Expense trend data",
-        "operationId": "getExpenseTrends",
+        "operationId": "get_expense_trends_api_analysis_expenses_trends_get",
         "parameters": [
           {
             "name": "start_date",
@@ -1858,7 +2127,7 @@
         ],
         "summary": "Get Cash Flow Analysis",
         "description": "Get cash flow analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n    \nReturns:\n    CashFlowResponse: Cash flow analysis results",
-        "operationId": "getCashFlowAnalysis",
+        "operationId": "get_cash_flow_analysis_api_analysis_cashflow_get",
         "parameters": [
           {
             "name": "start_date",
@@ -1941,7 +2210,7 @@
         ],
         "summary": "Get Cash Flow Trends",
         "description": "Get cash flow trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    CashFlowTrendsResponse: Cash flow trend data",
-        "operationId": "getCashFlowTrends",
+        "operationId": "get_cash_flow_trends_api_analysis_cashflow_trends_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2035,7 +2304,7 @@
         ],
         "summary": "Get Financial Health",
         "description": "Get financial health indicators.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis, with_capital, or complete)\n    db: Database session\n\nReturns:\n    FinancialHealthResponse: Financial health indicators",
-        "operationId": "getFinancialHealth",
+        "operationId": "get_financial_health_api_analysis_health_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2118,7 +2387,7 @@
         ],
         "summary": "Get Financial Summary",
         "description": "Get comprehensive financial summary.\n\nThis endpoint provides a complete financial overview including:\n- Total income, expenses, and net cash flow\n- Top income and expense categories\n- Recent transactions\n- Financial health indicators\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    recent_count: Number of recent transactions to return\n    db: Database session\n\nReturns:\n    FinancialSummaryResponse: Comprehensive financial summary",
-        "operationId": "getFinancialSummary",
+        "operationId": "get_financial_summary_api_analysis_summary_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2229,7 +2498,7 @@
         ],
         "summary": "Get Income Expense Comparison",
         "description": "Get combined income and expense comparison.\n\nThis endpoint provides a side-by-side comparison of income and expenses including:\n- Detailed income analysis\n- Detailed expense analysis\n- Cash flow summary\n- Comparison metrics (ratios, percentages)\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    db: Database session\n\nReturns:\n    IncomeExpenseComparisonResponse: Income vs expense comparison",
-        "operationId": "getIncomeExpenseComparison",
+        "operationId": "get_income_expense_comparison_api_analysis_income_expense_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2326,7 +2595,7 @@
         ],
         "summary": "Get Category Breakdown",
         "description": "Get detailed category breakdown for income and expenses.\n\nThis endpoint provides a comprehensive breakdown of all categories including:\n- Income categories with totals, counts, and percentages\n- Expense categories with totals, counts, and percentages\n- Percentage of total for each category type\n- Percentage of all transactions\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n\nReturns:\n    CategoryBreakdownResponse: Detailed category breakdown",
-        "operationId": "getCategoryBreakdown",
+        "operationId": "get_category_breakdown_api_analysis_category_breakdown_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2409,7 +2678,7 @@
         ],
         "summary": "Get Expense Category Trends",
         "description": "Get expense trends broken down by category for stacked charts.\n\nReturns expense amounts for each category for each time period,\nallowing for accurate stacked bar charts that show actual expenses\nper period rather than proportional distributions.",
-        "operationId": "getExpenseCategoryTrends",
+        "operationId": "get_expense_category_trends_api_analysis_expenses_category_trends_get",
         "parameters": [
           {
             "name": "start_date",
@@ -2513,7 +2782,7 @@
         ],
         "summary": "Detect Transfer Pairs",
         "description": "Detect potential transfer pairs (same amount, within date range).\n\nTransfer pairs are transactions that represent money moving between accounts,\nsuch as transfers from checking to savings or between different banks.\n\nArgs:\n    date_tolerance_days: Maximum days between transactions (default: 3)\n    amount_tolerance: Maximum amount difference to consider a match (default: 0.01)\n    auto_link: If True, automatically create relationships for high-confidence matches (>=0.8)\n    db: Database session\n    \nReturns:\n    TransferPairsResponse: Detected transfer pairs with confidence scores",
-        "operationId": "detectTransferPairs",
+        "operationId": "detect_transfer_pairs_api_relationships_detect_transfers_post",
         "parameters": [
           {
             "name": "date_tolerance_days",
@@ -2586,7 +2855,7 @@
         ],
         "summary": "Detect Credit Card Pairs",
         "description": "Detect credit card payment/receipt pairs.\n\nIdentifies matching pairs of credit card payments (from bank account) and\nreceipts (to credit card company) to prevent double-counting in analysis.\n\nArgs:\n    date_tolerance_days: Maximum days between payment and receipt (default: 5)\n    auto_link: If True, automatically create relationships for high-confidence matches (>=0.8)\n    db: Database session\n    \nReturns:\n    CreditCardPairsResponse: Detected credit card pairs with confidence scores",
-        "operationId": "detectCreditCardPairs",
+        "operationId": "detect_credit_card_pairs_api_relationships_detect_credit_cards_post",
         "parameters": [
           {
             "name": "date_tolerance_days",
@@ -2646,7 +2915,7 @@
         ],
         "summary": "Detect Reimbursement Pairs",
         "description": "Detect reimbursement pairs (expense paid + reimbursement received).\n\nIdentifies expenses that were later reimbursed to properly track\nout-of-pocket costs vs. reimbursed amounts.\n\nArgs:\n    date_tolerance_days: Maximum days between expense and reimbursement (default: 30)\n    auto_link: If True, automatically create relationships for high-confidence matches (>=0.8)\n    db: Database session\n    \nReturns:\n    ReimbursementPairsResponse: Detected reimbursement pairs with confidence scores",
-        "operationId": "detectReimbursementPairs",
+        "operationId": "detect_reimbursement_pairs_api_relationships_detect_reimbursements_post",
         "parameters": [
           {
             "name": "date_tolerance_days",
@@ -2706,7 +2975,7 @@
         ],
         "summary": "Detect Dividend Reinvestment Pairs",
         "description": "Detect dividend reinvestment pairs (dividend income + automatic reinvestment).\n\nIdentifies dividend income transactions that were automatically reinvested\nin the same security. Links the dividend (income) with the reinvestment (expense).\n\nArgs:\n    date_tolerance_days: Maximum days between dividend and reinvestment (default: 1)\n    amount_tolerance: Maximum amount difference to consider a match (default: 0.01)\n    auto_link: If True, automatically create relationships for high-confidence matches (>=0.8)\n    db: Database session\n\nReturns:\n    DividendReinvestmentPairsResponse: Detected dividend reinvestment pairs with confidence scores",
-        "operationId": "detectDividendReinvestmentPairs",
+        "operationId": "detect_dividend_reinvestment_pairs_api_relationships_detect_dividend_reinvestments_post",
         "parameters": [
           {
             "name": "date_tolerance_days",
@@ -2779,7 +3048,7 @@
         ],
         "summary": "Detect All Relationships",
         "description": "Run all relationship detection algorithms.\n\nDetects transfer pairs, credit card payments, reimbursements, and dividend reinvestments in a single operation.\n\nArgs:\n    auto_link: If True, automatically create relationships for high-confidence matches (>=0.8)\n    date_tolerance_days: Maximum days between related transactions (for transfers)\n    db: Database session\n\nReturns:\n    DetectAllRelationshipsResponse: Summary of all detected relationships",
-        "operationId": "detectAllRelationships",
+        "operationId": "detect_all_relationships_api_relationships_detect_all_post",
         "parameters": [
           {
             "name": "auto_link",
@@ -2839,7 +3108,7 @@
         ],
         "summary": "Create Relationship",
         "description": "Manually create a relationship between two transactions.\n\nArgs:\n    request: Relationship creation request\n    db: Database session\n\nReturns:\n    RelationshipResponse: Created relationship",
-        "operationId": "createRelationship",
+        "operationId": "create_relationship_api_relationships_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2881,7 +3150,7 @@
         ],
         "summary": "Get Related Transactions",
         "description": "Get all transactions related to a given transaction.\n\nArgs:\n    transaction_id: Transaction ID\n    db: Database session\n\nReturns:\n    RelatedTransactionsResponse: Related transactions with relationship info",
-        "operationId": "getRelatedTransactions",
+        "operationId": "get_related_transactions_api_transactions__transaction_id__relationships_get",
         "parameters": [
           {
             "name": "transaction_id",
@@ -2924,7 +3193,7 @@
         ],
         "summary": "Delete Relationship",
         "description": "Delete a relationship between transactions.\n\nArgs:\n    relationship_id: Relationship ID to delete\n    db: Database session\n\nReturns:\n    SuccessResponse: Success confirmation",
-        "operationId": "deleteRelationship",
+        "operationId": "delete_relationship_api_relationships__relationship_id__delete",
         "parameters": [
           {
             "name": "relationship_id",
@@ -2967,7 +3236,7 @@
         ],
         "summary": "Project Future Income",
         "description": "Generate income projections based on historical data using statistical methods",
-        "operationId": "projectIncome",
+        "operationId": "project_income_api_projections_income_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3078,7 +3347,7 @@
         ],
         "summary": "Project Future Expenses",
         "description": "Generate expense projections based on historical data using statistical methods",
-        "operationId": "projectExpenses",
+        "operationId": "project_expenses_api_projections_expenses_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3189,7 +3458,7 @@
         ],
         "summary": "Project Future Cash Flow",
         "description": "Generate cash flow projections with scenario analysis",
-        "operationId": "projectCashflow",
+        "operationId": "project_cashflow_api_projections_cashflow_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3312,7 +3581,7 @@
         ],
         "summary": "Validate Projection Accuracy",
         "description": "Calculate accuracy metrics for projection validation",
-        "operationId": "validateProjection",
+        "operationId": "validate_projection_api_projections_validate_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3354,7 +3623,7 @@
         ],
         "summary": "Get Scenario Analysis",
         "description": "Get detailed scenario analysis for cash flow projections",
-        "operationId": "getScenarios",
+        "operationId": "get_scenarios_api_projections_scenarios_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3451,7 +3720,7 @@
         ],
         "summary": "Generate Balance Sheet / Net Worth Report",
         "description": "Generate a report of all account balances and net worth.",
-        "operationId": "getBalanceReport",
+        "operationId": "get_balance_report_api_reports_balances_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3473,7 +3742,7 @@
         ],
         "summary": "Generate Summary Report",
         "description": "Generate a comprehensive financial summary report including:\n    - Income summary with top categories\n    - Expense summary with top categories\n    - Cash flow summary\n    - Financial health indicators\n    \n    The report can be generated in JSON or CSV format.",
-        "operationId": "getSummaryReport",
+        "operationId": "get_summary_report_api_reports_summary_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3567,7 +3836,7 @@
         ],
         "summary": "Generate Income Detail Report",
         "description": "Generate a detailed income report showing:\n    - Total income for the period\n    - Transaction count and averages\n    - Complete breakdown by category with percentages\n    \n    Useful for understanding income sources and patterns.",
-        "operationId": "getIncomeDetailReport",
+        "operationId": "get_income_detail_report_api_reports_income_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3661,7 +3930,7 @@
         ],
         "summary": "Generate Expense Detail Report",
         "description": "Generate a detailed expense report showing:\n    - Total expenses for the period\n    - Transaction count and averages\n    - Complete breakdown by category with percentages\n    \n    Useful for understanding spending patterns and identifying areas for optimization.",
-        "operationId": "getExpenseDetailReport",
+        "operationId": "get_expense_detail_report_api_reports_expenses_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3755,7 +4024,7 @@
         ],
         "summary": "Generate Reconciliation Report",
         "description": "Generate a reconciliation report showing ALL transactions including transfers.\n    \n    This report uses COMPLETE mode to show:\n    - All transactions in the period (including transfers, credit card payments, etc.)\n    - Complete transaction details for reconciliation\n    - Summary statistics\n    \n    Useful for:\n    - Bank reconciliation\n    - Verifying all transactions are accounted for\n    - Auditing purposes\n    - Complete financial picture",
-        "operationId": "getReconciliationReport",
+        "operationId": "get_reconciliation_report_api_reports_reconciliation_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3838,7 +4107,7 @@
         ],
         "summary": "Generate Capital Expense (CapEx) Report",
         "description": "Generate a report of all capital expense transactions.\n\n    Capital expenses are large asset purchases (vehicles, property improvements, equipment)\n    that are tracked separately from regular operating expenses.\n\n    This report includes:\n    - Total CapEx for the period\n    - Breakdown by category (Vehicle, Equipment, Home Improvement, etc.)\n    - Full list of CapEx transactions\n\n    CapEx transactions are identified by their classification code (CAPEX, CAPITAL_EXPENSE, etc.)\n    or classification name containing 'Capital Expense'.",
-        "operationId": "getCapexReport",
+        "operationId": "get_capex_report_api_reports_capex_get",
         "parameters": [
           {
             "name": "start_date",
@@ -3921,7 +4190,7 @@
         ],
         "summary": "Generate Receivables (Reimbursement Tracking) Report",
         "description": "Generate a report for tracking reimbursable expenses and their status.\n\n    This report helps you track:\n    - **Outstanding receivables**: Expenses paid that haven't been reimbursed yet\n    - **Recently reimbursed**: Expenses that have been successfully reimbursed\n    - **Aging information**: How long receivables have been outstanding\n\n    Receivables are identified by their classification:\n    - `REIMB_PAID`: Expense paid that will be reimbursed\n    - Linked via `REIMBURSEMENT_PAIR` relationship when reimbursement is received\n\n    Use this report to:\n    - Follow up on outstanding expense reports\n    - Track reimbursement turnaround time\n    - Identify stale receivables that need attention",
-        "operationId": "getReceivablesReport",
+        "operationId": "get_receivables_report_api_reports_receivables_get",
         "parameters": [
           {
             "name": "start_date",
@@ -4016,7 +4285,7 @@
         ],
         "summary": "List All Classifications",
         "description": "Get a list of all transaction classifications.\n    \n    Classifications determine how transactions are treated in financial calculations:\n    - Standard transactions are included in all calculations\n    - Transfers are excluded to prevent double-counting\n    - Credit card payments/receipts are handled specially\n    - Reimbursements and refunds are excluded from income\n    \n    System classifications cannot be deleted but can be viewed.",
-        "operationId": "listClassifications",
+        "operationId": "list_classifications_api_classifications_get",
         "parameters": [
           {
             "name": "system_only",
@@ -4060,7 +4329,7 @@
         ],
         "summary": "Create Classification",
         "description": "Create a new custom classification.\n    \n    Note: System classifications cannot be created through the API.\n    Custom classifications can be used for specialized transaction handling.",
-        "operationId": "createClassification",
+        "operationId": "create_classification_api_classifications_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -4102,7 +4371,7 @@
         ],
         "summary": "Get Classification Details",
         "description": "Get detailed information about a specific classification by ID.",
-        "operationId": "getClassification",
+        "operationId": "get_classification_api_classifications__classification_id__get",
         "parameters": [
           {
             "name": "classification_id",
@@ -4145,7 +4414,7 @@
         ],
         "summary": "Update Classification",
         "description": "Update an existing classification.\n    \n    Note: System classifications cannot be modified.\n    Only custom classifications can be updated.",
-        "operationId": "updateClassification",
+        "operationId": "update_classification_api_classifications__classification_id__put",
         "parameters": [
           {
             "name": "classification_id",
@@ -4198,7 +4467,7 @@
         ],
         "summary": "Delete Classification",
         "description": "Delete a custom classification.\n    \n    Note: System classifications cannot be deleted.\n    Transactions using this classification will be set to 'Standard Transaction'.",
-        "operationId": "deleteClassification",
+        "operationId": "delete_classification_api_classifications__classification_id__delete",
         "parameters": [
           {
             "name": "classification_id",
@@ -4236,7 +4505,7 @@
         ],
         "summary": "Classify Transaction",
         "description": "Manually classify a specific transaction.\n    \n    This sets the classification for a single transaction.\n    The classification determines how the transaction is treated in financial calculations.",
-        "operationId": "classifyTransaction",
+        "operationId": "classify_transaction_api_transactions__transaction_id__classify_post",
         "parameters": [
           {
             "name": "transaction_id",
@@ -4291,7 +4560,7 @@
         ],
         "summary": "Bulk Classify Transactions",
         "description": "Classify multiple transactions at once.\n    \n    Useful for applying the same classification to multiple transactions.\n    Returns counts of successful and failed classifications.",
-        "operationId": "bulkClassifyTransactions",
+        "operationId": "bulk_classify_transactions_api_transactions_classify_bulk_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4333,7 +4602,7 @@
         ],
         "summary": "Auto-Classify Transactions",
         "description": "Automatically classify transactions using pattern-based rules.\n\n    This applies all active classification rules to transactions.\n    Can be run on specific transactions or all unclassified transactions.",
-        "operationId": "autoClassifyTransactions",
+        "operationId": "auto_classify_transactions_api_transactions_auto_classify_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4375,7 +4644,7 @@
         ],
         "summary": "List Classification Rules",
         "description": "Get a list of all classification rules.\n\n    Rules are applied in priority order (lower number = higher priority).\n    Active rules are automatically applied during auto-classification.",
-        "operationId": "listClassificationRules",
+        "operationId": "list_classification_rules_api_classification_rules_get",
         "parameters": [
           {
             "name": "active_only",
@@ -4419,7 +4688,7 @@
         ],
         "summary": "Create Classification Rule",
         "description": "Create a new classification rule.\n\n    Rules use pattern matching to automatically classify transactions.\n    Patterns support SQL LIKE syntax (% for wildcard).",
-        "operationId": "createClassificationRule",
+        "operationId": "create_classification_rule_api_classification_rules_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -4461,7 +4730,7 @@
         ],
         "summary": "Get Classification Rule",
         "description": "Get detailed information about a specific classification rule.",
-        "operationId": "getClassificationRule",
+        "operationId": "get_classification_rule_api_classification_rules__rule_id__get",
         "parameters": [
           {
             "name": "rule_id",
@@ -4504,7 +4773,7 @@
         ],
         "summary": "Update Classification Rule",
         "description": "Update an existing classification rule.",
-        "operationId": "updateClassificationRule",
+        "operationId": "update_classification_rule_api_classification_rules__rule_id__put",
         "parameters": [
           {
             "name": "rule_id",
@@ -4557,7 +4826,7 @@
         ],
         "summary": "Delete Classification Rule",
         "description": "Delete a classification rule.",
-        "operationId": "deleteClassificationRule",
+        "operationId": "delete_classification_rule_api_classification_rules__rule_id__delete",
         "parameters": [
           {
             "name": "rule_id",
@@ -4595,7 +4864,7 @@
         ],
         "summary": "Test Classification Rule",
         "description": "Test a classification rule without applying it.\n\n    Returns the number of transactions that would match the rule\n    and a sample of matching transaction IDs.",
-        "operationId": "testClassificationRule",
+        "operationId": "test_classification_rule_api_classification_rules_test_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4637,7 +4906,7 @@
         ],
         "summary": "Apply Classification Rules",
         "description": "Apply classification rules to existing transactions.\n\n    By default, this is a dry-run that previews changes without applying them.\n    Set dry_run=False to actually apply the rules.\n\n    Rules are applied in priority order (lower number = higher priority).\n    Only active rules are applied unless specific rule_ids are provided.",
-        "operationId": "applyClassificationRules",
+        "operationId": "apply_classification_rules_api_classification_rules_apply_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4679,7 +4948,7 @@
           "persons"
         ],
         "summary": "List Persons",
-        "operationId": "listPersons",
+        "operationId": "list_persons_api_persons_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4703,7 +4972,7 @@
           "persons"
         ],
         "summary": "Create Person",
-        "operationId": "createPerson",
+        "operationId": "create_person_api_persons_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4745,7 +5014,7 @@
           "splits"
         ],
         "summary": "Get Transaction Splits",
-        "operationId": "getTransactionSplits",
+        "operationId": "get_transaction_splits_api_transactions__transaction_id__splits_get",
         "parameters": [
           {
             "name": "transaction_id",
@@ -4790,7 +5059,7 @@
           "splits"
         ],
         "summary": "Create Transaction Split",
-        "operationId": "createTransactionSplit",
+        "operationId": "create_transaction_split_api_transactions__transaction_id__splits_post",
         "parameters": [
           {
             "name": "transaction_id",
@@ -4844,7 +5113,7 @@
         ],
         "summary": "Preview Scenario",
         "description": "Simulate a scenario without saving it (deterministic, fast preview).",
-        "operationId": "previewScenario",
+        "operationId": "preview_scenario_api_scenarios_preview_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4887,7 +5156,7 @@
         ],
         "summary": "Get Net Worth",
         "description": "Get total net worth across all accounts.",
-        "operationId": "getNetWorth",
+        "operationId": "get_net_worth_api_accounts_net_worth_get",
         "parameters": [
           {
             "name": "as_of_date",
@@ -4941,7 +5210,7 @@
         ],
         "summary": "Get Account Summary",
         "description": "Get summary of all accounts with current balances.",
-        "operationId": "getAccountSummary",
+        "operationId": "get_account_summary_api_accounts_summary_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4968,7 +5237,7 @@
         ],
         "summary": "List Accounts",
         "description": "Get all accounts with optional filtering.",
-        "operationId": "listAccounts",
+        "operationId": "list_accounts_api_accounts_get",
         "parameters": [
           {
             "name": "is_active",
@@ -5041,7 +5310,7 @@
         ],
         "summary": "Create Account",
         "description": "Create a new account.",
-        "operationId": "createAccount",
+        "operationId": "create_account_api_accounts_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -5084,7 +5353,7 @@
         ],
         "summary": "Get Account",
         "description": "Get a specific account by ID.",
-        "operationId": "getAccount",
+        "operationId": "get_account_api_accounts__account_id__get",
         "parameters": [
           {
             "name": "account_id",
@@ -5128,7 +5397,7 @@
         ],
         "summary": "Update Account",
         "description": "Update an account.",
-        "operationId": "updateAccount",
+        "operationId": "update_account_api_accounts__account_id__put",
         "parameters": [
           {
             "name": "account_id",
@@ -5182,7 +5451,7 @@
         ],
         "summary": "Delete Account",
         "description": "Deactivate an account (soft delete).",
-        "operationId": "deleteAccount",
+        "operationId": "delete_account_api_accounts__account_id__delete",
         "parameters": [
           {
             "name": "account_id",
@@ -5226,7 +5495,7 @@
         ],
         "summary": "Get Balance History",
         "description": "Get balance history for an account.",
-        "operationId": "getBalanceHistory",
+        "operationId": "get_balance_history_api_accounts__account_id__balances_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5326,7 +5595,7 @@
         ],
         "summary": "Add Balance Snapshot",
         "description": "Add a balance snapshot for an account.",
-        "operationId": "addBalanceSnapshot",
+        "operationId": "add_balance_snapshot_api_accounts__account_id__balances_post",
         "parameters": [
           {
             "name": "account_id",
@@ -5382,7 +5651,7 @@
         ],
         "summary": "Get Current Balance",
         "description": "Get the current balance for an account.",
-        "operationId": "getCurrentBalance",
+        "operationId": "get_current_balance_api_accounts__account_id__current_balance_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5428,7 +5697,7 @@
         ],
         "summary": "Get Calculated Balance",
         "description": "Calculate account balance from transactions.",
-        "operationId": "getCalculatedBalance",
+        "operationId": "get_calculated_balance_api_accounts__account_id__calculated_balance_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5449,7 +5718,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2026-01-16",
+              "default": "2026-01-17",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"
@@ -5487,7 +5756,7 @@
         ],
         "summary": "Get Holdings",
         "description": "Get current investment holdings for an account.",
-        "operationId": "getHoldings",
+        "operationId": "get_holdings_api_accounts__account_id__holdings_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5535,7 +5804,7 @@
         ],
         "summary": "Add Holding",
         "description": "Add or update an investment holding.",
-        "operationId": "addHolding",
+        "operationId": "add_holding_api_accounts__account_id__holdings_post",
         "parameters": [
           {
             "name": "account_id",
@@ -5591,7 +5860,7 @@
         ],
         "summary": "Get Portfolio Summary",
         "description": "Get portfolio summary for an account.",
-        "operationId": "getPortfolioSummary",
+        "operationId": "get_portfolio_summary_api_accounts__account_id__portfolio_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5637,7 +5906,7 @@
         ],
         "summary": "Create Reconciliation",
         "description": "Start a new reconciliation for an account.",
-        "operationId": "createReconciliation",
+        "operationId": "create_reconciliation_api_accounts__account_id__reconcile_post",
         "parameters": [
           {
             "name": "account_id",
@@ -5693,7 +5962,7 @@
         ],
         "summary": "Get Reconciliations",
         "description": "Get reconciliation history for an account.",
-        "operationId": "getReconciliations",
+        "operationId": "get_reconciliations_api_accounts__account_id__reconciliations_get",
         "parameters": [
           {
             "name": "account_id",
@@ -5761,7 +6030,7 @@
         ],
         "summary": "Complete Reconciliation",
         "description": "Mark a reconciliation as complete.",
-        "operationId": "completeReconciliation",
+        "operationId": "complete_reconciliation_api_accounts_reconciliations__reconciliation_id__complete_put",
         "parameters": [
           {
             "name": "reconciliation_id",
@@ -5817,7 +6086,7 @@
         ],
         "summary": "Clear Transactions",
         "description": "Mark transactions as cleared.",
-        "operationId": "clearTransactions",
+        "operationId": "clear_transactions_api_accounts_transactions_clear_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5862,7 +6131,7 @@
         ],
         "summary": "Fix System Classifications",
         "description": "Repair incorrect system classifications.\n    - Fixes 'Insurance Reimbursement' cash flow settings\n    - Removes duplicate/legacy classifications ('STANDARD', 'REIMB_RECEIVED')",
-        "operationId": "fixClassifications",
+        "operationId": "fix_classifications_api_maintenance_fix_classifications_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5885,7 +6154,7 @@
         ],
         "summary": "Fix Transfer Links",
         "description": "Attempts to link orphaned transfers based on amount and date proximity.",
-        "operationId": "fixTransfers",
+        "operationId": "fix_transfers_api_maintenance_fix_transfers_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5908,7 +6177,7 @@
         ],
         "summary": "Fix Reimbursement Links",
         "description": "Links reimbursement expenses to income.",
-        "operationId": "fixReimbursements",
+        "operationId": "fix_reimbursements_api_maintenance_fix_reimbursements_post",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5930,7 +6199,7 @@
         ],
         "summary": "Root",
         "description": "Root endpoint.",
-        "operationId": "rootGet",
+        "operationId": "root__get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6067,8 +6336,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Opening Balance",
@@ -6189,7 +6457,6 @@
           },
           "opening_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Opening Balance"
           },
           "opening_balance_date": {
@@ -6217,8 +6484,7 @@
           "current_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6241,8 +6507,7 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6253,8 +6518,7 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6306,7 +6570,6 @@
           },
           "current_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Balance"
           },
           "balance_date": {
@@ -6332,8 +6595,7 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6344,8 +6606,7 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6734,8 +6995,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Total Balance"
@@ -6756,8 +7016,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6771,8 +7030,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6905,7 +7163,6 @@
           },
           "total_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Balance"
           },
           "balance_type": {
@@ -6915,8 +7172,7 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -6927,8 +7183,7 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7018,6 +7273,18 @@
             "title": "Skip Duplicates",
             "description": "Skip duplicate transactions",
             "default": true
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id",
+            "description": "Import profile ID to apply saved column mappings"
           }
         },
         "type": "object",
@@ -7025,6 +7292,21 @@
           "file"
         ],
         "title": "Body_import_transactions_api_import_post"
+      },
+      "Body_suggest_import_profiles_api_import_profiles_suggest_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Excel file to analyze"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_suggest_import_profiles_api_import_profiles_suggest_post"
       },
       "BulkClassifyRequest": {
         "properties": {
@@ -7107,14 +7389,12 @@
           },
           "total": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total"
           },
           "cash": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7125,8 +7405,7 @@
           "investments": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -7351,19 +7630,16 @@
         "properties": {
           "net_cash_flow": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow (income - expenses)"
           },
           "total_income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income"
           },
           "total_expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses"
           },
@@ -7439,19 +7715,16 @@
           },
           "income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income",
             "description": "Income for period"
           },
           "expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses",
             "description": "Expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow for period"
           },
@@ -7712,7 +7985,6 @@
         "properties": {
           "total": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total",
             "description": "Total amount for category"
           },
@@ -7723,7 +7995,6 @@
           },
           "average": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average",
             "description": "Average transaction amount"
           },
@@ -7762,7 +8033,6 @@
           },
           "total_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Amount",
             "description": "Total amount for category"
           },
@@ -7773,7 +8043,6 @@
           },
           "average_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Amount",
             "description": "Average transaction amount"
           },
@@ -7822,13 +8091,11 @@
           },
           "total_income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income"
           },
           "total_expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses"
           },
@@ -9503,7 +9770,6 @@
           },
           "amount_difference": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -9564,7 +9830,6 @@
         "properties": {
           "total_expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expense amount"
           },
@@ -9575,7 +9840,6 @@
           },
           "average_transaction": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -9847,19 +10111,16 @@
           },
           "average_daily_income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Income",
             "description": "Average daily income"
           },
           "average_daily_expense": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Expense",
             "description": "Average daily expense"
           },
           "net_daily_cash_flow": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Daily Cash Flow",
             "description": "Net daily cash flow"
           },
@@ -9912,19 +10173,16 @@
         "properties": {
           "total_income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income for period"
           },
           "total_expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow (income - expenses)"
           },
@@ -10223,8 +10481,7 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Quantity"
@@ -10252,8 +10509,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10267,8 +10523,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10337,14 +10592,12 @@
           },
           "quantity": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Quantity"
           },
           "cost_basis": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10355,8 +10608,7 @@
           "current_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10404,8 +10656,7 @@
           "gain_loss": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -10652,6 +10903,300 @@
         "title": "ImportHistoryResponse",
         "description": "Schema for import history list response."
       },
+      "ImportProfileCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "description": "Profile name (e.g., 'Chase Credit Card')"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Optional associated account ID"
+          },
+          "column_mappings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Column Mappings",
+            "description": "Mapping of source column names to standard field names. Example: {'Posting Date': 'date', 'Description': 'description'}"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string (e.g., '%m/%d/%Y')"
+          },
+          "skip_rows": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "column_mappings"
+        ],
+        "title": "ImportProfileCreate",
+        "description": "Schema for creating an import profile."
+      },
+      "ImportProfileListResponse": {
+        "properties": {
+          "profiles": {
+            "items": {
+              "$ref": "#/components/schemas/ImportProfileResponse"
+            },
+            "type": "array",
+            "title": "Profiles",
+            "description": "List of import profiles"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of profiles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profiles",
+          "total"
+        ],
+        "title": "ImportProfileListResponse",
+        "description": "Schema for list of import profiles."
+      },
+      "ImportProfileResponse": {
+        "properties": {
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id",
+            "description": "Profile ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Associated account ID"
+          },
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Name",
+            "description": "Associated account name"
+          },
+          "column_mappings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Column Mappings",
+            "description": "Column mappings"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string"
+          },
+          "skip_rows": {
+            "type": "integer",
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether the profile is active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "name",
+          "column_mappings",
+          "skip_rows",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ImportProfileResponse",
+        "description": "Schema for import profile response."
+      },
+      "ImportProfileSuggestion": {
+        "properties": {
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id",
+            "description": "Profile ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "match_score": {
+            "type": "number",
+            "title": "Match Score",
+            "description": "Match score (0-100)"
+          },
+          "matched_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Columns",
+            "description": "Columns that matched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "name",
+          "match_score",
+          "matched_columns"
+        ],
+        "title": "ImportProfileSuggestion",
+        "description": "Schema for suggested import profile match."
+      },
+      "ImportProfileUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Associated account ID"
+          },
+          "column_mappings": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Mappings",
+            "description": "Column mappings"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string"
+          },
+          "skip_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Whether the profile is active"
+          }
+        },
+        "type": "object",
+        "title": "ImportProfileUpdate",
+        "description": "Schema for updating an import profile."
+      },
       "ImportRequest": {
         "properties": {
           "mode": {
@@ -10826,7 +11371,6 @@
         "properties": {
           "total_income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income amount"
           },
@@ -10837,7 +11381,6 @@
           },
           "average_transaction": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -11309,27 +11852,22 @@
         "properties": {
           "assets": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Assets"
           },
           "liabilities": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liabilities"
           },
           "net_worth": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Worth"
           },
           "liquid_assets": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liquid Assets"
           },
           "investments": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Investments"
           },
           "as_of_date": {
@@ -11424,14 +11962,12 @@
           },
           "total_value": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Value"
           },
           "total_cost_basis": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -11442,8 +11978,7 @@
           "total_gain_loss": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -11785,7 +12320,6 @@
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -11869,8 +12403,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Statement Balance"
@@ -11881,8 +12414,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -11896,8 +12428,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12008,19 +12539,16 @@
           },
           "statement_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Statement Balance"
           },
           "calculated_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Calculated Balance"
           },
           "statement_cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12031,8 +12559,7 @@
           "calculated_cash_balance": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12043,8 +12570,7 @@
           "statement_investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12055,8 +12581,7 @@
           "calculated_investment_value": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12067,8 +12592,7 @@
           "discrepancy_amount": {
             "anyOf": [
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12558,7 +13082,6 @@
           },
           "min_balance": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Min Balance"
           },
           "coverage_by_person": {
@@ -12572,8 +13095,7 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "type": "string",
-                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                  "type": "string"
                 },
                 "type": "object"
               },
@@ -12629,8 +13151,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -12678,8 +13199,7 @@
           },
           "deltas": {
             "additionalProperties": {
-              "type": "string",
-              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              "type": "string"
             },
             "type": "object",
             "title": "Deltas"
@@ -12765,17 +13285,14 @@
           },
           "income": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income"
           },
           "expenses": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses"
           },
           "net_cf": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cf"
           },
           "by_person": {
@@ -12783,8 +13300,7 @@
               {
                 "additionalProperties": {
                   "additionalProperties": {
-                    "type": "string",
-                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                    "type": "string"
                   },
                   "type": "object"
                 },
@@ -13225,7 +13741,6 @@
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Total amount"
           },
@@ -13293,8 +13808,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Amount",
@@ -13555,7 +14069,6 @@
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount (can be negative for expenses)"
           },
@@ -13758,8 +14271,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               }
             ],
             "title": "Amount",
@@ -13790,7 +14302,6 @@
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount"
           },
           "created_at": {
@@ -13825,7 +14336,6 @@
           },
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -13914,8 +14424,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -14114,7 +14623,6 @@
           },
           "amount_difference": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -14180,7 +14688,6 @@
           },
           "value": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Value",
             "description": "Value for the period"
           },

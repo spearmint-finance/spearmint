@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database.models import (
     Transaction, Category, TransactionClassification,
-    Tag, TransactionTag, ImportHistory
+    Tag, TransactionTag, ImportHistory, ImportProfile, Account
 )
 from ..utils.validators import DataValidator, DuplicateDetector, ValidationError
 
@@ -92,31 +92,41 @@ class ImportService:
         self,
         file_path: str,
         mode: str = 'incremental',
-        skip_duplicates: bool = True
+        skip_duplicates: bool = True,
+        profile_id: Optional[int] = None
     ) -> ImportResult:
         """
         Import transactions from Excel file.
-        
+
         Args:
             file_path: Path to Excel file
             mode: Import mode ('full', 'incremental', 'update')
             skip_duplicates: Whether to skip duplicate transactions
-            
+            profile_id: Optional import profile ID to apply saved mappings
+
         Returns:
             ImportResult: Result of the import operation
         """
         result = ImportResult()
-        
+
         try:
             # Validate import mode
             mode = self.validator.validate_import_mode(mode)
-            
-            # Read Excel file
-            df = self._read_excel_file(file_path)
+
+            # Load import profile if specified
+            profile = None
+            if profile_id:
+                profile = self.get_profile(profile_id)
+                if not profile:
+                    result.add_warning(f"Import profile {profile_id} not found, using default mappings")
+
+            # Read Excel file (with optional skip_rows from profile)
+            skip_rows = profile.skip_rows if profile else 0
+            df = self._read_excel_file(file_path, skip_rows=skip_rows)
             result.total_rows = len(df)
-            
-            # Normalize column names
-            df = self._normalize_columns(df)
+
+            # Normalize column names (use profile mappings if available)
+            df = self._normalize_columns(df, profile=profile)
             
             # Handle import mode
             if mode == 'full':
@@ -208,8 +218,13 @@ class ImportService:
         
         return result
     
-    def _read_excel_file(self, file_path: str) -> pd.DataFrame:
-        """Read Excel file into DataFrame."""
+    def _read_excel_file(self, file_path: str, skip_rows: int = 0) -> pd.DataFrame:
+        """Read Excel file into DataFrame.
+
+        Args:
+            file_path: Path to Excel file
+            skip_rows: Number of rows to skip at the beginning (from profile)
+        """
         path = Path(file_path)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -238,27 +253,45 @@ class ImportService:
 
             print(f"DEBUG: Using sheet: '{sheet_to_use}'")
 
-            # Read the selected sheet
-            df = pd.read_excel(xl_file, sheet_name=sheet_to_use)
+            # Read the selected sheet (with optional row skip)
+            df = pd.read_excel(xl_file, sheet_name=sheet_to_use, skiprows=skip_rows if skip_rows > 0 else None)
 
         # Debug: Print column info (will appear in logs)
         print(f"DEBUG: Read Excel with {len(df)} rows and {len(df.columns)} columns")
         print(f"DEBUG: Columns found: {list(df.columns)}")
 
         return df
-    
-    def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize column names to standard format."""
+
+    def _normalize_columns(self, df: pd.DataFrame, profile: Optional[ImportProfile] = None) -> pd.DataFrame:
+        """Normalize column names to standard format.
+
+        Args:
+            df: DataFrame with original column names
+            profile: Optional import profile with custom column mappings
+        """
         column_map = {}
         df_columns_lower = {col.lower().strip(): col for col in df.columns}
 
         print(f"DEBUG: Lowercase columns: {list(df_columns_lower.keys())}")
 
+        # If profile has custom mappings, apply them first
+        if profile and profile.column_mappings:
+            print(f"DEBUG: Applying profile '{profile.name}' mappings")
+            for source_col, target_field in profile.column_mappings.items():
+                source_lower = source_col.lower().strip()
+                if source_lower in df_columns_lower:
+                    column_map[df_columns_lower[source_lower]] = target_field
+                    print(f"DEBUG: Profile mapped '{df_columns_lower[source_lower]}' -> '{target_field}'")
+
+        # Apply default mappings for any unmapped columns
         for standard_name, variations in self.COLUMN_MAPPINGS.items():
+            # Skip if already mapped by profile
+            if standard_name in column_map.values():
+                continue
             for variation in variations:
-                if variation in df_columns_lower:
+                if variation in df_columns_lower and df_columns_lower[variation] not in column_map:
                     column_map[df_columns_lower[variation]] = standard_name
-                    print(f"DEBUG: Mapped '{df_columns_lower[variation]}' -> '{standard_name}'")
+                    print(f"DEBUG: Default mapped '{df_columns_lower[variation]}' -> '{standard_name}'")
                     break
 
         print(f"DEBUG: Final column mapping: {column_map}")
@@ -445,4 +478,156 @@ class ImportService:
         )
         self.db.add(import_record)
         self.db.commit()
+
+    # ==================== Import Profile Methods ====================
+
+    def get_profiles(self, is_active: Optional[bool] = None) -> List[ImportProfile]:
+        """Get all import profiles with optional filtering.
+
+        Args:
+            is_active: Filter by active status
+
+        Returns:
+            List of import profiles
+        """
+        query = self.db.query(ImportProfile)
+        if is_active is not None:
+            query = query.filter(ImportProfile.is_active == is_active)
+        return query.order_by(ImportProfile.name).all()
+
+    def get_profile(self, profile_id: int) -> Optional[ImportProfile]:
+        """Get a single import profile by ID.
+
+        Args:
+            profile_id: Profile ID
+
+        Returns:
+            ImportProfile or None if not found
+        """
+        return self.db.query(ImportProfile).filter(
+            ImportProfile.profile_id == profile_id
+        ).first()
+
+    def create_profile(
+        self,
+        name: str,
+        column_mappings: Dict[str, str],
+        account_id: Optional[int] = None,
+        date_format: Optional[str] = None,
+        skip_rows: int = 0
+    ) -> ImportProfile:
+        """Create a new import profile.
+
+        Args:
+            name: Profile name
+            column_mappings: Dictionary mapping source columns to standard fields
+            account_id: Optional associated account ID
+            date_format: Optional date format string
+            skip_rows: Number of header rows to skip
+
+        Returns:
+            Created ImportProfile
+        """
+        # Validate account exists if specified
+        if account_id:
+            account = self.db.query(Account).filter(Account.account_id == account_id).first()
+            if not account:
+                raise ValueError(f"Account {account_id} not found")
+
+        profile = ImportProfile(
+            name=name,
+            account_id=account_id,
+            column_mappings=column_mappings,
+            date_format=date_format,
+            skip_rows=skip_rows,
+            is_active=True
+        )
+        self.db.add(profile)
+        self.db.commit()
+        self.db.refresh(profile)
+        return profile
+
+    def update_profile(
+        self,
+        profile_id: int,
+        **kwargs
+    ) -> Optional[ImportProfile]:
+        """Update an import profile.
+
+        Args:
+            profile_id: Profile ID
+            **kwargs: Fields to update
+
+        Returns:
+            Updated ImportProfile or None if not found
+        """
+        profile = self.get_profile(profile_id)
+        if not profile:
+            return None
+
+        # Validate account if being updated
+        if 'account_id' in kwargs and kwargs['account_id']:
+            account = self.db.query(Account).filter(Account.account_id == kwargs['account_id']).first()
+            if not account:
+                raise ValueError(f"Account {kwargs['account_id']} not found")
+
+        for key, value in kwargs.items():
+            if hasattr(profile, key) and value is not None:
+                setattr(profile, key, value)
+
+        self.db.commit()
+        self.db.refresh(profile)
+        return profile
+
+    def delete_profile(self, profile_id: int) -> bool:
+        """Delete an import profile.
+
+        Args:
+            profile_id: Profile ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        profile = self.get_profile(profile_id)
+        if not profile:
+            return False
+
+        self.db.delete(profile)
+        self.db.commit()
+        return True
+
+    def suggest_profiles(self, file_columns: List[str]) -> List[Dict[str, Any]]:
+        """Suggest matching import profiles based on file columns.
+
+        Args:
+            file_columns: List of column names from the file
+
+        Returns:
+            List of profile suggestions with match scores
+        """
+        profiles = self.get_profiles(is_active=True)
+        suggestions = []
+
+        file_columns_lower = {col.lower().strip() for col in file_columns}
+
+        for profile in profiles:
+            if not profile.column_mappings:
+                continue
+
+            # Calculate match score
+            profile_columns = {col.lower().strip() for col in profile.column_mappings.keys()}
+            matched_columns = profile_columns.intersection(file_columns_lower)
+
+            if matched_columns:
+                match_score = (len(matched_columns) / len(profile_columns)) * 100
+                suggestions.append({
+                    'profile_id': profile.profile_id,
+                    'name': profile.name,
+                    'match_score': round(match_score, 1),
+                    'matched_columns': list(matched_columns)
+                })
+
+        # Sort by match score descending
+        suggestions.sort(key=lambda x: x['match_score'], reverse=True)
+        return suggestions
 
