@@ -41,7 +41,11 @@ const transformTransaction = (backendTransaction: any): Transaction => {
   // The SDK might return an object where properties are accessible directly
   return {
     id: backendTransaction.transaction_id,
-    date: backendTransaction.transaction_date ? new Date(backendTransaction.transaction_date).toISOString().split('T')[0] : "",
+    date: backendTransaction.transaction_date
+      ? new Date(backendTransaction.transaction_date)
+          .toISOString()
+          .split("T")[0]
+      : "",
     description: backendTransaction.description || "",
     amount: backendTransaction.amount,
     transaction_type: backendTransaction.transaction_type,
@@ -57,8 +61,12 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     transfer_account_to: backendTransaction.transfer_account_to,
     notes: backendTransaction.notes,
     tags: backendTransaction.tags?.map((tag: any) => tag.tag_name),
-    created_at: backendTransaction.created_at ? new Date(backendTransaction.created_at).toISOString() : "",
-    updated_at: backendTransaction.updated_at ? new Date(backendTransaction.updated_at).toISOString() : "",
+    created_at: backendTransaction.created_at
+      ? new Date(backendTransaction.created_at).toISOString()
+      : "",
+    updated_at: backendTransaction.updated_at
+      ? new Date(backendTransaction.updated_at).toISOString()
+      : "",
   };
 };
 
@@ -68,11 +76,7 @@ const transformTransaction = (backendTransaction: any): Transaction => {
 export const getTransactions = async (
   params?: TransactionListParams
 ): Promise<TransactionListResponse> => {
-  // Map frontend params to SDK params
-  // Note: openapi-generator usually expects individual arguments or a request object
-  // We'll assume it takes an object with keys matching the spec parameters
-  
-  const response = await transactionsApi.listTransactions({
+  const response = await transactionsApi.listTransactionsApiTransactionsGet({
     startDate: params?.start_date,
     endDate: params?.end_date,
     transactionType: params?.transaction_type,
@@ -82,19 +86,20 @@ export const getTransactions = async (
     isTransfer: params?.is_transfer,
     minAmount: params?.min_amount,
     maxAmount: params?.max_amount,
-    search: params?.search_text, // "search" vs "search_text" - check spec
+    search: params?.search_text,
     limit: params?.limit,
     offset: params?.offset,
     sortBy: params?.sort_by,
-    sortOrder: params?.sort_order
+    sortOrder: params?.sort_order,
   });
 
+  const data = response.data;
   return {
-    transactions: (response.transactions || []).map(transformTransaction),
-    total: response.total,
-    limit: response.limit,
-    offset: response.offset,
-    summary: (response as any).summary,
+    transactions: (data.transactions || []).map(transformTransaction),
+    total: data.total,
+    limit: data.limit,
+    offset: data.offset,
+    summary: (data as any).summary,
   };
 };
 
@@ -102,8 +107,9 @@ export const getTransactions = async (
  * Get a single transaction by ID
  */
 export const getTransaction = async (id: number): Promise<Transaction> => {
-  const response = await transactionsApi.getTransaction({ transactionId: id });
-  return transformTransaction(response);
+  const response =
+    await transactionsApi.getTransactionApiTransactionsTransactionIdGet(id);
+  return transformTransaction(response.data);
 };
 
 /**
@@ -112,18 +118,16 @@ export const getTransaction = async (id: number): Promise<Transaction> => {
 export const createTransaction = async (
   data: TransactionCreate
 ): Promise<Transaction> => {
-  const response = await transactionsApi.createTransaction({
-    transactionCreate: {
-      transaction_date: data.date, // SDK likely expects snake_case based on spec
-      description: data.description,
-      amount: data.amount,
-      transaction_type: data.transaction_type,
-      category_id: data.category_id,
-      is_transfer: data.is_transfer || false,
-      notes: data.notes,
-    }
+  const response = await transactionsApi.createTransactionApiTransactionsPost({
+    transaction_date: data.date,
+    description: data.description,
+    amount: data.amount,
+    transaction_type: data.transaction_type,
+    category_id: data.category_id,
+    is_transfer: data.is_transfer || false,
+    notes: data.notes,
   });
-  return transformTransaction(response);
+  return transformTransaction(response.data);
 };
 
 /**
@@ -133,9 +137,8 @@ export const updateTransaction = async (
   id: number,
   data: TransactionUpdate
 ): Promise<Transaction> => {
-  const response = await transactionsApi.updateTransaction({
-    transactionId: id,
-    transactionUpdate: {
+  const response =
+    await transactionsApi.updateTransactionApiTransactionsTransactionIdPut(id, {
       transaction_date: data.date,
       description: data.description,
       amount: data.amount,
@@ -143,15 +146,13 @@ export const updateTransaction = async (
       category_id: data.category_id,
       is_transfer: data.is_transfer,
       notes: data.notes,
-      // reapply_rules: data.reapply_rules // Check if this exists in TransactionUpdate model
-    }
-  });
-  return transformTransaction(response);
+    });
+  return transformTransaction(response.data);
 };
 
 /**
  * Delete a transaction
  */
 export const deleteTransaction = async (id: number): Promise<void> => {
-  await transactionsApi.deleteTransaction({ transactionId: id });
+  await transactionsApi.deleteTransactionApiTransactionsTransactionIdDelete(id);
 };

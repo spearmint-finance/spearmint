@@ -11,6 +11,7 @@ Usage:
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -20,30 +21,106 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from financial_analysis.api.main import app
 
 
+def clean_operation_id(operation_id: str) -> str:
+    """
+    Transform FastAPI's auto-generated operationId to a clean SDK method name.
+
+    FastAPI generates operationIds like:
+        list_accounts_api_accounts_get
+        create_transaction_api_transactions_post
+        get_transaction_api_transactions__transaction_id__get
+
+    This transforms them to:
+        listAccounts
+        createTransaction
+        getTransaction
+
+    Args:
+        operation_id: The original operationId from FastAPI
+
+    Returns:
+        Clean camelCase operationId suitable for SDK method names
+    """
+    # Remove the path suffix (e.g., "_api_accounts_get" or "_api_transactions__transaction_id__delete")
+    # Pattern: everything after "_api_" is the path and method
+    match = re.match(r'^(.+?)_api_.*$', operation_id)
+    if match:
+        base_name = match.group(1)
+    else:
+        # Fallback: just use the original
+        base_name = operation_id
+
+    # Convert snake_case to camelCase
+    parts = base_name.split('_')
+    camel_case = parts[0] + ''.join(word.capitalize() for word in parts[1:])
+
+    return camel_case
+
+
+def clean_operation_ids(spec: dict) -> dict:
+    """
+    Post-process OpenAPI spec to clean up all operationIds.
+
+    This is a workaround until we add explicit operation_id to all FastAPI routes.
+    See GitHub issue #10 for the long-term fix.
+
+    Args:
+        spec: The OpenAPI specification dictionary
+
+    Returns:
+        The spec with cleaned operationIds
+    """
+    if 'paths' not in spec:
+        return spec
+
+    seen_ids = set()
+
+    for path, methods in spec['paths'].items():
+        for method, operation in methods.items():
+            if isinstance(operation, dict) and 'operationId' in operation:
+                original_id = operation['operationId']
+                clean_id = clean_operation_id(original_id)
+
+                # Handle duplicates by appending a suffix
+                final_id = clean_id
+                counter = 2
+                while final_id in seen_ids:
+                    final_id = f"{clean_id}{counter}"
+                    counter += 1
+
+                seen_ids.add(final_id)
+                operation['operationId'] = final_id
+
+    return spec
+
+
 def generate_openapi(output_path: str = None):
     """
     Generate OpenAPI spec from the FastAPI app and save to file.
-    
+
     Args:
         output_path: Path to save the spec. Defaults to ../sdk/openapi.json
-    
+
     Returns:
         Path to the generated spec
     """
     if output_path is None:
         # Default: save to sdk/openapi.json (relative to this script)
         output_path = str(Path(__file__).parent.parent.parent / "sdk" / "openapi.json")
-    
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Get the spec from FastAPI
     spec = app.openapi()
-    
+
+    # Post-process to clean up operationIds for better SDK method names
+    spec = clean_operation_ids(spec)
+
     # Write to file
     with open(output_path, 'w') as f:
         json.dump(spec, f, indent=2)
-    
+
     # Return path without emoji for cross-platform compatibility
     return output_path
 

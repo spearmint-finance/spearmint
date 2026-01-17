@@ -27,14 +27,14 @@ export interface ProjectionQueryParams {
 export const getIncomeProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<IncomeProjectionResponse> => {
-  const response = await projectionsApi.projectIncome({
+  const response = await projectionsApi.projectIncomeApiProjectionsIncomeGet({
     startDate: params.start_date,
     endDate: params.end_date,
     projectionDays: params.projection_days,
     method: params.method as any, // Cast enum
-    confidenceLevel: params.confidence_level
+    confidenceLevel: params.confidence_level,
   });
-  return response as unknown as IncomeProjectionResponse;
+  return response.data as unknown as IncomeProjectionResponse;
 };
 
 /**
@@ -43,14 +43,15 @@ export const getIncomeProjection = async (
 export const getExpenseProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<ExpenseProjectionResponse> => {
-  const response = await projectionsApi.projectExpenses({
-    startDate: params.start_date,
-    endDate: params.end_date,
-    projectionDays: params.projection_days,
-    method: params.method as any,
-    confidenceLevel: params.confidence_level
-  });
-  return response as unknown as ExpenseProjectionResponse;
+  const response =
+    await projectionsApi.projectExpensesApiProjectionsExpensesGet({
+      startDate: params.start_date,
+      endDate: params.end_date,
+      projectionDays: params.projection_days,
+      method: params.method as any,
+      confidenceLevel: params.confidence_level,
+    });
+  return response.data as unknown as ExpenseProjectionResponse;
 };
 
 /**
@@ -59,15 +60,16 @@ export const getExpenseProjection = async (
 export const getCashflowProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<CashflowProjectionResponse> => {
-  const response = await projectionsApi.projectCashFlow({
-    startDate: params.start_date,
-    endDate: params.end_date,
-    projectionDays: params.projection_days,
-    method: params.method as any,
-    confidenceLevel: params.confidence_level,
-    includeScenarios: params.include_scenarios
-  });
-  return response as unknown as CashflowProjectionResponse;
+  const response =
+    await projectionsApi.projectCashflowApiProjectionsCashflowGet({
+      startDate: params.start_date,
+      endDate: params.end_date,
+      projectionDays: params.projection_days,
+      method: params.method as any,
+      confidenceLevel: params.confidence_level,
+      includeScenarios: params.include_scenarios,
+    });
+  return response.data as unknown as CashflowProjectionResponse;
 };
 
 /**
@@ -76,15 +78,16 @@ export const getCashflowProjection = async (
 export const getScenarios = async (
   params: Omit<ProjectionQueryParams, "include_scenarios"> = {}
 ): Promise<CashflowProjectionResponse> => {
-  const response = await projectionsApi.projectCashFlow({
-    startDate: params.start_date,
-    endDate: params.end_date,
-    projectionDays: params.projection_days,
-    method: params.method as any,
-    confidenceLevel: params.confidence_level,
-    includeScenarios: true
-  });
-  return response as unknown as CashflowProjectionResponse;
+  const response =
+    await projectionsApi.projectCashflowApiProjectionsCashflowGet({
+      startDate: params.start_date,
+      endDate: params.end_date,
+      projectionDays: params.projection_days,
+      method: params.method as any,
+      confidenceLevel: params.confidence_level,
+      includeScenarios: true,
+    });
+  return response.data as unknown as CashflowProjectionResponse;
 };
 
 /**
@@ -93,16 +96,15 @@ export const getScenarios = async (
 export const validateProjection = async (
   data: ValidationRequest
 ): Promise<AccuracyMetrics> => {
-  const response = await projectionsApi.validateProjections({ validationRequest: data });
-  return response as unknown as AccuracyMetrics;
+  const response =
+    await projectionsApi.validateProjectionApiProjectionsValidatePost(data);
+  return response.data as unknown as AccuracyMetrics;
 };
 
 /**
  * Get all projections (income, expenses, and cashflow) in one call
  */
-export const getAllProjections = async (
-  params: ProjectionQueryParams = {}
-) => {
+export const getAllProjections = async (params: ProjectionQueryParams = {}) => {
   const [income, expenses, cashflow] = await Promise.all([
     getIncomeProjection(params),
     getExpenseProjection(params),

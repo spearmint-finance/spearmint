@@ -16,14 +16,12 @@ export const importApi = {
     skipDuplicates: boolean = true
   ): Promise<ImportResponse> => {
     // The SDK should handle multipart/form-data if spec is correct
-    // Assuming the method is named importFile or uploadFile
-    // We pass the file object directly
-    const response = await importClient.importTransactions({
+    const response = await importClient.importTransactionsApiImportPost({
       file,
       mode,
-      skipDuplicates
+      skipDuplicates,
     });
-    return response as unknown as ImportResponse;
+    return response.data as unknown as ImportResponse;
   },
 
   /**
@@ -33,23 +31,28 @@ export const importApi = {
     limit: number = 50,
     offset: number = 0
   ): Promise<ImportHistoryResponse> => {
-    const response = await importClient.getImportHistory({ limit, offset });
-    return response as unknown as ImportHistoryResponse;
+    const response = await importClient.getImportHistoryApiImportHistoryGet({
+      limit,
+      offset,
+    });
+    return response.data as unknown as ImportHistoryResponse;
   },
 
   /**
    * Get detailed information about a specific import
    */
   getImportDetail: async (importId: number): Promise<ImportHistoryDetail> => {
-    const response = await importClient.getImportDetail({ importId });
-    return response as unknown as ImportHistoryDetail;
+    const response =
+      await importClient.getImportDetailApiImportHistoryImportIdGet(importId);
+    return response.data as unknown as ImportHistoryDetail;
   },
 
   /**
    * Get import status for progress tracking
    */
   getImportStatus: async (importId: number): Promise<ImportStatusResponse> => {
-    const response = await importClient.getImportStatus({ importId });
-    return response as unknown as ImportStatusResponse;
+    const response =
+      await importClient.getImportStatusApiImportStatusImportIdGet(importId);
+    return response.data as unknown as ImportStatusResponse;
   },
 };
