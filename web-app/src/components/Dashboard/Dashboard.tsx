@@ -7,14 +7,18 @@ import {
   CardContent,
   Chip,
   Alert,
+  Skeleton,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
+import { useQuery } from "@tanstack/react-query";
 import {
   useFinancialSummary,
   useCashFlowTrends,
 } from "../../hooks/useAnalysis";
+import { getNetWorth, getAccountSummary } from "../../api/accounts";
 import {
   formatCurrency,
   formatPercentage,
@@ -43,6 +47,20 @@ function Dashboard() {
   const { data: trendsData } = useCashFlowTrends({
     mode: "analysis",
     period: "monthly",
+  });
+
+  // Fetch net worth data
+  const { data: netWorth, isLoading: netWorthLoading } = useQuery({
+    queryKey: ["netWorth"],
+    queryFn: () => getNetWorth(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch account summary for quick balances view
+  const { data: accountSummary, isLoading: accountsLoading } = useQuery({
+    queryKey: ["accountSummary"],
+    queryFn: () => getAccountSummary(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Loading state
@@ -223,6 +241,139 @@ function Dashboard() {
               <Typography variant="caption" color="text.secondary">
                 Average per day
               </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Net Worth Card */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <AccountBalanceIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" color="text.secondary">
+                  Net Worth
+                </Typography>
+              </Box>
+              {netWorthLoading ? (
+                <Box>
+                  <Skeleton variant="text" width="60%" height={40} />
+                  <Skeleton variant="text" width="80%" />
+                </Box>
+              ) : netWorth ? (
+                <Box>
+                  <Typography
+                    variant="h4"
+                    component="div"
+                    color={
+                      netWorth.net_worth >= 0 ? "primary.main" : "error.main"
+                    }
+                    gutterBottom
+                  >
+                    {formatCurrency(netWorth.net_worth)}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Assets
+                      </Typography>
+                      <Typography variant="h6" color="success.main">
+                        {formatCurrency(netWorth.assets)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        Liabilities
+                      </Typography>
+                      <Typography variant="h6" color="error.main">
+                        {formatCurrency(netWorth.liabilities)}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: "block" }}
+                  >
+                    As of {formatDate(netWorth.as_of_date)}
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No account data available
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Account Balances Quick View */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                Account Balances
+              </Typography>
+              {accountsLoading ? (
+                <Box>
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="100%" />
+                </Box>
+              ) : accountSummary && accountSummary.length > 0 ? (
+                <Box>
+                  {accountSummary.slice(0, 5).map((account) => (
+                    <Box
+                      key={account.account_id}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        py: 1,
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        "&:last-child": { borderBottom: "none" },
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {account.account_name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {account.account_type}
+                          {account.institution
+                            ? ` • ${account.institution}`
+                            : ""}
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body1"
+                        fontWeight="medium"
+                        color={
+                          account.current_balance >= 0
+                            ? "text.primary"
+                            : "error.main"
+                        }
+                      >
+                        {formatCurrency(account.current_balance)}
+                      </Typography>
+                    </Box>
+                  ))}
+                  {accountSummary.length > 5 && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mt: 1, display: "block" }}
+                    >
+                      +{accountSummary.length - 5} more accounts
+                    </Typography>
+                  )}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No accounts set up yet
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>
