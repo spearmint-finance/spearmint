@@ -85,3 +85,62 @@ class ImportStatusResponse(BaseModel):
     started_at: Optional[datetime] = Field(None, description="Processing start time")
     completed_at: Optional[datetime] = Field(None, description="Processing completion time")
 
+
+# ==================== Import Profile Schemas ====================
+
+class ImportProfileCreate(BaseModel):
+    """Schema for creating an import profile."""
+
+    name: str = Field(..., max_length=100, description="Profile name (e.g., 'Chase Credit Card')")
+    account_id: Optional[int] = Field(None, description="Optional associated account ID")
+    column_mappings: Dict[str, str] = Field(
+        ...,
+        description="Mapping of source column names to standard field names. Example: {'Posting Date': 'date', 'Description': 'description'}"
+    )
+    date_format: Optional[str] = Field(None, max_length=50, description="Date format string (e.g., '%m/%d/%Y')")
+    skip_rows: int = Field(default=0, ge=0, description="Number of header rows to skip")
+
+
+class ImportProfileUpdate(BaseModel):
+    """Schema for updating an import profile."""
+
+    name: Optional[str] = Field(None, max_length=100, description="Profile name")
+    account_id: Optional[int] = Field(None, description="Associated account ID")
+    column_mappings: Optional[Dict[str, str]] = Field(None, description="Column mappings")
+    date_format: Optional[str] = Field(None, max_length=50, description="Date format string")
+    skip_rows: Optional[int] = Field(None, ge=0, description="Number of header rows to skip")
+    is_active: Optional[bool] = Field(None, description="Whether the profile is active")
+
+
+class ImportProfileResponse(BaseModel):
+    """Schema for import profile response."""
+
+    profile_id: int = Field(..., description="Profile ID")
+    name: str = Field(..., description="Profile name")
+    account_id: Optional[int] = Field(None, description="Associated account ID")
+    account_name: Optional[str] = Field(None, description="Associated account name")
+    column_mappings: Dict[str, str] = Field(..., description="Column mappings")
+    date_format: Optional[str] = Field(None, description="Date format string")
+    skip_rows: int = Field(..., description="Number of header rows to skip")
+    is_active: bool = Field(..., description="Whether the profile is active")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    model_config = {"from_attributes": True}
+
+
+class ImportProfileListResponse(BaseModel):
+    """Schema for list of import profiles."""
+
+    profiles: List[ImportProfileResponse] = Field(..., description="List of import profiles")
+    total: int = Field(..., description="Total number of profiles")
+
+
+class ImportProfileSuggestion(BaseModel):
+    """Schema for suggested import profile match."""
+
+    profile_id: int = Field(..., description="Profile ID")
+    name: str = Field(..., description="Profile name")
+    match_score: float = Field(..., description="Match score (0-100)")
+    matched_columns: List[str] = Field(..., description="Columns that matched")
+

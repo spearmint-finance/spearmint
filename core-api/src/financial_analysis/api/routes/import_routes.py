@@ -1,7 +1,8 @@
 """Import API endpoints."""
 
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from typing import Optional, List
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Path as PathParam
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
@@ -11,7 +12,12 @@ from ..schemas.import_schema import (
     ImportHistoryResponse,
     ImportHistoryItem,
     ImportHistoryDetailResponse,
-    ImportStatusResponse
+    ImportStatusResponse,
+    ImportProfileCreate,
+    ImportProfileUpdate,
+    ImportProfileResponse,
+    ImportProfileListResponse,
+    ImportProfileSuggestion
 )
 from ...services.import_service import ImportService
 from ...config import settings
@@ -25,17 +31,19 @@ async def import_transactions(
     file: UploadFile = File(..., description="Excel file to import"),
     mode: str = Form("incremental", pattern="^(full|incremental|update)$", description="Import mode"),
     skip_duplicates: bool = Form(True, description="Skip duplicate transactions"),
+    profile_id: Optional[int] = Form(None, description="Import profile ID to apply saved column mappings"),
     db: Session = Depends(get_db)
 ):
     """
     Import transactions from Excel file.
-    
+
     Args:
         file: Uploaded Excel file
         mode: Import mode (full, incremental, update)
         skip_duplicates: Whether to skip duplicates
+        profile_id: Optional import profile ID for column mappings
         db: Database session
-        
+
     Returns:
         ImportResponse: Import result
     """
@@ -45,7 +53,7 @@ async def import_transactions(
             status_code=400,
             detail="Invalid file type. Only .xlsx and .xls files are supported."
         )
-    
+
     # Check file size
     contents = await file.read()
     if len(contents) > settings.MAX_UPLOAD_SIZE:
@@ -53,12 +61,12 @@ async def import_transactions(
             status_code=413,
             detail=f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE} bytes."
         )
-    
+
     # Save uploaded file temporarily
     temp_dir = settings.BASE_DIR / "data" / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
     temp_file_path = temp_dir / file.filename
-    
+
     try:
         # Write file
         with open(temp_file_path, 'wb') as f:
@@ -69,7 +77,8 @@ async def import_transactions(
         result = service.import_from_excel(
             file_path=str(temp_file_path),
             mode=mode,
-            skip_duplicates=skip_duplicates
+            skip_duplicates=skip_duplicates,
+            profile_id=profile_id
         )
 
         # Convert result to response
@@ -285,3 +294,251 @@ def get_import_status(
     )
 
 
+# ==================== Import Profile Endpoints ====================
+
+
+@router.get("/import/profiles", response_model=ImportProfileListResponse)
+async def list_import_profiles(
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    db: Session = Depends(get_db)
+):
+    """
+    List all import profiles.
+
+    Args:
+        is_active: Optional filter by active status
+        db: Database session
+
+    Returns:
+        ImportProfileListResponse: List of import profiles
+    """
+    service = ImportService(db)
+    profiles = service.get_profiles(is_active=is_active)
+
+    profile_responses = []
+    for profile in profiles:
+        profile_responses.append(ImportProfileResponse(
+            profile_id=profile.profile_id,
+            name=profile.name,
+            account_id=profile.account_id,
+            account_name=profile.account.account_name if profile.account else None,
+            column_mappings=profile.column_mappings,
+            date_format=profile.date_format,
+            skip_rows=profile.skip_rows,
+            is_active=profile.is_active,
+            created_at=profile.created_at,
+            updated_at=profile.updated_at
+        ))
+
+    return ImportProfileListResponse(
+        profiles=profile_responses,
+        total=len(profile_responses)
+    )
+
+
+@router.post("/import/profiles", response_model=ImportProfileResponse, status_code=201)
+async def create_import_profile(
+    profile: ImportProfileCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new import profile.
+
+    Args:
+        profile: Profile creation data
+        db: Database session
+
+    Returns:
+        ImportProfileResponse: Created profile
+    """
+    service = ImportService(db)
+
+    try:
+        created = service.create_profile(
+            name=profile.name,
+            column_mappings=profile.column_mappings,
+            account_id=profile.account_id,
+            date_format=profile.date_format,
+            skip_rows=profile.skip_rows
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return ImportProfileResponse(
+        profile_id=created.profile_id,
+        name=created.name,
+        account_id=created.account_id,
+        account_name=created.account.account_name if created.account else None,
+        column_mappings=created.column_mappings,
+        date_format=created.date_format,
+        skip_rows=created.skip_rows,
+        is_active=created.is_active,
+        created_at=created.created_at,
+        updated_at=created.updated_at
+    )
+
+
+@router.get("/import/profiles/{profile_id}", response_model=ImportProfileResponse)
+async def get_import_profile(
+    profile_id: int = PathParam(..., description="Profile ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single import profile by ID.
+
+    Args:
+        profile_id: Profile ID
+        db: Database session
+
+    Returns:
+        ImportProfileResponse: Profile details
+    """
+    service = ImportService(db)
+    profile = service.get_profile(profile_id)
+
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Import profile {profile_id} not found")
+
+    return ImportProfileResponse(
+        profile_id=profile.profile_id,
+        name=profile.name,
+        account_id=profile.account_id,
+        account_name=profile.account.account_name if profile.account else None,
+        column_mappings=profile.column_mappings,
+        date_format=profile.date_format,
+        skip_rows=profile.skip_rows,
+        is_active=profile.is_active,
+        created_at=profile.created_at,
+        updated_at=profile.updated_at
+    )
+
+
+@router.put("/import/profiles/{profile_id}", response_model=ImportProfileResponse)
+async def update_import_profile(
+    profile_id: int = PathParam(..., description="Profile ID"),
+    profile: ImportProfileUpdate = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Update an import profile.
+
+    Args:
+        profile_id: Profile ID
+        profile: Profile update data
+        db: Database session
+
+    Returns:
+        ImportProfileResponse: Updated profile
+    """
+    service = ImportService(db)
+
+    # Build update kwargs from non-None fields
+    update_data = {}
+    if profile:
+        if profile.name is not None:
+            update_data['name'] = profile.name
+        if profile.account_id is not None:
+            update_data['account_id'] = profile.account_id
+        if profile.column_mappings is not None:
+            update_data['column_mappings'] = profile.column_mappings
+        if profile.date_format is not None:
+            update_data['date_format'] = profile.date_format
+        if profile.skip_rows is not None:
+            update_data['skip_rows'] = profile.skip_rows
+        if profile.is_active is not None:
+            update_data['is_active'] = profile.is_active
+
+    try:
+        updated = service.update_profile(profile_id, **update_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Import profile {profile_id} not found")
+
+    return ImportProfileResponse(
+        profile_id=updated.profile_id,
+        name=updated.name,
+        account_id=updated.account_id,
+        account_name=updated.account.account_name if updated.account else None,
+        column_mappings=updated.column_mappings,
+        date_format=updated.date_format,
+        skip_rows=updated.skip_rows,
+        is_active=updated.is_active,
+        created_at=updated.created_at,
+        updated_at=updated.updated_at
+    )
+
+
+@router.delete("/import/profiles/{profile_id}", status_code=204)
+async def delete_import_profile(
+    profile_id: int = PathParam(..., description="Profile ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete an import profile.
+
+    Args:
+        profile_id: Profile ID
+        db: Database session
+    """
+    service = ImportService(db)
+    deleted = service.delete_profile(profile_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Import profile {profile_id} not found")
+
+    return None
+
+
+@router.post("/import/profiles/suggest", response_model=List[ImportProfileSuggestion])
+async def suggest_import_profiles(
+    file: UploadFile = File(..., description="Excel file to analyze"),
+    db: Session = Depends(get_db)
+):
+    """
+    Suggest matching import profiles based on file columns.
+
+    Analyzes the uploaded file's column headers and returns profiles
+    that match, sorted by match score.
+
+    Args:
+        file: Uploaded Excel file
+        db: Database session
+
+    Returns:
+        List of profile suggestions with match scores
+    """
+    import pandas as pd
+
+    # Validate file type
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Only .xlsx and .xls files are supported."
+        )
+
+    try:
+        # Read just the header row
+        contents = await file.read()
+        import io
+        df = pd.read_excel(io.BytesIO(contents), nrows=0)
+        columns = list(df.columns)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to read file columns: {str(e)}"
+        )
+
+    service = ImportService(db)
+    suggestions = service.suggest_profiles(columns)
+
+    return [
+        ImportProfileSuggestion(
+            profile_id=s['profile_id'],
+            name=s['name'],
+            match_score=s['match_score'],
+            matched_columns=s['matched_columns']
+        )
+        for s in suggestions
+    ]

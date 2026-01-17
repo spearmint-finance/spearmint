@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import (
     Column, Integer, String, Numeric, Date, DateTime, Boolean, Text,
-    ForeignKey, CheckConstraint, UniqueConstraint, Index, func
+    ForeignKey, CheckConstraint, UniqueConstraint, Index, func, JSON
 )
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -310,6 +310,39 @@ class ImportHistory(Base):
 
     def __repr__(self):
         return f"<ImportHistory(id={self.import_id}, file='{self.file_name}', date={self.import_date})>"
+
+
+class ImportProfile(Base):
+    """
+    Import mapping profiles table.
+
+    Stores column mappings for different bank/institution export formats
+    to enable reusable import configurations.
+    """
+    __tablename__ = "import_profiles"
+
+    profile_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)  # e.g., "Chase Credit Card"
+    account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)
+    column_mappings = Column(JSON, nullable=False)  # {"Posting Date": "date", "Description": "description", ...}
+    date_format = Column(String(50))  # e.g., "%m/%d/%Y"
+    skip_rows = Column(Integer, default=0)  # Number of header rows to skip
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    account = relationship("Account", backref="import_profiles")
+
+    # Indexes
+    __table_args__ = (
+        Index('idx_import_profile_name', 'name'),
+        Index('idx_import_profile_account', 'account_id'),
+        Index('idx_import_profile_active', 'is_active'),
+    )
+
+    def __repr__(self):
+        return f"<ImportProfile(id={self.profile_id}, name='{self.name}')>"
 
 
 class Budget(Base):

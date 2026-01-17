@@ -94,7 +94,7 @@ function ProjectionsDashboard() {
                     {formatCurrency(data.income.projected_total)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {data.income.projection_period.days} days
+                    {data.income.projection_period?.days ?? projectionDays} days
                   </Typography>
                 </CardContent>
               </Card>
@@ -109,7 +109,8 @@ function ProjectionsDashboard() {
                     {formatCurrency(data.expenses.projected_total)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {data.expenses.projection_period.days} days
+                    {data.expenses.projection_period?.days ?? projectionDays}{" "}
+                    days
                   </Typography>
                 </CardContent>
               </Card>
@@ -131,7 +132,8 @@ function ProjectionsDashboard() {
                     {formatCurrency(data.cashflow.projected_cashflow)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {data.cashflow.projection_period.days} days
+                    {data.cashflow.projection_period?.days ?? projectionDays}{" "}
+                    days
                   </Typography>
                 </CardContent>
               </Card>
@@ -154,7 +156,7 @@ function ProjectionsDashboard() {
           {/* Tab Content */}
           {activeTab === 0 && (
             <ForecastChart
-              data={data.cashflow.daily_projections.map((d) => ({
+              data={(data.cashflow.daily_projections ?? []).map((d) => ({
                 date: d.date,
                 projected: d.projected_cashflow,
                 lowerBound: d.cashflow_lower,
@@ -169,7 +171,7 @@ function ProjectionsDashboard() {
             <Grid container spacing={3}>
               <Grid item xs={12} lg={6}>
                 <ForecastChart
-                  data={data.income.daily_projections.map((d) => ({
+                  data={(data.income.daily_projections ?? []).map((d) => ({
                     date: d.date,
                     projected: d.projected_value,
                     lowerBound: d.lower_bound,
@@ -181,7 +183,7 @@ function ProjectionsDashboard() {
               </Grid>
               <Grid item xs={12} lg={6}>
                 <ForecastChart
-                  data={data.expenses.daily_projections.map((d) => ({
+                  data={(data.expenses.daily_projections ?? []).map((d) => ({
                     date: d.date,
                     projected: d.projected_value,
                     lowerBound: d.lower_bound,
@@ -226,7 +228,7 @@ function ProjectionsDashboard() {
                   Historical Period
                 </Typography>
                 <Typography variant="body1">
-                  {data.cashflow.historical_period.days} days
+                  {data.cashflow.historical_period?.days ?? 365} days
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -234,7 +236,7 @@ function ProjectionsDashboard() {
                   Projection Period
                 </Typography>
                 <Typography variant="body1">
-                  {data.cashflow.projection_period.days} days
+                  {data.cashflow.projection_period?.days ?? projectionDays} days
                 </Typography>
               </Grid>
             </Grid>
@@ -246,4 +248,3 @@ function ProjectionsDashboard() {
 }
 
 export default ProjectionsDashboard;
-
