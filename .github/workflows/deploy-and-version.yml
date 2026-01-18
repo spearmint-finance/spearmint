@@ -353,79 +353,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  # STEP 5b: Create Postman collection (runs in parallel with SDK and spec publishing)
-  create-postman-collection:
-    needs: bump-version
-    if: needs.bump-version.outputs.version_changed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main  # Get the latest commit with version bump
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Create Postman collection
-        id: create-collection
-        run: |
-          python dev-tools/create_spearmint_collection.py \
-            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
-            --version "${{ needs.bump-version.outputs.new_version }}" \
-            --base-url "https://api.spearmint.ai" \
-            --output-file collection_info.json
-        env:
-          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
-
-      - name: Comment on PR with collection link
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const collectionInfo = JSON.parse(fs.readFileSync('collection_info.json', 'utf8'));
-            const workspaceId = '${{ secrets.POSTMAN_WORKSPACE_ID }}';
-            const collectionId = collectionInfo.collection.id;
-            const collectionName = collectionInfo.collection.name;
-            const collectionUrl = `https://app.postman.com/workspace/${workspaceId}/collection/${collectionId}`;
-            
-            const comment = `### 🎉 Postman Collection Created
-            
-            **Collection**: [${collectionName}](${collectionUrl})
-            **Version**: ${{ needs.bump-version.outputs.new_version }}
-            **Workspace**: [View in Postman](https://app.postman.com/workspace/${workspaceId})
-            
-            The collection is ready to use!`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-
-      - name: Upload collection info
-        uses: actions/upload-artifact@v4
-        with:
-          name: postman-collection-info
-          path: collection_info.json
-
-      - name: Summary
-        run: |
-          echo "## ✅ Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Gateway**: Deployed ✓" >> $GITHUB_STEP_SUMMARY
-          echo "- **SDK**: Published to npm ✓" >> $GITHUB_STEP_SUMMARY
-          echo "- **Postman**: Collection created ✓" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **npm package**: [@spearmint-finance/sdk@${{ needs.bump-version.outputs.new_version }}](https://www.npmjs.com/package/@spearmint-finance/sdk)" >> $GITHUB_STEP_SUMMARY
-
-  # STEP 5c: Publish OpenAPI spec to Postman Spec Hub (runs in parallel with SDK and collection)
-  publish-spec:
+  # STEP 5b: Publish OpenAPI spec to Postman Spec Hub AND generate collection from it
+  # This replaces the old create-postman-collection job - now collection is generated from spec
+  # to ensure it always stays in sync with the actual API
+  publish-spec-and-collection:
     needs: bump-version
     if: needs.bump-version.outputs.version_changed == 'true'
     runs-on: ubuntu-latest
@@ -446,31 +377,39 @@ jobs:
           name: openapi-spec
           path: sdk/
 
-      - name: Publish spec to Postman
+      - name: Publish spec and generate collection
         id: publish-spec
         run: |
           python dev-tools/publish_spec.py \
             --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
             --spec-file "sdk/openapi.json" \
             --version "${{ needs.bump-version.outputs.new_version }}" \
-            --output-file spec_info.json
+            --generate-collection \
+            --output-file postman_info.json
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      - name: Upload spec info
+      - name: Upload Postman info
         uses: actions/upload-artifact@v4
         with:
-          name: postman-spec-info
-          path: spec_info.json
+          name: postman-info
+          path: postman_info.json
 
       - name: Summary
         run: |
-          echo "## 📋 OpenAPI Spec Published" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Postman Assets Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Spec Hub**: Published ✓" >> $GITHUB_STEP_SUMMARY
+          echo "- **Collection**: Generated from spec ✓" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f spec_info.json ]; then
-            SPEC_ID=$(jq -r '.spec.id' spec_info.json)
-            echo "🔗 **View Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
+          if [ -f postman_info.json ]; then
+            SPEC_ID=$(jq -r '.spec.id' postman_info.json)
+            COLLECTION_ID=$(jq -r '.collection.id // empty' postman_info.json)
+            echo "### Links" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
+            if [ -n "$COLLECTION_ID" ]; then
+              echo "📦 **Collection**: [Postman Collection](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/collection/${COLLECTION_ID})" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
