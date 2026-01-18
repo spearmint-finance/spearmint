@@ -119,17 +119,18 @@ def create_spec_payload(spec_name: str, spec_type: str, spec_content: str, file_
     }
 
 
-def generate_collection_from_spec(api_key: str, spec_id: str, collection_name: str) -> dict:
+def import_openapi_as_collection(api_key: str, workspace_id: str, spec_content: str, collection_name: str) -> dict:
     """
-    Generate a Postman collection from a spec in Spec Hub.
+    Import an OpenAPI spec directly as a Postman collection.
 
-    This uses Postman's built-in OpenAPI-to-Collection conversion,
-    ensuring the collection stays in sync with the spec.
+    This uses Postman's Import API to convert the OpenAPI spec to a collection.
+    This is more reliable than the spec-to-collection generation endpoint.
 
     Args:
         api_key: Postman API key
-        spec_id: ID of the spec in Postman Spec Hub
-        collection_name: Name for the generated collection
+        workspace_id: Workspace ID to import into
+        spec_content: The OpenAPI spec content as a string
+        collection_name: Name for the generated collection (used to update after import)
 
     Returns:
         Response dictionary with collection info
@@ -137,20 +138,21 @@ def generate_collection_from_spec(api_key: str, spec_id: str, collection_name: s
     Raises:
         Exception: If the API call fails
     """
-    # API endpoint for generating a collection from a spec
-    # This endpoint creates a new collection from the spec using Postman's OpenAPI converter
-    url = f"https://api.getpostman.com/specs/{spec_id}/generated-elements"
+    # Use the import/openapi endpoint to import the spec as a collection
+    url = f"https://api.getpostman.com/import/openapi?workspace={workspace_id}"
+
+    # Parse the spec to modify the title for the collection name
+    spec_data = json.loads(spec_content)
+    spec_data['info']['title'] = collection_name
+    modified_spec = json.dumps(spec_data)
 
     payload = {
-        "elementType": "collection",
-        "name": collection_name,
+        "type": "string",
+        "input": modified_spec,
         "options": {
-            "folderStrategy": "Tags",  # Group by OpenAPI tags
-            "enableOptionalParameters": True,
-            "includeAuthInfoInExample": True,
-            "includeDeprecated": False,
-            "parametersResolution": "Schema",
-            "requestNameSource": "Fallback"
+            "folderStrategy": "Tags",
+            "requestParametersResolution": "Schema",
+            "exampleParametersResolution": "Schema"
         }
     }
 
@@ -426,31 +428,33 @@ def main():
 
         # Step 2: Generate collection if requested
         collection_info = None
-        if args.generate_collection and spec_id != 'N/A':
+        if args.generate_collection:
             print()
-            print("Generating Postman collection from spec...")
+            print("Importing OpenAPI spec as Postman collection...")
 
-            gen_response = generate_collection_from_spec(
+            # Read the spec content for import
+            spec_content = read_openapi_spec(args.spec_file)
+
+            import_response = import_openapi_as_collection(
                 api_key=api_key,
-                spec_id=spec_id,
+                workspace_id=args.workspace_id,
+                spec_content=spec_content,
                 collection_name=collection_name
             )
 
-            # The API returns a task ID for async generation
-            task_id = gen_response.get('taskId')
-            if task_id:
-                print(f"  Task ID: {task_id}")
-                task_result = poll_generation_task(api_key, spec_id, task_id)
-                collection_info = task_result.get('collection', {})
+            # The import API returns collections array
+            collections = import_response.get('collections', [])
+            if collections:
+                collection_info = collections[0]
             else:
-                # Synchronous response (if generation was immediate)
-                collection_info = gen_response.get('collection', gen_response)
+                # Fallback: check if response has collection directly
+                collection_info = import_response.get('collection', import_response)
 
             collection_id = collection_info.get('id', 'N/A')
             collection_uid = collection_info.get('uid', 'N/A')
 
             print()
-            print("✓ Collection generated successfully!")
+            print("✓ Collection imported successfully!")
             print()
             print("Collection Details:")
             print(f"  Name: {collection_name}")
