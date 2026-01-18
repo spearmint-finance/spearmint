@@ -138,7 +138,8 @@ def generate_collection_from_spec(api_key: str, spec_id: str, collection_name: s
         Exception: If the API call fails
     """
     # API endpoint for generating a collection from a spec
-    url = f"https://api.getpostman.com/specs/{spec_id}/generations"
+    # This endpoint creates a new collection from the spec using Postman's OpenAPI converter
+    url = f"https://api.getpostman.com/specs/{spec_id}/generated-elements"
 
     payload = {
         "elementType": "collection",
@@ -216,18 +217,19 @@ def poll_generation_task(api_key: str, spec_id: str, task_id: str, timeout: int 
     Raises:
         Exception: If the task fails or times out
     """
-    url = f"https://api.getpostman.com/specs/{spec_id}/tasks/{task_id}"
-
-    req = urllib.request.Request(
-        url,
-        headers={'X-Api-Key': api_key},
-        method='GET'
-    )
+    # Use the correct Postman API endpoint for checking spec generation task status
+    url = f"https://api.getpostman.com/specs/collections/{spec_id}/tasks/{task_id}"
 
     start_time = time.time()
     poll_interval = 2
 
     while time.time() - start_time < timeout:
+        req = urllib.request.Request(
+            url,
+            headers={'X-Api-Key': api_key},
+            method='GET'
+        )
+
         try:
             with urllib.request.urlopen(req) as response:
                 data = json.loads(response.read().decode('utf-8'))
