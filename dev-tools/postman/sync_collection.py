@@ -27,62 +27,67 @@ from postman.common import get_api_key, make_request, set_github_output
 def sync_collection_with_spec(spec_id: str, collection_uid: str) -> dict:
     """
     Sync a collection with its source spec.
-    
+
     This triggers an async sync operation. The response contains a task ID
     that can be polled for completion.
-    
+
+    Uses the correct Postman API endpoint:
+    PUT /collections/{collectionUid}/synchronizations?specId={specId}
+
     Args:
         spec_id: ID of the spec
         collection_uid: UID of the collection to sync
-        
+
     Returns:
         API response with task information
     """
     response = make_request(
         method='PUT',
-        path=f"/specs/{spec_id}/collections/{collection_uid}/sync",
+        path=f"/collections/{collection_uid}/synchronizations?specId={spec_id}",
         data={}
     )
-    
+
     return response
 
 
-def poll_sync_task(spec_id: str, collection_uid: str, task_id: str, timeout: int = 120) -> dict:
+def poll_sync_task(collection_uid: str, task_id: str, timeout: int = 120) -> dict:
     """
     Poll for the completion of a collection sync task.
-    
+
+    Uses the correct Postman API endpoint:
+    GET /collections/{collectionUid}/tasks/{taskId}
+
     Args:
-        spec_id: ID of the spec
         collection_uid: UID of the collection
         task_id: ID of the sync task
         timeout: Maximum time to wait in seconds
-        
+
     Returns:
         Task status response
-        
+
     Raises:
         Exception: If the task fails or times out
     """
     start_time = time.time()
     poll_interval = 2
-    
+
     while time.time() - start_time < timeout:
         response = make_request(
             method='GET',
-            path=f"/specs/{spec_id}/tasks/{task_id}"
+            path=f"/collections/{collection_uid}/tasks/{task_id}"
         )
-        
+
         status = response.get('status', 'unknown')
-        
+
         if status == 'completed':
             return response
         elif status == 'failed':
             error = response.get('error', 'Unknown error')
             raise Exception(f"Collection sync failed: {error}")
-        
+
         print(f"  ⏳ Sync in progress... (status: {status})")
         time.sleep(poll_interval)
-    
+
     raise Exception(f"Collection sync timed out after {timeout} seconds")
 
 
@@ -127,7 +132,7 @@ def main():
             print(f"  Task ID: {task_id}")
             print()
             print("Waiting for sync to complete...")
-            poll_sync_task(args.spec_id, args.collection_uid, task_id, args.timeout)
+            poll_sync_task(args.collection_uid, task_id, args.timeout)
         
         print()
         print("✓ Collection synced successfully!")
