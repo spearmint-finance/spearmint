@@ -160,11 +160,12 @@ def main():
         # Update the collection
         print()
         print("Updating collection description...")
+        # Note: PATCH endpoint only accepts 'name' and 'description' in info
+        # Do NOT include 'schema' - it causes a 400 error
         patch_collection(args.collection_id, {
             "info": {
                 "name": info.get('name'),
-                "description": new_description,
-                "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+                "description": new_description
             }
         })
         
