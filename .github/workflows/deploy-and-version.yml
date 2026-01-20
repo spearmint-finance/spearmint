@@ -401,17 +401,12 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 3: Sync the collection with the updated spec
-      - name: Sync collection with spec
-        id: sync-collection
-        run: |
-          python dev-tools/postman/sync_collection.py \
-            --spec-id "${{ secrets.POSTMAN_SPEC_ID }}" \
-            --collection-uid "${{ secrets.POSTMAN_COLLECTION_UID }}"
-        env:
-          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+      # Note: Sync step removed - only works for collections generated from spec via API
+      # The spec is updated in-place, and users can manually sync in Postman if needed
+      # To enable auto-sync, generate a new collection from the spec using:
+      #   POST /specs/{specId}/generations/collection
 
-      # Step 4: Update collection description with version changelog
+      # Step 3: Update collection description with version changelog
       - name: Update collection description
         id: update-description
         run: |
@@ -428,8 +423,8 @@ jobs:
           echo "### Update-in-Place Strategy" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Collection synced**: Regenerated from updated spec" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
+          echo "- ℹ️ **Collection sync**: Manual sync available in Postman" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Links" >> $GITHUB_STEP_SUMMARY
           echo "- 🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${{ secrets.POSTMAN_SPEC_ID }})" >> $GITHUB_STEP_SUMMARY
