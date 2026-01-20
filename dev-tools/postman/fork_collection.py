@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Fork collection script for Postman versioning
 """
 Fork a Postman collection to create a version snapshot.
 
