@@ -16,7 +16,6 @@ Environment:
 """
 
 import argparse
-import json
 import os
 import sys
 
@@ -72,14 +71,28 @@ def update_spec_properties(spec_id: str, name: str) -> dict:
 def get_spec_info(spec_id: str) -> dict:
     """
     Get information about a spec.
-    
+
     Args:
         spec_id: ID of the spec
-        
+
     Returns:
         Spec information dictionary
     """
     return make_request(method='GET', path=f"/specs/{spec_id}")
+
+
+def get_spec_files(spec_id: str) -> list:
+    """
+    Get list of files in a spec.
+
+    Args:
+        spec_id: ID of the spec
+
+    Returns:
+        List of file information dictionaries
+    """
+    response = make_request(method='GET', path=f"/specs/{spec_id}/files")
+    return response.get('files', [])
 
 
 def main():
@@ -127,11 +140,32 @@ def main():
     try:
         # Read the spec file
         spec_content = read_spec_file(args.spec_file)
-        file_path = os.path.basename(args.spec_file)
-        
+
+        # Get existing spec files to find the root file path
+        print("Getting existing spec file information...")
+        spec_files = get_spec_files(args.spec_id)
+
+        # Find the root file (or first file if none marked as root)
+        root_file = None
+        for f in spec_files:
+            if f.get('type') == 'ROOT':
+                root_file = f.get('path')
+                break
+
+        if not root_file and spec_files:
+            # Use the first file if no root is marked
+            root_file = spec_files[0].get('path')
+
+        if not root_file:
+            # Fallback to the input filename
+            root_file = os.path.basename(args.spec_file)
+            print(f"  No existing files found, using: {root_file}")
+        else:
+            print(f"  Found existing root file: {root_file}")
+
         # Update the spec file content
         print("Updating spec file content...")
-        update_spec_file(args.spec_id, spec_content, file_path)
+        update_spec_file(args.spec_id, spec_content, root_file)
         print("✓ Spec file updated successfully!")
         
         # Optionally update the spec name
