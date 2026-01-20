@@ -60,8 +60,9 @@ def update_spec_file(spec_id: str, spec_content: str, file_path: str = "openapi.
     # URL-encode the file path for the API endpoint
     encoded_path = file_path.replace("/", "%2F")
 
+    # Use PATCH method as per Postman API documentation
     response = make_request(
-        method='PUT',
+        method='PATCH',
         path=f"/specs/{spec_id}/files/{encoded_path}",
         data={"content": spec_content}
     )
