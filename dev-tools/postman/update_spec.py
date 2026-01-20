@@ -190,20 +190,12 @@ def main():
         else:
             print(f"  Using root file: {root_file}")
 
-        # Update or create the spec file content
+        # Update the spec file content
+        # Since we confirmed the file exists, we should only update (not create)
         if file_exists:
             print("Updating spec file content...")
-            try:
-                update_spec_file(args.spec_id, spec_content, root_file)
-                print("✓ Spec file updated successfully!")
-            except Exception as update_error:
-                # If update fails with 404, try creating instead
-                if "404" in str(update_error):
-                    print(f"  Update failed (file may not exist), trying to create...")
-                    create_spec_file(args.spec_id, spec_content, root_file)
-                    print("✓ Spec file created successfully!")
-                else:
-                    raise update_error
+            update_spec_file(args.spec_id, spec_content, root_file)
+            print("✓ Spec file updated successfully!")
         else:
             print("Creating spec file...")
             create_spec_file(args.spec_id, spec_content, root_file)
