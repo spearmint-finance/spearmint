@@ -266,11 +266,77 @@ All API endpoints use `/api` prefix:
 - Rules have priority (higher = applied first)
 - Apply rules manually via `/api/classifications/apply-rules` or automatically on import
 
+## Worktree Management
+
+This project supports parallel AI agent development using Git worktrees. The CLI is built with TypeScript/Node.js.
+
+### Setup (one-time)
+
+```bash
+# Build and link the CLI
+cd worktree-cli && npm install && npm run build && npm link
+cd ..
+
+# Or use directly without installing globally
+node ./worktree-cli/dist/index.js --help
+```
+
+### Creating a Worktree for Yourself
+
+If you need to work in isolation (e.g., for a long-running task or to avoid conflicts with another agent):
+
+```bash
+# Auto-generate everything (name, branch, ports)
+worktree create
+
+# Output shows name (e.g., wt-a3f2) and ports
+
+# Or specify a branch
+worktree create -b feature/my-feature
+```
+
+Then work in the new directory (shown in output, e.g., `.worktrees/wt-a3f2`)
+
+Your worktree will have:
+- Auto-assigned backend port (e.g., 8001)
+- Auto-assigned frontend port (e.g., 5174)
+- Isolated database: `financial_analysis_<name>.db`
+
+### Starting Services in a Worktree
+
+```bash
+# Backend (from worktree directory)
+cd .worktrees/wt-a3f2
+source core-api/venv/bin/activate  # or .\core-api\venv\Scripts\Activate.ps1 on Windows
+cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port $API_PORT
+
+# Frontend (separate terminal)
+cd .worktrees/wt-a3f2/web-app
+npm run dev
+```
+
+### Checking Existing Worktrees
+
+```bash
+worktree list --detailed
+```
+
+### Cleanup After Work
+
+```bash
+# Remove worktree and delete the branch
+worktree remove -n wt-a3f2 --delete-branch
+
+# Or cleanup ALL worktrees at once
+worktree cleanup
+```
+
 ## Documentation
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Detailed architecture overview
 - [API.md](docs/API.md) - Complete API documentation
 - [CLASSIFICATION_API.md](docs/CLASSIFICATION_API.md) - Classification system guide
 - [README.md](README.md) - Project overview & quick start
+- [worktree-cli/README.md](worktree-cli/README.md) - Worktree CLI documentation
 - API Docs: http://localhost:8000/api/docs (Swagger UI)
 - API Docs: http://localhost:8000/api/redoc (ReDoc)

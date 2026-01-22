@@ -1,0 +1,76 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Worktree: Create",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "create"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Worktree: Create with Name",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "create", "-n", "${input:worktreeName}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Worktree: Create and Open in VS Code",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "create", "--code"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Worktree: Remove",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "remove", "-n", "${input:worktreeName}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Worktree: List",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "list"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Worktree: List (Detailed)",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "list", "-d"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Worktree: Cleanup All",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "cleanup"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+    {
+      "label": "Worktree: Init (Create Config)",
+      "type": "shell",
+      "command": "node",
+      "args": ["./worktree-cli/dist/index.js", "init"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "new" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "worktreeName",
+      "type": "promptString",
+      "description": "Worktree name (e.g., my-feature, wt-a3f2). Use 'worktree list' to see existing names."
+    }
+  ]
+}
