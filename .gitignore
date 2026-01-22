@@ -131,6 +131,9 @@ web-app/.env
 web-app/.env.local
 web-app/.env.production
 
-#cluade
+#claude
 .claude
 .claude/settings.local.json
+
+# Worktrees (managed by worktree CLI)
+.worktrees/
