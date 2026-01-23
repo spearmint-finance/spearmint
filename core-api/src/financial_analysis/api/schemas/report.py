@@ -25,7 +25,7 @@ class ReportTypeEnum(str, Enum):
     BALANCE = "balance"
 
 
-class AnalysisModeEnum(str, Enum):
+class ReportModeEnum(str, Enum):
     """Analysis mode for reports."""
     ANALYSIS = "analysis"
     COMPLETE = "complete"
@@ -35,8 +35,8 @@ class ReportRequest(BaseModel):
     """Request parameters for generating a report."""
     start_date: Optional[date] = Field(None, description="Start date for the report period")
     end_date: Optional[date] = Field(None, description="End date for the report period")
-    mode: AnalysisModeEnum = Field(
-        AnalysisModeEnum.ANALYSIS,
+    mode: ReportModeEnum = Field(
+        ReportModeEnum.ANALYSIS,
         description="Analysis mode: 'analysis' excludes transfers, 'complete' includes all"
     )
     format: ReportFormatEnum = Field(

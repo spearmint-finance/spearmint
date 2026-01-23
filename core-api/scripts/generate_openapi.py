@@ -57,6 +57,86 @@ def clean_operation_id(operation_id: str) -> str:
     return camel_case
 
 
+def clean_schema_names(spec: dict) -> dict:
+    """
+    Post-process OpenAPI spec to fix non-PascalCase schema names.
+
+    This handles:
+    1. Body_* schemas from file uploads → PascalCase names
+    2. Enum-Output suffixes → proper PascalCase
+    3. Full module path names → simple names
+
+    Args:
+        spec: The OpenAPI specification dictionary
+
+    Returns:
+        The spec with cleaned schema names
+    """
+    if 'components' not in spec or 'schemas' not in spec['components']:
+        return spec
+
+    schemas = spec['components']['schemas']
+    renames = {}
+
+    # Identify schemas that need renaming
+    for schema_name in list(schemas.keys()):
+        new_name = None
+
+        # Fix Body_* schemas (e.g., Body_import_transactions_api_import_post)
+        if schema_name.startswith('Body_'):
+            # Extract the function name part and convert to PascalCase
+            # Body_import_transactions_api_import_post -> ImportTransactionsBody
+            # Body_suggest_import_profiles_api_import_profiles_suggest_post -> SuggestImportProfilesBody
+            match = re.match(r'^Body_(.+?)_api_.*$', schema_name)
+            if match:
+                func_name = match.group(1)
+                # Convert snake_case to PascalCase
+                pascal = ''.join(word.capitalize() for word in func_name.split('_'))
+                new_name = f"{pascal}Body"
+
+        # Fix Enum-Output suffix (e.g., AnalysisModeEnum-Output)
+        elif '-Output' in schema_name:
+            new_name = schema_name.replace('-Output', 'Output')
+
+        # Fix full module path names (e.g., financial_analysis__api__schemas__analysis__AnalysisModeEnum)
+        elif '__' in schema_name:
+            # Extract just the class name at the end
+            parts = schema_name.split('__')
+            class_name = parts[-1]
+            # Add module prefix to avoid conflicts
+            module_name = parts[-2] if len(parts) >= 2 else ''
+            if module_name:
+                new_name = f"{module_name.capitalize()}{class_name}"
+            else:
+                new_name = class_name
+
+        if new_name and new_name != schema_name:
+            renames[schema_name] = new_name
+
+    # Apply renames
+    for old_name, new_name in renames.items():
+        # Rename the schema
+        schemas[new_name] = schemas.pop(old_name)
+
+        # Update all $ref references throughout the spec
+        spec = _update_refs(spec, f"#/components/schemas/{old_name}", f"#/components/schemas/{new_name}")
+
+    return spec
+
+
+def _update_refs(obj, old_ref: str, new_ref: str):
+    """Recursively update $ref values in the spec."""
+    if isinstance(obj, dict):
+        if obj.get('$ref') == old_ref:
+            obj['$ref'] = new_ref
+        for key, value in obj.items():
+            _update_refs(value, old_ref, new_ref)
+    elif isinstance(obj, list):
+        for item in obj:
+            _update_refs(item, old_ref, new_ref)
+    return obj
+
+
 def clean_operation_ids(spec: dict) -> dict:
     """
     Post-process OpenAPI spec to clean up all operationIds.
@@ -116,6 +196,9 @@ def generate_openapi(output_path: str = None):
 
     # Post-process to clean up operationIds for better SDK method names
     spec = clean_operation_ids(spec)
+
+    # Post-process to fix non-PascalCase schema names
+    spec = clean_schema_names(spec)
 
     # Write to file
     with open(output_path, 'w') as f:
