@@ -17,6 +17,12 @@ source /workspace/core-api/venv/bin/activate
 pip install --upgrade pip
 pip install -r /workspace/core-api/requirements.txt
 
+# Install pre-commit hooks
+echo "Setting up pre-commit hooks..."
+pip install pre-commit
+cd /workspace
+pre-commit install
+
 # Install web-app frontend dependencies
 if [ -f "/workspace/web-app/package.json" ]; then
     echo "Installing web-app dependencies..."
