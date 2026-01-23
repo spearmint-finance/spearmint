@@ -14,7 +14,7 @@ from ...services.report_service import ReportService, ReportFormat, AnalysisMode
 from ..schemas.report import (
     ReportRequest,
     ReportFormatEnum,
-    AnalysisModeEnum,
+    ReportModeEnum,
     SummaryReportResponse,
     IncomeDetailReportResponse,
     ExpenseDetailReportResponse,
@@ -58,8 +58,8 @@ def get_balance_report(db: Session = Depends(get_db)):
 def get_summary_report(
     start_date: Optional[date] = Query(None, description="Start date (default: 30 days ago)"),
     end_date: Optional[date] = Query(None, description="End date (default: today)"),
-    mode: AnalysisModeEnum = Query(
-        AnalysisModeEnum.ANALYSIS,
+    mode: ReportModeEnum = Query(
+        ReportModeEnum.ANALYSIS,
         description="Analysis mode: 'analysis' excludes transfers, 'complete' includes all"
     ),
     format: ReportFormatEnum = Query(
@@ -72,7 +72,7 @@ def get_summary_report(
     service = ReportService(db)
     
     # Convert enum to service enum
-    analysis_mode = AnalysisMode.ANALYSIS if mode == AnalysisModeEnum.ANALYSIS else AnalysisMode.COMPLETE
+    analysis_mode = AnalysisMode.ANALYSIS if mode == ReportModeEnum.ANALYSIS else AnalysisMode.COMPLETE
     
     # Generate report
     report_data = service.generate_summary_report(
@@ -109,8 +109,8 @@ def get_summary_report(
 def get_income_detail_report(
     start_date: Optional[date] = Query(None, description="Start date (default: 30 days ago)"),
     end_date: Optional[date] = Query(None, description="End date (default: today)"),
-    mode: AnalysisModeEnum = Query(
-        AnalysisModeEnum.ANALYSIS,
+    mode: ReportModeEnum = Query(
+        ReportModeEnum.ANALYSIS,
         description="Analysis mode: 'analysis' excludes transfers, 'complete' includes all"
     ),
     format: ReportFormatEnum = Query(
@@ -122,7 +122,7 @@ def get_income_detail_report(
     """Generate a detailed income report."""
     service = ReportService(db)
     
-    analysis_mode = AnalysisMode.ANALYSIS if mode == AnalysisModeEnum.ANALYSIS else AnalysisMode.COMPLETE
+    analysis_mode = AnalysisMode.ANALYSIS if mode == ReportModeEnum.ANALYSIS else AnalysisMode.COMPLETE
     
     report_data = service.generate_income_detail_report(
         start_date=start_date,
@@ -157,8 +157,8 @@ def get_income_detail_report(
 def get_expense_detail_report(
     start_date: Optional[date] = Query(None, description="Start date (default: 30 days ago)"),
     end_date: Optional[date] = Query(None, description="End date (default: today)"),
-    mode: AnalysisModeEnum = Query(
-        AnalysisModeEnum.ANALYSIS,
+    mode: ReportModeEnum = Query(
+        ReportModeEnum.ANALYSIS,
         description="Analysis mode: 'analysis' excludes transfers, 'complete' includes all"
     ),
     format: ReportFormatEnum = Query(
@@ -170,7 +170,7 @@ def get_expense_detail_report(
     """Generate a detailed expense report."""
     service = ReportService(db)
     
-    analysis_mode = AnalysisMode.ANALYSIS if mode == AnalysisModeEnum.ANALYSIS else AnalysisMode.COMPLETE
+    analysis_mode = AnalysisMode.ANALYSIS if mode == ReportModeEnum.ANALYSIS else AnalysisMode.COMPLETE
     
     report_data = service.generate_expense_detail_report(
         start_date=start_date,
