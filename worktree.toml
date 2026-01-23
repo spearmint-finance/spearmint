@@ -27,12 +27,14 @@ VITE_API_URL = "http://localhost:{backend_port}/api"
 post_create = [
     "python3 -m venv core-api/venv",
     "./core-api/venv/bin/pip install -r core-api/requirements.txt",
-    "npm install --prefix web-app"
+    "npm install --prefix web-app",
+    "pip install pre-commit && pre-commit install"
 ]
 
 # Commands for Windows (used instead of post_create on Windows)
 post_create_windows = [
     "python -m venv core-api\\venv",
     ".\\core-api\\venv\\Scripts\\pip.exe install -r core-api\\requirements.txt",
-    "npm install --prefix web-app"
+    "npm install --prefix web-app",
+    "pip install pre-commit && pre-commit install"
 ]
