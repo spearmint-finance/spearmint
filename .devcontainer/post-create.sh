@@ -44,6 +44,22 @@ fi
 # Create .worktrees directory
 mkdir -p /workspace/.worktrees
 
+# Install global npm packages
+echo "Installing global npm packages..."
+npm install -g pnpm @memnexus-ai/cli @github/copilot postman-cli @augmentcode/auggie
+
+# Install uv (fast Python package manager)
+if ! command -v uv &> /dev/null; then
+    echo "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+# Install Claude Code CLI
+if ! command -v claude &> /dev/null; then
+    echo "Installing Claude Code CLI..."
+    curl -fsSL https://claude.ai/install.sh | sh
+fi
+
 echo ""
 echo "==================================="
 echo "  Setup Complete!"
