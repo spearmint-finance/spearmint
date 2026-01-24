@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude API Studio - Visual API Designer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .sidebar-header h1 {
+            font-size: 18px;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: #8c8c8c;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            background: #2d2d30;
+            border-top: 1px solid #3e3e42;
+        }
+
+        .chat-input-area textarea {
+            width: 100%;
+            min-height: 80px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .chat-input-area textarea:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+
+        .chat-input-area button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background: #1177bb;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chat-message.user {
+            background: #094771;
+            color: #ffffff;
+        }
+
+        .chat-message.assistant {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+        }
+
+        .chat-message.system {
+            background: #1a3a1a;
+            border: 1px solid #2e5c2e;
+            color: #6cc644;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+        }
+
+        .tabs-header {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            gap: 2px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #8c8c8c;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #cccccc;
+        }
+
+        .tab.active {
+            color: #ffffff;
+            border-bottom-color: #007acc;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* API Overview Tab */
+        .api-overview {
+            padding: 30px;
+        }
+
+        .endpoint-card {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .method-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .method-badge.post {
+            background: #49cc90;
+            color: #1e1e1e;
+        }
+
+        .method-badge.get {
+            background: #61affe;
+            color: #1e1e1e;
+        }
+
+        .method-badge.delete {
+            background: #f93e3e;
+            color: white;
+        }
+
+        .endpoint-path {
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            color: #4ec9b0;
+            font-weight: 600;
+        }
+
+        .endpoint-description {
+            color: #8c8c8c;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .schema-section {
+            margin-top: 25px;
+        }
+
+        .schema-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .schema-tree {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+
+        .schema-field {
+            padding: 6px 0;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .field-name {
+            color: #9cdcfe;
+            font-weight: 600;
+        }
+
+        .field-type {
+            color: #4ec9b0;
+        }
+
+        .field-required {
+            color: #f93e3e;
+            font-size: 11px;
+        }
+
+        .field-optional {
+            color: #8c8c8c;
+            font-size: 11px;
+        }
+
+        .field-description {
+            color: #6a9955;
+            font-style: italic;
+            flex: 1;
+        }
+
+        .schema-field.nested {
+            padding-left: 20px;
+        }
+
+        .schema-field.nested-2 {
+            padding-left: 40px;
+        }
+
+        /* Interactive Playground Tab */
+        .playground-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100%;
+        }
+
+        .request-panel,
+        .response-panel {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .request-panel {
+            border-right: 1px solid #3e3e42;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .example-selector {
+            margin-bottom: 20px;
+        }
+
+        .example-selector label {
+            display: block;
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 5px;
+        }
+
+        .example-selector select {
+            width: 100%;
+            padding: 8px 12px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .json-editor {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #cccccc;
+            min-height: 300px;
+            overflow-x: auto;
+        }
+
+        .send-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .send-button:hover {
+            background: #1177bb;
+        }
+
+        .response-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .response-status.success {
+            background: #49cc90;
+            color: #1e1e1e;
+        }
+
+        /* Flow Diagram Tab */
+        .flow-diagram {
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100%;
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .flow-box {
+            background: #252526;
+            border: 2px solid #3e3e42;
+            border-radius: 12px;
+            padding: 25px;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .flow-box.highlight {
+            border-color: #007acc;
+            box-shadow: 0 0 20px rgba(0, 122, 204, 0.3);
+        }
+
+        .flow-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .flow-box-content {
+            font-size: 12px;
+            color: #8c8c8c;
+            line-height: 1.6;
+        }
+
+        .flow-arrow {
+            color: #007acc;
+            font-size: 32px;
+        }
+
+        .flow-field {
+            padding: 6px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .flow-field:last-child {
+            border-bottom: none;
+        }
+
+        .flow-field-name {
+            color: #9cdcfe;
+            font-weight: 600;
+        }
+
+        .flow-field-value {
+            color: #ce9178;
+            margin-left: 10px;
+        }
+
+        /* Export Panel */
+        .export-panel {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 350px;
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .export-header {
+            padding: 15px 20px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .export-header h3 {
+            font-size: 14px;
+            color: #ffffff;
+        }
+
+        .export-body {
+            padding: 20px;
+        }
+
+        .export-button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #FF6C37;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .export-button:hover {
+            background: #ff8556;
+        }
+
+        .export-button.secondary {
+            background: #3e3e42;
+        }
+
+        .export-button.secondary:hover {
+            background: #4e4e52;
+        }
+
+        .export-info {
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-top: 15px;
+            padding: 12px;
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .toolbar-button {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #3e3e42;
+            color: #cccccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toolbar-button:hover {
+            background: #3e3e42;
+        }
+
+        .toolbar-button.primary {
+            background: #0e639c;
+            border-color: #0e639c;
+            color: white;
+        }
+
+        .toolbar-button.primary:hover {
+            background: #1177bb;
+        }
+
+        .json-string { color: #ce9178; }
+        .json-number { color: #b5cea8; }
+        .json-boolean { color: #569cd6; }
+        .json-null { color: #569cd6; }
+        .json-key { color: #9cdcfe; }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff40;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar with Chat -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 Claude API Studio</h1>
+                <p>Visual API Designer</p>
+            </div>
+
+            <div class="chat-container" id="chat-container">
+                <div class="chat-message system">
+                    👋 Describe your API endpoint in natural language. I'll create a visual representation you can explore and export to Postman.
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <textarea id="chat-input" placeholder="Example: Create a POST endpoint for scenario forecasting with adjusters, baseline and scenario projections, KPIs..."></textarea>
+                <button onclick="sendMessage()">
+                    <span id="send-btn-text">✨ Generate API Design</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="toolbar">
+                <button class="toolbar-button primary" onclick="showExportPanel()">
+                    📤 Export to Postman
+                </button>
+                <button class="toolbar-button" onclick="validateAPI()">
+                    ✅ Validate API
+                </button>
+                <button class="toolbar-button" onclick="generateMock()">
+                    🎭 Generate Mock Server
+                </button>
+                <div style="margin-left: auto; font-size: 12px; color: #8c8c8c;">
+                    <span id="status-text">Ready</span>
+                </div>
+            </div>
+
+            <div class="tabs-header">
+                <button class="tab active" onclick="switchMainTab('overview')">📋 API Overview</button>
+                <button class="tab" onclick="switchMainTab('playground')">🎮 Interactive Playground</button>
+                <button class="tab" onclick="switchMainTab('flow')">🔄 Flow Diagram</button>
+                <button class="tab" onclick="switchMainTab('swagger')">📖 Swagger UI</button>
+            </div>
+
+            <!-- API Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="api-overview">
+                    <div class="endpoint-card">
+                        <div class="endpoint-header">
+                            <span class="method-badge post">POST</span>
+                            <span class="endpoint-path">/api/scenarios/preview</span>
+                        </div>
+                        <div class="endpoint-description">
+                            Simulate a financial scenario without saving it to the database. Returns baseline projection vs scenario projection with KPIs and deltas for real-time scenario exploration.
+                        </div>
+
+                        <!-- Request Schema -->
+                        <div class="schema-section">
+                            <div class="schema-title">
+                                📥 Request Body
+                                <span style="font-size: 11px; color: #8c8c8c; font-weight: normal;">(application/json)</span>
+                            </div>
+                            <div class="schema-tree">
+                                <div class="schema-field">
+                                    <span class="field-name">name</span>
+                                    <span class="field-type">string</span>
+                                    <span class="field-optional">optional</span>
+                                    <span class="field-description">// Scenario name for reference</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">horizonMonths</span>
+                                    <span class="field-type">integer</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Forecast period (1-60 months)</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">startingBalance</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Initial account balance</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">adjusters</span>
+                                    <span class="field-type">array&lt;Adjuster&gt;</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Scenario modifications</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">type</span>
+                                    <span class="field-type">string</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// job_loss | income_reduction | expense_change</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">targetPersonId</span>
+                                    <span class="field-type">integer</span>
+                                    <span class="field-optional">optional</span>
+                                    <span class="field-description">// Person affected by adjustment</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">params</span>
+                                    <span class="field-type">object</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Type-specific parameters</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">startDate</span>
+                                    <span class="field-type">date</span>
+                                    <span class="field-optional">optional</span>
+                                    <span class="field-description">// When adjustment begins</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">endDate</span>
+                                    <span class="field-type">date</span>
+                                    <span class="field-optional">optional</span>
+                                    <span class="field-description">// When adjustment ends (null = permanent)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Response Schema -->
+                        <div class="schema-section">
+                            <div class="schema-title">
+                                📤 Response (200 OK)
+                                <span style="font-size: 11px; color: #8c8c8c; font-weight: normal;">(application/json)</span>
+                            </div>
+                            <div class="schema-tree">
+                                <div class="schema-field">
+                                    <span class="field-name">baselineSeries</span>
+                                    <span class="field-type">array&lt;TimeSeriesPoint&gt;</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Original projection</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">date</span>
+                                    <span class="field-type">date</span>
+                                    <span class="field-description">// Projection date</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">income</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Projected income</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">expenses</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Projected expenses</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">netCashFlow</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Net cash flow</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">balance</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Ending balance</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">scenarioSeries</span>
+                                    <span class="field-type">array&lt;TimeSeriesPoint&gt;</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Modified projection with adjusters</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">kpis</span>
+                                    <span class="field-type">object</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Key performance indicators</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">runwayMonths</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Months until funds depleted</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">minBalance</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Minimum balance in period</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">deltas</span>
+                                    <span class="field-type">object</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Changes from baseline</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">income</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Total income change</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">expenses</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Total expenses change</span>
+                                </div>
+                                <div class="schema-field nested">
+                                    <span class="field-name">netCashFlow</span>
+                                    <span class="field-type">decimal</span>
+                                    <span class="field-description">// Net cash flow change</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="field-name">generatedAt</span>
+                                    <span class="field-type">datetime</span>
+                                    <span class="field-required">required</span>
+                                    <span class="field-description">// Timestamp of generation</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Error Responses -->
+                        <div class="schema-section">
+                            <div class="schema-title">⚠️ Error Responses</div>
+                            <div class="schema-tree">
+                                <div class="schema-field">
+                                    <span class="method-badge" style="background: #f93e3e;">400</span>
+                                    <span class="field-description">// Invalid scenario configuration</span>
+                                </div>
+                                <div class="schema-field">
+                                    <span class="method-badge" style="background: #f93e3e;">500</span>
+                                    <span class="field-description">// Server error during projection calculation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Playground Tab -->
+            <div id="playground" class="tab-content">
+                <div class="playground-container">
+                    <div class="request-panel">
+                        <div class="panel-title">
+                            📨 Request
+                        </div>
+
+                        <div class="example-selector">
+                            <label>Load Example:</label>
+                            <select onchange="loadExample(this.value)">
+                                <option value="job-loss">Job Loss with Severance</option>
+                                <option value="rent-increase">20% Rent Increase</option>
+                                <option value="part-time">Part-Time Reduction</option>
+                                <option value="custom">Custom Scenario</option>
+                            </select>
+                        </div>
+
+                        <div class="json-editor" id="request-editor">
+<pre>{
+  <span class="json-key">"name"</span>: <span class="json-string">"Job Loss with Severance"</span>,
+  <span class="json-key">"horizonMonths"</span>: <span class="json-number">12</span>,
+  <span class="json-key">"startingBalance"</span>: <span class="json-string">"15000.00"</span>,
+  <span class="json-key">"adjusters"</span>: [
+    {
+      <span class="json-key">"type"</span>: <span class="json-string">"job_loss"</span>,
+      <span class="json-key">"targetPersonId"</span>: <span class="json-number">1</span>,
+      <span class="json-key">"params"</span>: {
+        <span class="json-key">"severanceMonths"</span>: <span class="json-number">3</span>
+      },
+      <span class="json-key">"startDate"</span>: <span class="json-string">"2026-06-01"</span>,
+      <span class="json-key">"endDate"</span>: <span class="json-null">null</span>
+    }
+  ]
+}</pre>
+                        </div>
+
+                        <button class="send-button" onclick="sendRequest()">
+                            🚀 Send Request
+                        </button>
+                    </div>
+
+                    <div class="response-panel">
+                        <div class="panel-title">
+                            📬 Response
+                        </div>
+
+                        <span class="response-status success">200 OK</span>
+
+                        <div class="json-editor" id="response-editor">
+<pre>{
+  <span class="json-key">"baselineSeries"</span>: [
+    {
+      <span class="json-key">"date"</span>: <span class="json-string">"2026-02-01"</span>,
+      <span class="json-key">"income"</span>: <span class="json-string">"5000.00"</span>,
+      <span class="json-key">"expenses"</span>: <span class="json-string">"3500.00"</span>,
+      <span class="json-key">"netCashFlow"</span>: <span class="json-string">"1500.00"</span>,
+      <span class="json-key">"balance"</span>: <span class="json-string">"16500.00"</span>
+    },
+    <span style="color: #6a9955;">// ... 11 more months</span>
+  ],
+  <span class="json-key">"scenarioSeries"</span>: [
+    {
+      <span class="json-key">"date"</span>: <span class="json-string">"2026-02-01"</span>,
+      <span class="json-key">"income"</span>: <span class="json-string">"5000.00"</span>,
+      <span class="json-key">"expenses"</span>: <span class="json-string">"3500.00"</span>,
+      <span class="json-key">"netCashFlow"</span>: <span class="json-string">"1500.00"</span>,
+      <span class="json-key">"balance"</span>: <span class="json-string">"16500.00"</span>
+    },
+    <span style="color: #6a9955;">// After job loss (June onwards)</span>
+    {
+      <span class="json-key">"date"</span>: <span class="json-string">"2026-06-01"</span>,
+      <span class="json-key">"income"</span>: <span class="json-string">"1666.67"</span>, <span style="color: #6a9955;">// Severance</span>
+      <span class="json-key">"expenses"</span>: <span class="json-string">"3500.00"</span>,
+      <span class="json-key">"netCashFlow"</span>: <span class="json-string">"-1833.33"</span>,
+      <span class="json-key">"balance"</span>: <span class="json-string">"18666.67"</span>
+    }
+  ],
+  <span class="json-key">"kpis"</span>: {
+    <span class="json-key">"runwayMonths"</span>: <span class="json-string">"8.2"</span>,
+    <span class="json-key">"minBalance"</span>: <span class="json-string">"2450.00"</span>
+  },
+  <span class="json-key">"deltas"</span>: {
+    <span class="json-key">"income"</span>: <span class="json-string">"-30000.00"</span>,
+    <span class="json-key">"expenses"</span>: <span class="json-string">"0.00"</span>,
+    <span class="json-key">"netCashFlow"</span>: <span class="json-string">"-30000.00"</span>
+  },
+  <span class="json-key">"generatedAt"</span>: <span class="json-string">"2026-01-21T15:30:00Z"</span>
+}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flow Diagram Tab -->
+            <div id="flow" class="tab-content">
+                <div class="flow-diagram">
+                    <div class="flow-container">
+                        <div class="flow-box highlight">
+                            <div class="flow-box-title">📥 Request</div>
+                            <div class="flow-box-content">
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Method:</span>
+                                    <span class="flow-field-value">POST</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Path:</span>
+                                    <span class="flow-field-value">/api/scenarios/preview</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Body:</span>
+                                    <span class="flow-field-value">ScenarioPreviewRequest</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Auth:</span>
+                                    <span class="flow-field-value">Bearer Token</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flow-arrow">→</div>
+
+                        <div class="flow-box">
+                            <div class="flow-box-title">⚙️ Processing</div>
+                            <div class="flow-box-content">
+                                <div class="flow-field">
+                                    <span class="flow-field-name">1. Validate request</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">2. Load baseline data</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">3. Apply adjusters</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">4. Calculate projections</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">5. Compute KPIs & deltas</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flow-arrow">→</div>
+
+                        <div class="flow-box highlight">
+                            <div class="flow-box-title">📤 Response</div>
+                            <div class="flow-box-content">
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Status:</span>
+                                    <span class="flow-field-value">200 OK</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Body:</span>
+                                    <span class="flow-field-value">ScenarioPreviewResponse</span>
+                                </div>
+                                <div class="flow-field">
+                                    <span class="flow-field-name">Includes:</span>
+                                    <span class="flow-field-value">Baseline + Scenario + KPIs</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Swagger UI Tab -->
+            <div id="swagger" class="tab-content">
+                <div style="padding: 30px; text-align: center; color: #8c8c8c;">
+                    <h2 style="margin-bottom: 15px; color: #ffffff;">📖 Swagger UI</h2>
+                    <p>Interactive API documentation would appear here (like Swagger UI)</p>
+                    <p style="margin-top: 10px; font-size: 14px;">In the real implementation, this would embed the actual Swagger UI component</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Panel (Hidden by default) -->
+    <div class="export-panel" id="export-panel" style="display: none;">
+        <div class="export-header">
+            <h3>📤 Export API</h3>
+            <button onclick="hideExportPanel()" style="background: none; border: none; color: #8c8c8c; cursor: pointer; font-size: 18px;">×</button>
+        </div>
+        <div class="export-body">
+            <button class="export-button">
+                <span style="font-size: 20px;">📮</span>
+                <span>Export to Postman Collection</span>
+            </button>
+            <button class="export-button secondary">
+                <span>📄</span>
+                <span>Export OpenAPI Spec (JSON)</span>
+            </button>
+            <button class="export-button secondary">
+                <span>📄</span>
+                <span>Export OpenAPI Spec (YAML)</span>
+            </button>
+            <button class="export-button secondary">
+                <span>🎭</span>
+                <span>Generate Mock Server</span>
+            </button>
+
+            <div class="export-info">
+                <strong>Export includes:</strong><br>
+                • Complete OpenAPI 3.0 spec<br>
+                • All 3 request examples<br>
+                • Response schemas<br>
+                • Authentication config<br>
+                • Error responses
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMainTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Activate selected tab button
+            event.target.classList.add('active');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message
+            const chatContainer = document.getElementById('chat-container');
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-message user';
+            userMsg.textContent = message;
+            chatContainer.appendChild(userMsg);
+
+            // Show loading
+            const sendBtn = document.getElementById('send-btn-text');
+            sendBtn.innerHTML = '<span class="loading-spinner"></span> Generating...';
+            document.getElementById('status-text').textContent = 'Claude is analyzing...';
+
+            // Clear input
+            input.value = '';
+
+            // Simulate response
+            setTimeout(() => {
+                const assistantMsg = document.createElement('div');
+                assistantMsg.className = 'chat-message assistant';
+                assistantMsg.innerHTML = `✨ I've created a visual representation of your API endpoint!<br><br>
+                    <strong>POST /api/scenarios/preview</strong><br><br>
+                    Check out the different tabs:<br>
+                    • 📋 API Overview - See request/response schemas<br>
+                    • 🎮 Interactive Playground - Test with examples<br>
+                    • 🔄 Flow Diagram - Visualize the request flow<br><br>
+                    Ready to export to Postman!`;
+                chatContainer.appendChild(assistantMsg);
+
+                sendBtn.textContent = '✨ Generate API Design';
+                document.getElementById('status-text').textContent = 'API design ready';
+
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 2000);
+        }
+
+        function showExportPanel() {
+            document.getElementById('export-panel').style.display = 'block';
+        }
+
+        function hideExportPanel() {
+            document.getElementById('export-panel').style.display = 'none';
+        }
+
+        function loadExample(example) {
+            const examples = {
+                'job-loss': `{
+  "name": "Job Loss with Severance",
+  "horizonMonths": 12,
+  "startingBalance": "15000.00",
+  "adjusters": [{
+    "type": "job_loss",
+    "targetPersonId": 1,
+    "params": {"severanceMonths": 3},
+    "startDate": "2026-06-01"
+  }]
+}`,
+                'rent-increase': `{
+  "name": "20% Rent Increase",
+  "horizonMonths": 12,
+  "startingBalance": "8500.00",
+  "adjusters": [{
+    "type": "expense_change",
+    "params": {
+      "categoryName": "Rent",
+      "percentageChange": 20.0
+    },
+    "startDate": "2026-03-01"
+  }]
+}`,
+                'part-time': `{
+  "name": "Reduce to Part-Time",
+  "horizonMonths": 12,
+  "startingBalance": "12000.00",
+  "adjusters": [{
+    "type": "income_reduction",
+    "targetPersonId": 1,
+    "params": {"percentageReduction": 50.0},
+    "startDate": "2026-04-01"
+  }]
+}`
+            };
+
+            if (examples[example]) {
+                document.getElementById('request-editor').innerHTML =
+                    `<pre>${syntaxHighlight(examples[example])}</pre>`;
+            }
+        }
+
+        function syntaxHighlight(json) {
+            json = JSON.stringify(JSON.parse(json), null, 2);
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function sendRequest() {
+            alert('🚀 In the real implementation, this would send a test request to your API or mock server!');
+        }
+
+        function validateAPI() {
+            alert('✅ Validation Results:\n\n✓ Spectral linting passed\n✓ Postman governance passed\n✓ All schemas valid\n✓ Ready to export!');
+        }
+
+        function generateMock() {
+            alert('🎭 Mock server would be generated and started on localhost:3000\n\nFrontend team could start building immediately!');
+        }
+
+        // Handle Enter key in chat
+        document.getElementById('chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
