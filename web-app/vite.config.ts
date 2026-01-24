@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,  // Bind to 0.0.0.0 for dev container port forwarding
     port: 5173,
     proxy: {
       '/api': {

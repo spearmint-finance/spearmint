@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude API Studio - Interactive Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title .icon {
+            font-size: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(56, 239, 125, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #495057;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .keyword { color: #c678dd; }
+        .string { color: #98c379; }
+        .number { color: #d19a66; }
+        .comment { color: #5c6370; font-style: italic; }
+        .function { color: #61afef; }
+        .class { color: #e5c07b; }
+        .decorator { color: #56b6c2; }
+
+        .validation-result {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        .validation-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .validation-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .validation-result .icon {
+            font-size: 24px;
+        }
+
+        .file-list {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .file-item {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item .icon {
+            font-size: 20px;
+        }
+
+        .file-item .path {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        .file-item .action {
+            margin-left: auto;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action.create {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .action.update {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .output-section {
+            display: none;
+        }
+
+        .output-section.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+
+        .info-box .icon {
+            font-size: 24px;
+            color: #0066cc;
+        }
+
+        .info-box .content {
+            flex: 1;
+        }
+
+        .info-box .content h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #0066cc;
+        }
+
+        .info-box .content p {
+            font-size: 14px;
+            color: #495057;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .next-steps {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .next-steps h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .next-steps ol {
+            margin-left: 20px;
+        }
+
+        .next-steps li {
+            margin-bottom: 10px;
+            color: #495057;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Claude API Studio</h1>
+            <p>AI-Powered FastAPI Code Generation for Spearmint</p>
+        </div>
+
+        <div class="content">
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="icon">💡</div>
+                <div class="content">
+                    <h3>Interactive Demo</h3>
+                    <p>This is a fully interactive mockup of the Claude API Studio. Try describing an endpoint in natural language below and click "Generate with Claude" to see the magic happen!</p>
+                </div>
+            </div>
+
+            <!-- Section 1: Design Input -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="icon">✍️</span>
+                    Step 1: Describe Your API Endpoint
+                </div>
+                <textarea id="endpoint-description" placeholder="Example:
+
+Create POST /api/scenarios/preview that simulates financial scenarios.
+
+Request should include:
+- scenario name (optional)
+- forecast horizon in months (1-60)
+- starting balance (Decimal)
+- array of adjusters with type, target person, parameters, dates
+
+Response should include:
+- baseline projection series (date, income, expenses, net cash flow)
+- scenario projection series (same structure)
+- KPIs: runway months, minimum balance, coverage by person
+- deltas showing the differences
+
+Generate 3 realistic examples: job loss, rent increase, income reduction.">Create POST /api/scenarios/preview that simulates financial scenarios.
+
+Request should include:
+- scenario name (optional)
+- forecast horizon in months (1-60)
+- starting balance (Decimal)
+- array of adjusters with type, target person, parameters, dates
+
+Response should include:
+- baseline projection series (date, income, expenses, net cash flow)
+- scenario projection series (same structure)
+- KPIs: runway months, minimum balance, coverage by person
+- deltas showing the differences
+
+Generate 3 realistic examples: job loss, rent increase, income reduction.</textarea>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="generateEndpoint()">
+                        <span>🤖</span>
+                        <span>Generate with Claude</span>
+                    </button>
+                    <button class="btn-secondary" onclick="clearAll()">
+                        <span>🗑️</span>
+                        <span>Clear</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>🤔 Claude is analyzing your request and generating code...</p>
+                <p style="font-size: 14px; color: #6c757d; margin-top: 10px;">Learning from existing patterns • Validating against Spectral rules • Creating realistic examples</p>
+            </div>
+
+            <!-- Output Sections (Hidden Initially) -->
+            <div class="output-section" id="output-section">
+                <!-- Section 2: Generated Code -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">📝</span>
+                        Step 2: Review Generated Code
+                        <span class="badge success">Generated in 3.2s</span>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('pydantic')">Pydantic Models</button>
+                        <button class="tab" onclick="switchTab('fastapi')">FastAPI Routes</button>
+                        <button class="tab" onclick="switchTab('openapi')">OpenAPI Spec</button>
+                        <button class="tab" onclick="switchTab('examples')">Examples</button>
+                    </div>
+
+                    <div id="pydantic" class="tab-content active">
+                        <pre><code><span class="comment"># Generated file: schemas/scenario.py</span>
+<span class="comment"># Auto-generated by Claude API Studio - Safe to regenerate</span>
+
+<span class="keyword">from</span> decimal <span class="keyword">import</span> Decimal
+<span class="keyword">from</span> datetime <span class="keyword">import</span> date, datetime
+<span class="keyword">from</span> typing <span class="keyword">import</span> List, Optional, Dict, Any
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field, ConfigDict
+
+<span class="keyword">from</span> ..utils.decimal_base <span class="keyword">import</span> DecimalBaseModel
+
+
+<span class="keyword">class</span> <span class="class">ScenarioAdjuster</span>(BaseModel):
+    <span class="string">"""Configuration for a scenario adjustment."""</span>
+
+    type: str = Field(
+        ...,
+        description=<span class="string">"Adjuster type: job_loss, income_reduction, expense_change, one_time"</span>
+    )
+    target_person_id: Optional[int] = Field(
+        None,
+        description=<span class="string">"ID of person affected by this adjuster"</span>
+    )
+    params: Dict[str, Any] = Field(
+        default_factory=dict,
+        description=<span class="string">"Adjuster-specific parameters"</span>
+    )
+    start_date: Optional[date] = Field(
+        None,
+        description=<span class="string">"When this adjustment begins"</span>
+    )
+    end_date: Optional[date] = Field(
+        None,
+        description=<span class="string">"When this adjustment ends (None = permanent)"</span>
+    )
+
+
+<span class="keyword">class</span> <span class="class">ScenarioPreviewRequest</span>(DecimalBaseModel):
+    <span class="string">"""Request for previewing a financial scenario."""</span>
+
+    name: Optional[str] = Field(
+        None,
+        max_length=255,
+        description=<span class="string">"Optional scenario name"</span>
+    )
+    horizon_months: int = Field(
+        ...,
+        ge=1,
+        le=60,
+        description=<span class="string">"Number of months to project (1-60)"</span>
+    )
+    starting_balance: Decimal = Field(
+        ...,
+        description=<span class="string">"Starting account balance"</span>
+    )
+    adjusters: List[ScenarioAdjuster] = Field(
+        default_factory=list,
+        description=<span class="string">"Array of scenario adjustments to apply"</span>
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+<span class="keyword">class</span> <span class="class">TimeSeriesPoint</span>(DecimalBaseModel):
+    <span class="string">"""Single point in time series projection."""</span>
+
+    date: date = Field(..., description=<span class="string">"Projection date"</span>)
+    income: Decimal = Field(..., description=<span class="string">"Projected income"</span>)
+    expenses: Decimal = Field(..., description=<span class="string">"Projected expenses"</span>)
+    net_cash_flow: Decimal = Field(..., description=<span class="string">"Net cash flow (income - expenses)"</span>)
+    balance: Decimal = Field(..., description=<span class="string">"Ending balance"</span>)
+    by_person: Optional[Dict[str, Decimal]] = Field(
+        None,
+        description=<span class="string">"Breakdown by person ID"</span>
+    )
+
+
+<span class="keyword">class</span> <span class="class">ScenarioKPIs</span>(DecimalBaseModel):
+    <span class="string">"""Key performance indicators for scenario."""</span>
+
+    runway_months: Optional[Decimal] = Field(
+        None,
+        description=<span class="string">"Months until funds depleted (None = never)"</span>
+    )
+    min_balance: Decimal = Field(
+        ...,
+        description=<span class="string">"Minimum balance during projection period"</span>
+    )
+    coverage_by_person: Optional[Dict[str, Decimal]] = Field(
+        None,
+        description=<span class="string">"Expense coverage percentage by person"</span>
+    )
+
+
+<span class="keyword">class</span> <span class="class">ScenarioDeltas</span>(DecimalBaseModel):
+    <span class="string">"""Changes between baseline and scenario."""</span>
+
+    income: Decimal = Field(..., description=<span class="string">"Total income change"</span>)
+    expenses: Decimal = Field(..., description=<span class="string">"Total expenses change"</span>)
+    net_cash_flow: Decimal = Field(..., description=<span class="string">"Net cash flow change"</span>)
+
+
+<span class="keyword">class</span> <span class="class">ScenarioPreviewResponse</span>(DecimalBaseModel):
+    <span class="string">"""Response from scenario preview simulation."""</span>
+
+    baseline_series: List[TimeSeriesPoint] = Field(
+        ...,
+        description=<span class="string">"Original projection without adjustments"</span>
+    )
+    scenario_series: List[TimeSeriesPoint] = Field(
+        ...,
+        description=<span class="string">"Modified projection with adjustments applied"</span>
+    )
+    kpis: ScenarioKPIs = Field(..., description=<span class="string">"Key performance indicators"</span>)
+    deltas: ScenarioDeltas = Field(..., description=<span class="string">"Aggregate changes from baseline"</span>)
+    generated_at: datetime = Field(
+        ...,
+        description=<span class="string">"When this projection was generated"</span>
+    )
+
+    model_config = ConfigDict(from_attributes=True)</code></pre>
+                    </div>
+
+                    <div id="fastapi" class="tab-content">
+                        <pre><code><span class="comment"># Generated file: routes/scenarios.py</span>
+<span class="comment"># Template generated by Claude API Studio - Safe to modify</span>
+
+<span class="keyword">from</span> fastapi <span class="keyword">import</span> APIRouter, Depends, HTTPException, status
+<span class="keyword">from</span> sqlalchemy.orm <span class="keyword">import</span> Session
+
+<span class="keyword">from</span> ..dependencies <span class="keyword">import</span> get_db
+<span class="keyword">from</span> ..schemas.scenario <span class="keyword">import</span> (
+    ScenarioPreviewRequest,
+    ScenarioPreviewResponse
+)
+<span class="keyword">from</span> ...services.scenario_service <span class="keyword">import</span> ScenarioService
+
+router = APIRouter(
+    prefix=<span class="string">"/scenarios"</span>,
+    tags=[<span class="string">"scenarios"</span>]
+)
+
+
+<span class="decorator">@router.post</span>(
+    <span class="string">"/preview"</span>,
+    response_model=ScenarioPreviewResponse,
+    status_code=status.HTTP_200_OK,
+    summary=<span class="string">"Preview financial scenario"</span>,
+    description=<span class="string">"Simulate a what-if scenario without saving it to the database"</span>
+)
+<span class="keyword">def</span> <span class="function">preview_scenario</span>(
+    request: ScenarioPreviewRequest,
+    db: Session = Depends(get_db)
+) -> ScenarioPreviewResponse:
+    <span class="string">"""
+    Simulate a financial scenario and return baseline vs scenario comparison.
+
+    This endpoint is deterministic and fast - it doesn't save anything to the database.
+    Frontend can use this for real-time scenario exploration.
+
+    Args:
+        request: Scenario configuration with adjusters
+        db: Database session
+
+    Returns:
+        Baseline and scenario projections with KPIs and deltas
+
+    Raises:
+        HTTPException: 400 if scenario configuration is invalid
+        HTTPException: 500 if projection calculation fails
+    """</span>
+    <span class="keyword">try</span>:
+        service = ScenarioService(db)
+        result = service.preview_scenario(
+            horizon_months=request.horizon_months,
+            starting_balance=request.starting_balance,
+            adjusters=request.adjusters
+        )
+        <span class="keyword">return</span> result
+
+    <span class="keyword">except</span> ValueError <span class="keyword">as</span> e:
+        <span class="keyword">raise</span> HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+        <span class="keyword">raise</span> HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=<span class="string">f"Failed to generate scenario preview: </span>{str(e)}<span class="string">"</span>
+        )</code></pre>
+                    </div>
+
+                    <div id="openapi" class="tab-content">
+                        <pre><code>{
+  <span class="string">"paths"</span>: {
+    <span class="string">"/api/scenarios/preview"</span>: {
+      <span class="string">"post"</span>: {
+        <span class="string">"operationId"</span>: <span class="string">"previewScenario"</span>,
+        <span class="string">"summary"</span>: <span class="string">"Preview financial scenario"</span>,
+        <span class="string">"description"</span>: <span class="string">"Simulate a what-if scenario without saving it to the database"</span>,
+        <span class="string">"tags"</span>: [<span class="string">"scenarios"</span>],
+        <span class="string">"requestBody"</span>: {
+          <span class="string">"required"</span>: <span class="keyword">true</span>,
+          <span class="string">"content"</span>: {
+            <span class="string">"application/json"</span>: {
+              <span class="string">"schema"</span>: {
+                <span class="string">"$ref"</span>: <span class="string">"#/components/schemas/ScenarioPreviewRequest"</span>
+              }
+            }
+          }
+        },
+        <span class="string">"responses"</span>: {
+          <span class="string">"200"</span>: {
+            <span class="string">"description"</span>: <span class="string">"Scenario preview generated successfully"</span>,
+            <span class="string">"content"</span>: {
+              <span class="string">"application/json"</span>: {
+                <span class="string">"schema"</span>: {
+                  <span class="string">"$ref"</span>: <span class="string">"#/components/schemas/ScenarioPreviewResponse"</span>
+                }
+              }
+            }
+          },
+          <span class="string">"400"</span>: {
+            <span class="string">"description"</span>: <span class="string">"Invalid scenario configuration"</span>
+          },
+          <span class="string">"500"</span>: {
+            <span class="string">"description"</span>: <span class="string">"Server error during projection calculation"</span>
+          }
+        }
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+
+                    <div id="examples" class="tab-content">
+                        <pre><code><span class="comment"># Example 1: Job Loss Scenario</span>
+{
+  <span class="string">"name"</span>: <span class="string">"Job Loss with Severance"</span>,
+  <span class="string">"horizonMonths"</span>: <span class="number">12</span>,
+  <span class="string">"startingBalance"</span>: <span class="string">"15000.00"</span>,
+  <span class="string">"adjusters"</span>: [
+    {
+      <span class="string">"type"</span>: <span class="string">"job_loss"</span>,
+      <span class="string">"targetPersonId"</span>: <span class="number">1</span>,
+      <span class="string">"params"</span>: {
+        <span class="string">"severanceMonths"</span>: <span class="number">3</span>
+      },
+      <span class="string">"startDate"</span>: <span class="string">"2026-06-01"</span>,
+      <span class="string">"endDate"</span>: <span class="keyword">null</span>
+    }
+  ]
+}
+
+<span class="comment"># Example 2: Rent Increase Scenario</span>
+{
+  <span class="string">"name"</span>: <span class="string">"20% Rent Increase"</span>,
+  <span class="string">"horizonMonths"</span>: <span class="number">12</span>,
+  <span class="string">"startingBalance"</span>: <span class="string">"8500.00"</span>,
+  <span class="string">"adjusters"</span>: [
+    {
+      <span class="string">"type"</span>: <span class="string">"expense_change"</span>,
+      <span class="string">"targetPersonId"</span>: <span class="keyword">null</span>,
+      <span class="string">"params"</span>: {
+        <span class="string">"categoryName"</span>: <span class="string">"Rent"</span>,
+        <span class="string">"percentageChange"</span>: <span class="number">20.0</span>
+      },
+      <span class="string">"startDate"</span>: <span class="string">"2026-03-01"</span>,
+      <span class="string">"endDate"</span>: <span class="keyword">null</span>
+    }
+  ]
+}
+
+<span class="comment"># Example 3: Part-Time Income Reduction</span>
+{
+  <span class="string">"name"</span>: <span class="string">"Reduce to Part-Time (50%)"</span>,
+  <span class="string">"horizonMonths"</span>: <span class="number">12</span>,
+  <span class="string">"startingBalance"</span>: <span class="string">"12000.00"</span>,
+  <span class="string">"adjusters"</span>: [
+    {
+      <span class="string">"type"</span>: <span class="string">"income_reduction"</span>,
+      <span class="string">"targetPersonId"</span>: <span class="number">1</span>,
+      <span class="string">"params"</span>: {
+        <span class="string">"percentageReduction"</span>: <span class="number">50.0</span>,
+        <span class="string">"reason"</span>: <span class="string">"Transition to part-time"</span>
+      },
+      <span class="string">"startDate"</span>: <span class="string">"2026-04-01"</span>,
+      <span class="string">"endDate"</span>: <span class="keyword">null</span>
+    }
+  ]
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Section 3: Validation Results -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">✅</span>
+                        Step 3: Validation Results
+                    </div>
+
+                    <div class="validation-result success">
+                        <span class="icon">✅</span>
+                        <div>
+                            <strong>Spectral Linting: PASSED</strong>
+                            <div style="font-size: 13px; margin-top: 5px; opacity: 0.8;">
+                                ✓ Path naming (kebab-case) • ✓ Parameter naming (camelCase) • ✓ Operation IDs • ✓ Required summaries
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="validation-result success">
+                        <span class="icon">✅</span>
+                        <div>
+                            <strong>Postman Governance: PASSED</strong>
+                            <div style="font-size: 13px; margin-top: 5px; opacity: 0.8;">
+                                ✓ Security requirements • ✓ Error responses • ✓ Content-Type headers
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="validation-result success">
+                        <span class="icon">✅</span>
+                        <div>
+                            <strong>Pattern Matching: PASSED</strong>
+                            <div style="font-size: 13px; margin-top: 5px; opacity: 0.8;">
+                                ✓ Matches existing projection endpoint patterns • ✓ DecimalBaseModel usage • ✓ Field descriptions
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: File Operations -->
+                <div class="section">
+                    <div class="section-title">
+                        <span class="icon">📁</span>
+                        Step 4: File Operations Preview
+                    </div>
+
+                    <div class="file-list">
+                        <div class="file-item">
+                            <span class="icon">📝</span>
+                            <span class="path">core-api/src/financial_analysis/api/schemas/scenario.py</span>
+                            <span class="action create">CREATE</span>
+                        </div>
+                        <div class="file-item">
+                            <span class="icon">📝</span>
+                            <span class="path">core-api/src/financial_analysis/api/routes/scenarios.py</span>
+                            <span class="action create">CREATE</span>
+                        </div>
+                        <div class="file-item">
+                            <span class="icon">📝</span>
+                            <span class="path">core-api/src/financial_analysis/services/scenario_service.py</span>
+                            <span class="action create">CREATE (INTERFACE)</span>
+                        </div>
+                        <div class="file-item">
+                            <span class="icon">✏️</span>
+                            <span class="path">core-api/src/financial_analysis/api/main.py</span>
+                            <span class="action update">UPDATE (add router)</span>
+                        </div>
+                    </div>
+
+                    <div class="button-group" style="margin-top: 15px;">
+                        <button class="btn-success" onclick="writeFiles()">
+                            <span>💾</span>
+                            <span>Write to Files</span>
+                        </button>
+                        <button class="btn-secondary" onclick="exportSpec()">
+                            <span>📤</span>
+                            <span>Export OpenAPI Spec</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 5: Next Steps -->
+                <div class="next-steps">
+                    <h3>🎯 Next Steps</h3>
+                    <ol>
+                        <li><strong>Implement business logic</strong> in <code>services/scenario_service.py</code> - Add projection calculations and adjuster logic</li>
+                        <li><strong>Write tests</strong> in <code>tests/api/test_scenarios.py</code> - Test each adjuster type and edge cases</li>
+                        <li><strong>Run tests locally:</strong> <code>pytest tests/api/test_scenarios.py -v</code></li>
+                        <li><strong>Commit changes:</strong> Pre-commit hook will validate automatically</li>
+                        <li><strong>Deploy:</strong> CI/CD pipeline will generate SDK and publish to Postman</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Activate selected tab
+            event.target.classList.add('active');
+        }
+
+        function generateEndpoint() {
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('output-section').classList.remove('active');
+
+            // Simulate API call delay
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('output-section').classList.add('active');
+
+                // Scroll to results
+                document.getElementById('output-section').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 3000);
+        }
+
+        function clearAll() {
+            document.getElementById('endpoint-description').value = '';
+            document.getElementById('output-section').classList.remove('active');
+        }
+
+        function writeFiles() {
+            alert('✅ Files written successfully!\n\nCreated:\n- schemas/scenario.py\n- routes/scenarios.py\n- services/scenario_service.py\n\nUpdated:\n- api/main.py (added scenarios router)\n\nNext: Implement business logic in scenario_service.py');
+        }
+
+        function exportSpec() {
+            const spec = {
+                openapi: "3.0.0",
+                info: {
+                    title: "Spearmint Financial Analysis API",
+                    version: "0.0.43"
+                },
+                paths: {
+                    "/api/scenarios/preview": {
+                        post: {
+                            operationId: "previewScenario",
+                            summary: "Preview financial scenario",
+                            // ... rest of spec
+                        }
+                    }
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(spec, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scenarios-api.json';
+            a.click();
+
+            alert('✅ OpenAPI spec exported as scenarios-api.json');
+        }
+
+        // Auto-scroll to top on load
+        window.onload = function() {
+            window.scrollTo(0, 0);
+        };
+    </script>
+</body>
+</html>

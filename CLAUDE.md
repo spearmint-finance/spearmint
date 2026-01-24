@@ -38,38 +38,40 @@ A full-stack financial analysis application that imports Excel transaction data,
 
 ```bash
 # Start backend API server (runs on http://localhost:8000)
-start_api.bat
-# OR manually:
-venv\Scripts\activate
-python run_api.py
+cd core-api
+source venv/bin/activate                # Linux/Mac
+# OR: .\venv\Scripts\Activate.ps1       # Windows PowerShell
+python -m uvicorn src.financial_analysis.api.main:app --reload --port 8000
 
 # Run backend tests
-venv\Scripts\activate
+cd core-api
+source venv/bin/activate
 pytest tests/ -v
 pytest tests/ --cov=src
 
 # Initialize database
+cd core-api
+source venv/bin/activate
 python -m src.financial_analysis.database.init_db
-
-# Verify setup
-python verify_setup.py
 ```
 
 ### Frontend
 
 ```bash
 # Start frontend dev server (runs on http://localhost:5173)
-cd frontend
-start_frontend.bat
-# OR: npm run dev
+cd web-app
+npm run dev
 
 # Build for production
+cd web-app
 npm run build
 
 # Run linting
+cd web-app
 npm run lint
 
 # Run E2E tests
+cd web-app
 npm run test:e2e
 npm run test:e2e:ui        # Interactive UI mode
 npm run test:e2e:headed    # Run with visible browser
@@ -79,42 +81,44 @@ npm run test:e2e:debug     # Debug mode
 ### Full Stack Development
 
 Run both servers in separate terminals:
-- **Terminal 1:** `start_api.bat` (backend on :8000)
-- **Terminal 2:** `cd frontend && start_frontend.bat` (frontend on :5173)
+- **Terminal 1:** `cd core-api && source venv/bin/activate && python -m uvicorn src.financial_analysis.api.main:app --reload --port 8000`
+- **Terminal 2:** `cd web-app && npm run dev`
 
 ## Architecture Overview
 
 ### Backend Structure
 
 ```
-src/financial_analysis/
-├── api/
-│   ├── main.py              # FastAPI app with CORS, error handlers, middleware
-│   ├── routes/              # API route handlers (8 router modules)
-│   │   ├── transactions.py
-│   │   ├── analysis.py
-│   │   ├── classifications.py
-│   │   ├── projections.py
-│   │   ├── reports.py
-│   │   └── ...
-│   └── schemas/             # Pydantic validation models
-├── database/
-│   ├── models.py            # SQLAlchemy ORM models
-│   ├── views.py             # Database views for complex queries
-│   └── init_db.py           # Database initialization
-├── services/                # Business logic layer
-│   ├── import_service.py    # Excel import & validation
-│   ├── classification_service.py  # Auto-classification engine
-│   ├── analysis_service.py  # Income/expense/cash flow analysis
-│   ├── projection_service.py # Statistical forecasting
-│   └── transaction_service.py
-└── utils/                   # Utility functions
+core-api/
+├── src/financial_analysis/
+│   ├── api/
+│   │   ├── main.py              # FastAPI app with CORS, error handlers, middleware
+│   │   ├── routes/              # API route handlers (8 router modules)
+│   │   │   ├── transactions.py
+│   │   │   ├── analysis.py
+│   │   │   ├── classifications.py
+│   │   │   ├── projections.py
+│   │   │   ├── reports.py
+│   │   │   └── ...
+│   │   └── schemas/             # Pydantic validation models
+│   ├── database/
+│   │   ├── models.py            # SQLAlchemy ORM models
+│   │   ├── views.py             # Database views for complex queries
+│   │   └── init_db.py           # Database initialization
+│   ├── services/                # Business logic layer
+│   │   ├── import_service.py    # Excel import & validation
+│   │   ├── classification_service.py  # Auto-classification engine
+│   │   ├── analysis_service.py  # Income/expense/cash flow analysis
+│   │   ├── projection_service.py # Statistical forecasting
+│   │   └── transaction_service.py
+│   └── utils/                   # Utility functions
+└── venv/                        # Python virtual environment
 ```
 
 ### Frontend Structure
 
 ```
-frontend/src/
+web-app/src/
 ├── components/
 │   ├── common/              # Layout, Header, Sidebar
 │   ├── Dashboard/
@@ -340,3 +344,168 @@ worktree cleanup
 - [worktree-cli/README.md](worktree-cli/README.md) - Worktree CLI documentation
 - API Docs: http://localhost:8000/api/docs (Swagger UI)
 - API Docs: http://localhost:8000/api/redoc (ReDoc)
+
+# mx-cli Memory Management Rules
+
+## When to Save Memories
+
+Save a memory after:
+- **Completing significant implementation milestones** - Major features, bug fixes, architectural changes
+- **Making important technical decisions** - Why a specific approach was chosen, trade-offs considered
+- **Resolving complex bugs or issues** - Root cause, solution, and lessons learned
+- **Discovering important patterns or gotchas** - Reusable patterns, common pitfalls, best practices
+- **Context switching between tasks** - Current progress, next steps, any blockers
+- **Fixing validation errors** - OpenAPI validation fixes, schema corrections, compliance issues
+
+## What to Include in Memories
+
+Include these details when creating memories:
+- **Implementation details** - What was done and how
+- **Technical decisions** - Why this approach was chosen
+- **Code patterns** - Reusable patterns discovered
+- **Integration points** - How components interact
+- **Testing strategies** - What tests were written and why
+- **Deployment details** - How to deploy or configure
+- **References** - GitHub issue numbers, commit hashes, PR links
+- **Gotchas** - Common mistakes or edge cases to avoid
+- **Next steps** - What should be done next
+
+## How to Save Memories
+
+Use the mx-cli memory command in non-interactive mode:
+
+```bash
+mx memories create \
+  --conversation-id "NEW" \
+  --content "Detailed memory content here. Include issue numbers (#X), commit hashes, and specific details." \
+  --topics "topic1,topic2,topic3"
+```
+
+**Important:**
+- Always use `--conversation-id "NEW"` to create a new conversation for the memory
+- Always use `--content` flag (non-interactive mode) for CI/CD and scripting compatibility
+- Use `--topics` (not `--tags`) for categorization
+
+## When to Search Memories
+
+Search for memories before:
+- **Starting new work** - Check if similar work has been done
+- **Solving similar problems** - Find patterns and solutions from past work
+- **Working with unfamiliar code** - Understand prior decisions and patterns
+- **Making architectural changes** - Understand existing design decisions
+
+```bash
+mx memories search --query "relevant keywords or issue number"
+```
+
+## Topic Conventions
+
+Use consistent topics for better searchability:
+
+**Component Topics:** `mx-cli`, `mx-core-api`, `mx-api-gateway`, `mx-mcp-server`
+
+**Type Topics:** `implementation`, `decision`, `pattern`, `gotcha`, `integration`, `testing`, `deployment`
+
+**Feature Topics:** `openapi-validation`, `openapi-compliance`, `schema-validation`, `neo4j`, `version-management`, `ci-cd`, `memory-management`
+
+**Status Topics:** `completed`, `in-progress`, `blocked`, `needs-review`
+
+Example: `--topics "mx-cli,implementation,version-management,completed"`
+
+## Integration with Workflow
+
+Make memory operations part of your standard task completion:
+
+1. **Before starting work** - Search memories for related context
+2. **During implementation** - Note important decisions and patterns
+3. **After completing work** - Save memory with details and references
+4. **When switching tasks** - Save progress before switching
+5. **When resuming work** - Search for saved progress and context
+
+## Retrieve Full Memory Details
+
+After finding a memory with search, get full details:
+
+```bash
+mx memories get <memory-id>
+```
+
+## Best Practices
+
+- **Search first** - Check for existing memories before asking for context
+- **Use consistent topics** - Enables better searchability across memories
+- **Include references** - Link to GitHub issues, commits, and PRs for traceability
+- **Keep focused** - One memory per significant milestone or decision
+- **Write for others** - Assume future readers are unfamiliar with the work
+- **Update when needed** - If implementation details change, create a new memory
+- **Non-interactive mode** - Always use `--conversation-id "NEW"` and `--content` flags for automation compatibility
+
+## Example Memory Creation
+
+```bash
+mx memories create \
+  --conversation-id "NEW" \
+  --content "Issue #13: Fixed nested memory object access in mx-cli search command.
+API returns {data: [{memory: {...}, score: 0.66}]} but CLI was accessing properties directly.
+Solution: Extract nested memory object first (const m = result.memory).
+Added 5 comprehensive test cases. All 188 tests pass.
+Commits: e04151c, 50434a1, 9380b26.
+Pattern: Always check API response structure before accessing nested properties." \
+  --topics "mx-cli,search,nested-objects,testing,completed"
+```
+
+## Example Memory Search
+
+```bash
+# Search by issue number
+mx memories search --query "issue #13"
+
+# Search by component
+mx memories search --query "Neo4j adapter"
+
+# Search by feature
+mx memories search --query "OpenAPI validation"
+```
+
+---
+
+## OpenAPI Validation Expectations
+
+When working on mx-core-api, all code changes must pass **full OpenAPI 3.0 compliance validation**:
+
+### Validation Requirements
+
+1. **Pre-commit validation** - Automatically runs full OpenAPI spec validation (`.spectral-full.yml`)
+2. **Local validation** - Run `npm run validate:openapi:local` before committing
+3. **CI/CD validation** - Full validation runs in GitHub Actions pipeline
+
+### Common Validation Tasks to Save as Memories
+
+- **Schema fixes** - Document how you fixed invalid schema structures (e.g., `z.record()` → `z.object().passthrough()`)
+- **$ref siblings** - Document how you resolved `$ref` sibling property violations
+- **Unused components** - Document decisions to remove or use previously unused schemas
+- **Route documentation** - Document patterns for adding `@openapi` JSDoc annotations
+
+### Validation Commands
+
+```bash
+# Full OpenAPI compliance (default)
+npm run validate:openapi:local
+
+# All validations
+npm run validate:all
+
+# REST design only (legacy)
+npx spectral lint openapi-spec.json --ruleset .spectral-api-rules.yml
+```
+
+### Resources
+
+- Migration Guide: `mx-core-api/docs/OPENAPI_VALIDATION_MIGRATION.md`
+- Validation Guide: `mx-core-api/docs/OPENAPI_VALIDATION.md`
+- AI Instructions: `mx-core-api/.ai/api-instructions.md`
+
+---
+
+**Use this prompt in Claude Code settings or as a system message to enable systematic memory management during task execution.**
+
