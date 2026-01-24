@@ -10,7 +10,7 @@ from typing import Dict, Any
 
 # API metadata
 API_TITLE = "Financial Analysis API"
-API_VERSION = "0.0.45"
+API_VERSION = "0.0.46"
 API_DESCRIPTION = """
 # Financial Analysis API
 
