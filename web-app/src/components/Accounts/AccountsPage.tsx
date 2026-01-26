@@ -113,7 +113,8 @@ const AccountsPage: React.FC = () => {
 
   const renderAccountCard = (account: Account) => {
     const isLiability = !isAssetAccount(account.account_type);
-    const balance = account.current_balance || 0;
+    // Use current_balance if available, otherwise fall back to opening_balance
+    const balance = account.current_balance ?? account.opening_balance ?? 0;
     const displayBalance = isLiability ? Math.abs(balance) : balance;
 
     return (

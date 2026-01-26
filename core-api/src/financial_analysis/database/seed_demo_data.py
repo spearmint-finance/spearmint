@@ -27,7 +27,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .base import SessionLocal
-from .models import Category, Transaction, TransactionClassification
+from .models import Account, Category, Transaction, TransactionClassification
 
 
 # Constants
@@ -168,6 +168,100 @@ UTILITY_COMPANIES = [
 
 
 # =============================================================================
+# Bank Accounts (for source field)
+# =============================================================================
+
+# Primary checking account - used for rent, utilities, auto-pay
+PRIMARY_CHECKING = "Chase Checking"
+
+# Credit cards - used for most discretionary spending
+CREDIT_CARDS = [
+    "Chase Sapphire",
+    "Amex Gold",
+    "Citi Double Cash",
+]
+
+# Debit card transactions come from checking
+DEBIT_ACCOUNT = "Chase Checking"
+
+# HSA account for healthcare
+HSA_ACCOUNT = "Fidelity HSA"
+
+# Accounts used for transfers
+SAVINGS_ACCOUNT = "Marcus Savings"
+
+
+# =============================================================================
+# Demo Account Definitions
+# =============================================================================
+
+DEMO_ACCOUNTS = [
+    {
+        "account_name": "Chase Checking",
+        "account_type": "checking",
+        "institution_name": "Chase Bank",
+        "account_number_last4": "4521",
+        "has_cash_component": True,
+        "opening_balance": Decimal("5000.00"),
+        "notes": f"{DEMO_MARKER} Primary checking account",
+    },
+    {
+        "account_name": "Marcus Savings",
+        "account_type": "savings",
+        "institution_name": "Marcus by Goldman Sachs",
+        "account_number_last4": "8834",
+        "has_cash_component": True,
+        "opening_balance": Decimal("15000.00"),
+        "notes": f"{DEMO_MARKER} High-yield savings account",
+    },
+    {
+        "account_name": "Chase Sapphire",
+        "account_type": "credit_card",
+        "institution_name": "Chase Bank",
+        "account_number_last4": "9012",
+        "opening_balance": Decimal("0.00"),
+        "notes": f"{DEMO_MARKER} Chase Sapphire Reserve credit card",
+    },
+    {
+        "account_name": "Amex Gold",
+        "account_type": "credit_card",
+        "institution_name": "American Express",
+        "account_number_last4": "1004",
+        "opening_balance": Decimal("0.00"),
+        "notes": f"{DEMO_MARKER} Amex Gold rewards card",
+    },
+    {
+        "account_name": "Citi Double Cash",
+        "account_type": "credit_card",
+        "institution_name": "Citibank",
+        "account_number_last4": "7788",
+        "opening_balance": Decimal("0.00"),
+        "notes": f"{DEMO_MARKER} Citi Double Cash Back card",
+    },
+    {
+        "account_name": "Fidelity HSA",
+        "account_type": "other",
+        "account_subtype": "hsa",
+        "institution_name": "Fidelity Investments",
+        "account_number_last4": "3344",
+        "has_cash_component": True,
+        "opening_balance": Decimal("2500.00"),
+        "notes": f"{DEMO_MARKER} Health Savings Account",
+    },
+    {
+        "account_name": "Vanguard Brokerage",
+        "account_type": "brokerage",
+        "institution_name": "Vanguard",
+        "account_number_last4": "5566",
+        "has_cash_component": True,
+        "has_investment_component": True,
+        "opening_balance": Decimal("50000.00"),
+        "notes": f"{DEMO_MARKER} Investment brokerage account",
+    },
+]
+
+
+# =============================================================================
 # Helper Functions
 # =============================================================================
 
@@ -242,6 +336,65 @@ def seed_demo_categories(db: Session) -> dict[str, int]:
     db.commit()
     print(f"\n[OK] Categories: {added} added, {skipped} already existed")
     return category_map
+
+
+def seed_demo_accounts(db: Session) -> dict[str, int]:
+    """
+    Seed demo accounts if they don't exist.
+
+    Returns:
+        dict mapping account_name -> account_id
+    """
+    from datetime import date as date_type
+
+    print("\n" + "=" * 60)
+    print("Seeding Demo Accounts")
+    print("=" * 60)
+
+    account_map = {}
+    added = 0
+    skipped = 0
+
+    for acct_data in DEMO_ACCOUNTS:
+        existing = db.query(Account).filter_by(
+            account_name=acct_data["account_name"]
+        ).first()
+
+        if existing:
+            account_map[acct_data["account_name"]] = existing.account_id
+            skipped += 1
+        else:
+            # Set opening balance date to 13 months ago
+            opening_date = date_type.today().replace(day=1)
+            if opening_date.month == 1:
+                opening_date = opening_date.replace(year=opening_date.year - 2, month=12)
+            else:
+                opening_date = opening_date.replace(month=opening_date.month - 1)
+                if opening_date.year == date_type.today().year:
+                    opening_date = opening_date.replace(year=opening_date.year - 1)
+
+            account = Account(
+                account_name=acct_data["account_name"],
+                account_type=acct_data["account_type"],
+                account_subtype=acct_data.get("account_subtype"),
+                institution_name=acct_data.get("institution_name"),
+                account_number_last4=acct_data.get("account_number_last4"),
+                has_cash_component=acct_data.get("has_cash_component", False),
+                has_investment_component=acct_data.get("has_investment_component", False),
+                opening_balance=acct_data.get("opening_balance", Decimal("0.00")),
+                opening_balance_date=opening_date,
+                notes=acct_data.get("notes"),
+                is_active=True,
+            )
+            db.add(account)
+            db.flush()  # Get the ID
+            account_map[acct_data["account_name"]] = account.account_id
+            added += 1
+            print(f"  [ADDED] {acct_data['account_name']} ({acct_data['account_type']})")
+
+    db.commit()
+    print(f"\n[OK] Accounts: {added} added, {skipped} already existed")
+    return account_map
 
 
 def get_classification_map(db: Session) -> dict[str, int]:
@@ -388,6 +541,7 @@ def generate_expense_transactions(
         "category_id": categories["Rent/Mortgage"],
         "classification_id": standard_class,
         "description": f"{DEMO_MARKER} Rent Payment - 123 Main Street Apt 4B",
+        "source": PRIMARY_CHECKING,
         "payment_method": "ACH Transfer",
     })
 
@@ -400,12 +554,15 @@ def generate_expense_transactions(
             "category_id": categories["Utilities"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {util_name}",
+            "source": PRIMARY_CHECKING,
             "payment_method": "Auto Pay",
         })
 
     # Groceries - 4-6x per month
     num_grocery = random.randint(4, 6)
     for _ in range(num_grocery):
+        payment = random.choice(["Credit Card", "Debit Card"])
+        source = random.choice(CREDIT_CARDS) if payment == "Credit Card" else DEBIT_ACCOUNT
         transactions.append({
             "transaction_date": random_date_in_month(year, month),
             "amount": random_amount(50, 250),
@@ -413,7 +570,8 @@ def generate_expense_transactions(
             "category_id": categories["Groceries"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(GROCERY_MERCHANTS)}",
-            "payment_method": random.choice(["Credit Card", "Debit Card"]),
+            "source": source,
+            "payment_method": payment,
         })
 
     # Dining - 6-10x per month (more in December for holidays)
@@ -428,12 +586,15 @@ def generate_expense_transactions(
             "category_id": categories["Dining & Restaurants"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(DINING_MERCHANTS)}",
+            "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
         })
 
     # Transportation - 4-8x per month
     num_transport = random.randint(4, 8)
     for _ in range(num_transport):
+        payment = random.choice(["Credit Card", "Debit Card"])
+        source = random.choice(CREDIT_CARDS) if payment == "Credit Card" else DEBIT_ACCOUNT
         transactions.append({
             "transaction_date": random_date_in_month(year, month),
             "amount": random_amount(20, 80),
@@ -441,7 +602,8 @@ def generate_expense_transactions(
             "category_id": categories["Transportation"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(TRANSPORTATION_MERCHANTS)}",
-            "payment_method": random.choice(["Credit Card", "Debit Card"]),
+            "source": source,
+            "payment_method": payment,
         })
 
     # Subscriptions - Fixed amounts on specific days
@@ -454,6 +616,7 @@ def generate_expense_transactions(
             "category_id": categories["Subscriptions"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {sub_name}",
+            "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
         })
 
@@ -469,12 +632,15 @@ def generate_expense_transactions(
             "category_id": categories["Shopping"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(SHOPPING_MERCHANTS)}",
+            "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
         })
 
     # Healthcare - 1-2x per month
     num_healthcare = random.randint(1, 2)
     for _ in range(num_healthcare):
+        payment = random.choice(["Credit Card", "HSA Card"])
+        source = HSA_ACCOUNT if payment == "HSA Card" else random.choice(CREDIT_CARDS)
         transactions.append({
             "transaction_date": random_date_in_month(year, month),
             "amount": random_amount(20, 150),
@@ -482,7 +648,8 @@ def generate_expense_transactions(
             "category_id": categories["Healthcare"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(HEALTHCARE_MERCHANTS)}",
-            "payment_method": random.choice(["Credit Card", "HSA Card"]),
+            "source": source,
+            "payment_method": payment,
         })
 
     # Entertainment - 2-4x per month
@@ -495,6 +662,7 @@ def generate_expense_transactions(
             "category_id": categories["Entertainment"],
             "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(ENTERTAINMENT_MERCHANTS)}",
+            "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
         })
 
@@ -506,6 +674,7 @@ def generate_expense_transactions(
         "category_id": categories["Insurance"],
         "classification_id": standard_class,
         "description": f"{DEMO_MARKER} Auto Insurance - GEICO",
+        "source": PRIMARY_CHECKING,
         "payment_method": "Auto Pay",
     })
 
@@ -547,10 +716,11 @@ def generate_transfer_transactions(
             "category_id": categories["Transfers"],
             "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer to Savings Account",
+            "source": PRIMARY_CHECKING,
             "is_transfer": True,
             "include_in_analysis": False,
-            "transfer_account_from": "Checking",
-            "transfer_account_to": "Savings",
+            "transfer_account_from": PRIMARY_CHECKING,
+            "transfer_account_to": SAVINGS_ACCOUNT,
         })
 
         # Income side (to savings)
@@ -561,15 +731,17 @@ def generate_transfer_transactions(
             "category_id": categories["Transfers"],
             "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer from Checking Account",
+            "source": SAVINGS_ACCOUNT,
             "is_transfer": True,
             "include_in_analysis": False,
-            "transfer_account_from": "Checking",
-            "transfer_account_to": "Savings",
+            "transfer_account_from": PRIMARY_CHECKING,
+            "transfer_account_to": SAVINGS_ACCOUNT,
         })
 
     # Credit card payment - 1 pair per month
     cc_amount = random_amount(1500, 3500)
     cc_date = random_date_in_month(year, month)
+    cc_card = random.choice(CREDIT_CARDS)
 
     # Payment from checking (expense)
     transactions.append({
@@ -578,7 +750,8 @@ def generate_transfer_transactions(
         "transaction_type": "Expense",
         "category_id": categories["Credit Card Payment"],
         "classification_id": cc_payment_class,
-        "description": f"{DEMO_MARKER} Payment to Chase Sapphire Card",
+        "description": f"{DEMO_MARKER} Payment to {cc_card}",
+        "source": PRIMARY_CHECKING,
         "is_transfer": True,
         "include_in_analysis": False,
         "payment_method": "ACH Transfer",
@@ -591,7 +764,8 @@ def generate_transfer_transactions(
         "transaction_type": "Income",
         "category_id": categories["Credit Card Payment"],
         "classification_id": cc_receipt_class,
-        "description": f"{DEMO_MARKER} Payment Received - Chase Sapphire",
+        "description": f"{DEMO_MARKER} Payment Received - {cc_card}",
+        "source": cc_card,
         "is_transfer": True,
         "include_in_analysis": False,
     })
@@ -726,7 +900,10 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
     # Set random seed for reproducibility
     random.seed(RANDOM_SEED)
 
-    # Seed categories first
+    # Seed accounts first
+    accounts = seed_demo_accounts(db)
+
+    # Seed categories
     categories = seed_demo_categories(db)
 
     # Get classification mappings
@@ -790,18 +967,18 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
     }
 
 
-def clear_demo_data(db: Session) -> int:
+def clear_demo_data(db: Session) -> dict:
     """
-    Remove all demo transactions (identified by DEMO_MARKER in description).
+    Remove all demo data (transactions and accounts identified by DEMO_MARKER).
 
     Args:
         db: Database session
 
     Returns:
-        Number of transactions deleted
+        dict with counts of deleted transactions and accounts
     """
     print("\n" + "=" * 60)
-    print("Clearing Demo Transaction Data")
+    print("Clearing Demo Data")
     print("=" * 60)
 
     # Find all demo transactions
@@ -809,20 +986,45 @@ def clear_demo_data(db: Session) -> int:
         Transaction.description.like(f"%{DEMO_MARKER}%")
     ).all()
 
-    count = len(demo_txns)
+    txn_count = len(demo_txns)
 
-    if count == 0:
+    if txn_count > 0:
+        # First, clear related_transaction_id to avoid circular dependency
+        demo_ids = [txn.transaction_id for txn in demo_txns]
+        db.query(Transaction).filter(
+            Transaction.transaction_id.in_(demo_ids)
+        ).update({Transaction.related_transaction_id: None}, synchronize_session=False)
+        db.flush()
+
+        # Delete them using bulk delete to avoid ORM dependency issues
+        db.query(Transaction).filter(
+            Transaction.transaction_id.in_(demo_ids)
+        ).delete(synchronize_session=False)
+
+        print(f"[OK] Deleted {txn_count} demo transactions.")
+    else:
         print("[OK] No demo transactions found.")
-        return 0
 
-    # Delete them
-    for txn in demo_txns:
-        db.delete(txn)
+    # Find and delete demo accounts (identified by DEMO_MARKER in notes)
+    demo_accounts = db.query(Account).filter(
+        Account.notes.like(f"%{DEMO_MARKER}%")
+    ).all()
+
+    acct_count = len(demo_accounts)
+
+    if acct_count > 0:
+        demo_acct_ids = [acct.account_id for acct in demo_accounts]
+        db.query(Account).filter(
+            Account.account_id.in_(demo_acct_ids)
+        ).delete(synchronize_session=False)
+
+        print(f"[OK] Deleted {acct_count} demo accounts.")
+    else:
+        print("[OK] No demo accounts found.")
 
     db.commit()
 
-    print(f"[OK] Deleted {count} demo transactions.")
-    return count
+    return {"transactions": txn_count, "accounts": acct_count}
 
 
 # =============================================================================
@@ -856,7 +1058,9 @@ def main():
     db = SessionLocal()
     try:
         if args.reset or args.clear_only:
-            clear_demo_data(db)
+            clear_result = clear_demo_data(db)
+            if args.clear_only:
+                print(f"\n[SUCCESS] Cleared {clear_result['transactions']} transactions, {clear_result['accounts']} accounts")
 
         if not args.clear_only:
             result = seed_demo_transactions(db, months=args.months)
