@@ -5,65 +5,163 @@
       "label": "Worktree: Create",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "create"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "create"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
       "label": "Worktree: Create with Name",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "create", "-n", "${input:worktreeName}"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "create",
+        "-n",
+        "${input:worktreeName}"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
       "label": "Worktree: Create and Open in VS Code",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "create", "--code"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "create",
+        "--code"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
       "label": "Worktree: Remove",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "remove", "-n", "${input:worktreeName}"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "remove",
+        "-n",
+        "${input:worktreeName}"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
       "label": "Worktree: List",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "list"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "list"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "Worktree: List (Detailed)",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "list", "-d"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "list",
+        "-d"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "Worktree: Cleanup All",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "cleanup"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "cleanup"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     },
     {
       "label": "Worktree: Init (Create Config)",
       "type": "shell",
       "command": "node",
-      "args": ["./worktree-cli/dist/index.js", "init"],
+      "args": [
+        "./worktree-cli/dist/index.js",
+        "init"
+      ],
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "new" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Start Backend",
+      "type": "shell",
+      "command": "source core-api/venv/bin/activate && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port 8000",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-servers"
+      }
+    },
+    {
+      "label": "Start Frontend",
+      "type": "shell",
+      "command": "npm run dev -- --port 5173",
+      "options": {
+        "cwd": "${workspaceFolder}/web-app"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-servers"
+      }
+    },
+    {
+      "label": "Start Dev Servers",
+      "type": "shell",
+      "command": "echo \"Starting dev servers...\"",
+      "dependsOn": [
+        "Start Backend",
+        "Start Frontend"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "default"
+      }
     }
   ],
   "inputs": [
