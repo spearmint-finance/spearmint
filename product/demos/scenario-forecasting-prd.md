@@ -1,4 +1,4 @@
-# Product Requirements Document: Scenario-Based Financial Forecasting
+# PRD: Scenario-Based Financial Forecasting
 
 **Product:** Spearmint Personal Finance Engine
 **Feature:** Scenario-Based Financial Forecasting
