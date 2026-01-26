@@ -59,7 +59,7 @@ This script automates the entire setup process:
 
 ```bash
 # Terminal 1 - Start Backend
-.\start_api.ps1
+.\scripts\start_api.ps1
 
 # Terminal 2 - Start Frontend
 cd web-app
@@ -68,8 +68,8 @@ cd web-app
 
 **See Also:**
 - Complete Guide: `dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md`
-- Quick Start: `LOCAL_DEVELOPMENT_QUICKSTART.md`
-- SDK Guide: `LOCAL_SDK_DEVELOPMENT.md`
+- Quick Start: `docs/LOCAL_DEVELOPMENT_QUICKSTART.md`
+- SDK Guide: `docs/LOCAL_SDK_DEVELOPMENT.md`
 
 ---
 

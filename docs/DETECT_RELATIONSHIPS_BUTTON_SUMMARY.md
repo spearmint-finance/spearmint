@@ -189,7 +189,7 @@ After optimization:
 ## **Testing Instructions**
 
 ### **Manual Testing:**
-1. Start backend: `.\start_api.bat`
+1. Start backend: `.\scripts\start_api.bat`
 2. Start frontend: `cd frontend && .\start_frontend.bat`
 3. Navigate to http://localhost:5173/transactions
 4. Click "Detect Relationships" button

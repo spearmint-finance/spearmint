@@ -211,7 +211,7 @@ def main():
         print("\n✅ Your setup is ready!")
         print("\nNext steps:")
         print("  1. Start the API server:")
-        print("     - Windows: start_api.bat")
+        print("     - Windows: scripts\\start_api.bat")
         print("     - Or: python run_api.py")
         print("  2. Open browser: http://localhost:8000/api/docs")
         print("  3. Run verification tests: python test_analysis_api.py")

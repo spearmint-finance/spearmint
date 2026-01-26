@@ -10,7 +10,7 @@ All 6 visual enhancements for dividend reinvestment linking have been successful
 
 ### 1. Start the Backend API Server
 ```bash
-D:\CodingProjects\financial-analysis\start_api.bat
+D:\CodingProjects\financial-analysis\scripts\start_api.bat
 ```
 - Server will run on: http://localhost:8000
 - API Docs: http://localhost:8000/api/docs

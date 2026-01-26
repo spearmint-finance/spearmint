@@ -57,7 +57,7 @@ Now you can make changes and see them immediately:
 
 **Terminal 1 - Backend:**
 ```powershell
-.\start_api.bat
+.\scripts\start_api.bat
 ```
 
 **Terminal 2 - Frontend:**

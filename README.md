@@ -126,7 +126,7 @@ This automated script sets up:
 
 ```bash
 # Terminal 1 - Backend
-.\start_api.ps1
+.\scripts\start_api.ps1
 # Backend runs on http://localhost:8000
 
 # Terminal 2 - Frontend
@@ -137,8 +137,8 @@ cd web-app
 
 **See Also:**
 - Complete Guide: [dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md](dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md)
-- Quick Start: [LOCAL_DEVELOPMENT_QUICKSTART.md](LOCAL_DEVELOPMENT_QUICKSTART.md)
-- SDK Development: [LOCAL_SDK_DEVELOPMENT.md](LOCAL_SDK_DEVELOPMENT.md)
+- Quick Start: [LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md)
+- SDK Development: [LOCAL_SDK_DEVELOPMENT.md](docs/LOCAL_SDK_DEVELOPMENT.md)
 
 ---
 

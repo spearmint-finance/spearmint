@@ -475,7 +475,7 @@ Open **2 terminals** and run:
 **Terminal 1 - Backend API:**
 ```powershell
 # From project root
-.\start_api.ps1
+.\scripts\start_api.ps1
 ```
 
 **What happens:**
@@ -753,7 +753,7 @@ npm link
 
 # If not, restart:
 # Press Ctrl+C, then:
-.\start_api.ps1
+.\scripts\start_api.ps1
 ```
 
 ---
@@ -901,9 +901,9 @@ python scripts/generate_openapi.py ../sdk/openapi.json
 ## 📚 Related Documentation
 
 - **SDK Generation:** `sdk/scripts/README.md`
-- **Docker Hot Reload:** `DOCKER_HOT_RELOAD.md`
-- **Local SDK Development:** `LOCAL_SDK_DEVELOPMENT.md`
-- **Local Development Quickstart:** `LOCAL_DEVELOPMENT_QUICKSTART.md`
+- **Docker Hot Reload:** `docs/DOCKER_HOT_RELOAD.md`
+- **Local SDK Development:** `docs/LOCAL_SDK_DEVELOPMENT.md`
+- **Local Development Quickstart:** `docs/LOCAL_DEVELOPMENT_QUICKSTART.md`
 - **Full Stack Guide:** `docs/FULLSTACK_QUICKSTART.md`
 
 ---
@@ -929,7 +929,7 @@ Copy-Item .env.example .env
 
 ```powershell
 # Terminal 1 - Backend
-.\start_api.ps1
+.\scripts\start_api.ps1
 
 # Terminal 2 - Frontend
 cd web-app
