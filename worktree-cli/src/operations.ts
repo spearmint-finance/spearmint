@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, unlinkSync, openSync } from 'fs';
 import { join, dirname } from 'path';
 import { execSync, spawn } from 'child_process';
 import chalk from 'chalk';
@@ -508,12 +508,68 @@ function readPortsFromEnv(
   return { backendPort, frontendPort };
 }
 
+interface PidFile {
+  backend?: number;
+  frontend?: number;
+  startedAt: string;
+  context: string;
+  backendPort: number;
+  frontendPort: number;
+}
+
+function getLogsDir(workingDir: string): string {
+  return join(workingDir, '.dev-logs');
+}
+
+function getPidFile(workingDir: string): string {
+  return join(getLogsDir(workingDir), 'pids.json');
+}
+
+function readPidFile(workingDir: string): PidFile | null {
+  const pidFile = getPidFile(workingDir);
+  if (existsSync(pidFile)) {
+    try {
+      return JSON.parse(readFileSync(pidFile, 'utf-8'));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function writePidFile(workingDir: string, data: PidFile): void {
+  const logsDir = getLogsDir(workingDir);
+  if (!existsSync(logsDir)) {
+    mkdirSync(logsDir, { recursive: true });
+  }
+  writeFileSync(getPidFile(workingDir), JSON.stringify(data, null, 2));
+}
+
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function killProcess(pid: number): boolean {
+  try {
+    process.kill(pid, 'SIGTERM');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Start development servers (backend + frontend) in VS Code terminals
+ * Start development servers (backend + frontend) as background processes
  */
 export function startDev(worktreeName?: string): boolean {
   const context = getDevContext(worktreeName);
   const isWindows = process.platform === 'win32';
+  const logsDir = getLogsDir(context.workingDir);
 
   console.log();
   console.log(chalk.cyan.bold('Starting Development Servers'));
@@ -524,169 +580,242 @@ export function startDev(worktreeName?: string): boolean {
   console.log(`  ${chalk.bold('Frontend:')} http://localhost:${context.frontendPort}`);
   console.log();
 
-  // Check if VS Code CLI is available
-  try {
-    execSync('code --version', { stdio: 'ignore' });
-  } catch {
-    logError('VS Code CLI not found. Please install VS Code and add it to PATH.');
-    log('On Mac: Open VS Code, press Cmd+Shift+P, type "Shell Command: Install \'code\' command"');
-    log('On Windows: VS Code installer should add it automatically');
-    return false;
+  // Check if servers are already running
+  const existingPids = readPidFile(context.workingDir);
+  if (existingPids) {
+    const backendRunning = existingPids.backend && isProcessRunning(existingPids.backend);
+    const frontendRunning = existingPids.frontend && isProcessRunning(existingPids.frontend);
+
+    if (backendRunning || frontendRunning) {
+      logWarning('Servers appear to be already running:');
+      if (backendRunning) log(`  Backend PID: ${existingPids.backend}`);
+      if (frontendRunning) log(`  Frontend PID: ${existingPids.frontend}`);
+      console.log();
+      log('Run ' + chalk.cyan('worktree dev --stop') + ' first to stop them.');
+      return false;
+    }
   }
 
-  // Build the commands for each server
-  const backendCmd = buildBackendCommand(context, isWindows);
-  const frontendCmd = buildFrontendCommand(context, isWindows);
+  // Create logs directory
+  if (!existsSync(logsDir)) {
+    mkdirSync(logsDir, { recursive: true });
+  }
 
-  try {
-    // Create VS Code tasks configuration
-    createVSCodeTasks(context, isWindows);
+  // Create log files
+  const backendLogPath = join(logsDir, 'backend.log');
+  const frontendLogPath = join(logsDir, 'frontend.log');
 
-    logDim('Opening VS Code...');
+  const backendLog = openSync(backendLogPath, 'w');
+  const frontendLog = openSync(frontendLogPath, 'w');
 
-    // Open VS Code with the project folder
-    execSync(`code "${context.workingDir}"`, { stdio: 'ignore' });
+  logDim('Starting backend server...');
 
-    console.log();
-    logSuccess('VS Code opened with development configuration!');
-    console.log();
-    console.log(chalk.bold('Start the servers:'));
-    console.log(chalk.cyan('  Press Ctrl+Shift+P → "Tasks: Run Task" → "Start Dev Servers"'));
-    console.log();
-    console.log(chalk.bold('Server URLs (once started):'));
-    console.log(`  ${chalk.green('API Docs:')}  http://localhost:${context.backendPort}/api/docs`);
-    console.log(`  ${chalk.green('Frontend:')} http://localhost:${context.frontendPort}`);
-    console.log();
-    console.log(chalk.dim('Or start manually:'));
-    console.log(chalk.dim(`  Backend:  ${backendCmd}`));
-    console.log(chalk.dim(`  Frontend: ${frontendCmd}`));
-    console.log();
+  // Start backend
+  const backendProcess = spawn(
+    isWindows ? 'cmd' : 'bash',
+    isWindows
+      ? ['/c', `cd /d "${join(context.workingDir, 'core-api')}" && ..\\venv\\Scripts\\activate && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`]
+      : ['-c', `cd "${join(context.workingDir, 'core-api')}" && source ../venv/bin/activate 2>/dev/null || source venv/bin/activate && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`],
+    {
+      detached: true,
+      stdio: ['ignore', backendLog, backendLog],
+      cwd: context.workingDir,
+    }
+  );
+  backendProcess.unref();
 
+  logDim('Starting frontend server...');
+
+  // Start frontend
+  const frontendProcess = spawn(
+    isWindows ? 'cmd' : 'bash',
+    isWindows
+      ? ['/c', `cd /d "${join(context.workingDir, 'web-app')}" && npm run dev -- --port ${context.frontendPort}`]
+      : ['-c', `cd "${join(context.workingDir, 'web-app')}" && npm run dev -- --port ${context.frontendPort}`],
+    {
+      detached: true,
+      stdio: ['ignore', frontendLog, frontendLog],
+      cwd: context.workingDir,
+    }
+  );
+  frontendProcess.unref();
+
+  // Save PIDs
+  writePidFile(context.workingDir, {
+    backend: backendProcess.pid,
+    frontend: frontendProcess.pid,
+    startedAt: new Date().toISOString(),
+    context: context.isWorktree ? context.worktreeName! : 'main',
+    backendPort: context.backendPort,
+    frontendPort: context.frontendPort,
+  });
+
+  console.log();
+  logSuccess('Servers started in background!');
+  console.log();
+  console.log(chalk.bold('Server URLs:'));
+  console.log(`  ${chalk.green('API Docs:')}  http://localhost:${context.backendPort}/api/docs`);
+  console.log(`  ${chalk.green('Frontend:')} http://localhost:${context.frontendPort}`);
+  console.log();
+  console.log(chalk.bold('Logs:'));
+  console.log(`  ${chalk.dim('Backend:')}  ${backendLogPath}`);
+  console.log(`  ${chalk.dim('Frontend:')} ${frontendLogPath}`);
+  console.log();
+  console.log(chalk.bold('Commands:'));
+  console.log(`  ${chalk.cyan('worktree dev --stop')}   Stop the servers`);
+  console.log(`  ${chalk.cyan('worktree dev --logs')}   Tail the log files`);
+  console.log(`  ${chalk.cyan('worktree dev --status')} Check server status`);
+  console.log();
+
+  return true;
+}
+
+/**
+ * Stop running development servers
+ */
+export function stopDev(worktreeName?: string): boolean {
+  const context = getDevContext(worktreeName);
+  const pids = readPidFile(context.workingDir);
+
+  console.log();
+  console.log(chalk.yellow.bold('Stopping Development Servers'));
+  console.log(chalk.dim('─'.repeat(40)));
+
+  if (!pids) {
+    logWarning('No running servers found (no PID file)');
     return true;
-  } catch (error) {
-    logError(`Failed to open VS Code: ${error}`);
-    console.log();
-    console.log(chalk.bold('Manual startup commands:'));
-    console.log(`  ${chalk.cyan('Backend:')}  ${backendCmd}`);
-    console.log(`  ${chalk.cyan('Frontend:')} ${frontendCmd}`);
-    console.log();
-    return false;
-  }
-}
-
-function buildBackendCommand(context: DevContext, isWindows: boolean): string {
-  const venvActivate = isWindows
-    ? `core-api\\venv\\Scripts\\activate`
-    : `source core-api/venv/bin/activate`;
-
-  return isWindows
-    ? `cd /d "${context.workingDir}" && ${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`
-    : `cd "${context.workingDir}" && ${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`;
-}
-
-function buildFrontendCommand(context: DevContext, isWindows: boolean): string {
-  return isWindows
-    ? `cd /d "${context.workingDir}\\web-app" && npm run dev -- --port ${context.frontendPort}`
-    : `cd "${context.workingDir}/web-app" && npm run dev -- --port ${context.frontendPort}`;
-}
-
-function createVSCodeTasks(context: DevContext, isWindows: boolean): void {
-  const vscodeDir = join(context.workingDir, '.vscode');
-  if (!existsSync(vscodeDir)) {
-    mkdirSync(vscodeDir, { recursive: true });
   }
 
-  const tasksPath = join(vscodeDir, 'tasks.json');
+  let stopped = 0;
 
-  // Read existing tasks or create new
-  let tasks: {
-    version: string;
-    tasks: Array<{
-      label: string;
-      type: string;
-      command?: string;
-      args?: string[];
-      options?: { cwd?: string; shell?: { executable?: string; args?: string[] } };
-      isBackground?: boolean;
-      problemMatcher?: string[];
-      presentation?: { reveal?: string; panel?: string; group?: string };
-      dependsOn?: string[];
-      dependsOrder?: string;
-      runOptions?: { runOn?: string };
-    }>;
-  } = { version: '2.0.0', tasks: [] };
-
-  if (existsSync(tasksPath)) {
-    try {
-      tasks = JSON.parse(readFileSync(tasksPath, 'utf-8'));
-    } catch {
-      // If parsing fails, use default
+  if (pids.backend) {
+    if (isProcessRunning(pids.backend)) {
+      logDim(`Stopping backend (PID ${pids.backend})...`);
+      if (killProcess(pids.backend)) {
+        logSuccess('Backend stopped');
+        stopped++;
+      } else {
+        logError(`Failed to stop backend (PID ${pids.backend})`);
+      }
+    } else {
+      logDim('Backend was not running');
     }
   }
 
-  // Remove existing dev server tasks
-  tasks.tasks = tasks.tasks.filter(
-    (t) => !['Start Backend', 'Start Frontend', 'Start Dev Servers'].includes(t.label)
-  );
-
-  const venvActivate = isWindows
-    ? '.\\core-api\\venv\\Scripts\\Activate.ps1'
-    : 'source core-api/venv/bin/activate';
-
-  const backendCommand = isWindows
-    ? `${venvActivate}; cd core-api; python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`
-    : `${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`;
-
-  const frontendCommand = `npm run dev -- --port ${context.frontendPort}`;
-
-  // Add new tasks
-  tasks.tasks.push(
-    {
-      label: 'Start Backend',
-      type: 'shell',
-      command: backendCommand,
-      options: {
-        cwd: '${workspaceFolder}',
-        shell: isWindows
-          ? { executable: 'powershell.exe', args: ['-NoProfile', '-Command'] }
-          : undefined,
-      },
-      isBackground: true,
-      problemMatcher: [],
-      presentation: {
-        reveal: 'always',
-        panel: 'dedicated',
-        group: 'dev-servers',
-      },
-    },
-    {
-      label: 'Start Frontend',
-      type: 'shell',
-      command: frontendCommand,
-      options: {
-        cwd: '${workspaceFolder}/web-app',
-      },
-      isBackground: true,
-      problemMatcher: [],
-      presentation: {
-        reveal: 'always',
-        panel: 'dedicated',
-        group: 'dev-servers',
-      },
-    },
-    {
-      label: 'Start Dev Servers',
-      type: 'shell',
-      command: 'echo "Starting dev servers..."',
-      dependsOn: ['Start Backend', 'Start Frontend'],
-      dependsOrder: 'parallel',
-      problemMatcher: [],
-      runOptions: {
-        runOn: 'default',
-      },
+  if (pids.frontend) {
+    if (isProcessRunning(pids.frontend)) {
+      logDim(`Stopping frontend (PID ${pids.frontend})...`);
+      if (killProcess(pids.frontend)) {
+        logSuccess('Frontend stopped');
+        stopped++;
+      } else {
+        logError(`Failed to stop frontend (PID ${pids.frontend})`);
+      }
+    } else {
+      logDim('Frontend was not running');
     }
-  );
+  }
 
-  writeFileSync(tasksPath, JSON.stringify(tasks, null, 2));
-  logSuccess('VS Code tasks configured (.vscode/tasks.json)');
+  // Clean up PID file
+  const pidFile = getPidFile(context.workingDir);
+  if (existsSync(pidFile)) {
+    unlinkSync(pidFile);
+  }
+
+  console.log();
+  if (stopped > 0) {
+    logSuccess(`Stopped ${stopped} server(s)`);
+  } else {
+    log('No servers were running');
+  }
+  console.log();
+
+  return true;
+}
+
+/**
+ * Show status of development servers
+ */
+export function statusDev(worktreeName?: string): void {
+  const context = getDevContext(worktreeName);
+  const pids = readPidFile(context.workingDir);
+
+  console.log();
+  console.log(chalk.cyan.bold('Development Server Status'));
+  console.log(chalk.dim('─'.repeat(40)));
+  console.log(`  ${chalk.bold('Context:')} ${context.isWorktree ? chalk.magenta(`[${context.worktreeName}]`) : chalk.white('[MAIN]')}`);
+  console.log(`  ${chalk.bold('Path:')}    ${context.workingDir}`);
+  console.log();
+
+  if (!pids) {
+    log('No servers configured (no PID file found)');
+    console.log();
+    log(`Run ${chalk.cyan('worktree dev')} to start servers.`);
+    console.log();
+    return;
+  }
+
+  console.log(`  ${chalk.bold('Started:')} ${pids.startedAt}`);
+  console.log();
+
+  const backendRunning = pids.backend && isProcessRunning(pids.backend);
+  const frontendRunning = pids.frontend && isProcessRunning(pids.frontend);
+
+  console.log(chalk.bold('Backend:'));
+  console.log(`  Status: ${backendRunning ? chalk.green('● Running') : chalk.red('○ Stopped')}`);
+  console.log(`  PID:    ${pids.backend || 'N/A'}`);
+  console.log(`  URL:    http://localhost:${pids.backendPort}/api/docs`);
+  console.log();
+
+  console.log(chalk.bold('Frontend:'));
+  console.log(`  Status: ${frontendRunning ? chalk.green('● Running') : chalk.red('○ Stopped')}`);
+  console.log(`  PID:    ${pids.frontend || 'N/A'}`);
+  console.log(`  URL:    http://localhost:${pids.frontendPort}`);
+  console.log();
+}
+
+/**
+ * Tail the development server logs
+ */
+export function logsDev(worktreeName?: string): void {
+  const context = getDevContext(worktreeName);
+  const logsDir = getLogsDir(context.workingDir);
+  const backendLogPath = join(logsDir, 'backend.log');
+  const frontendLogPath = join(logsDir, 'frontend.log');
+
+  console.log();
+  console.log(chalk.cyan.bold('Development Server Logs'));
+  console.log(chalk.dim('─'.repeat(40)));
+
+  if (!existsSync(logsDir)) {
+    logWarning('No logs directory found. Start servers first with: worktree dev');
+    return;
+  }
+
+  console.log(`  ${chalk.bold('Backend log:')}  ${backendLogPath}`);
+  console.log(`  ${chalk.bold('Frontend log:')} ${frontendLogPath}`);
+  console.log();
+  console.log(chalk.dim('Tailing logs (Ctrl+C to stop)...'));
+  console.log(chalk.dim('─'.repeat(40)));
+  console.log();
+
+  // Use tail to follow both log files
+  const isWindows = process.platform === 'win32';
+
+  try {
+    if (isWindows) {
+      // On Windows, use PowerShell Get-Content -Wait
+      execSync(
+        `powershell -Command "Get-Content -Path '${backendLogPath}','${frontendLogPath}' -Wait"`,
+        { stdio: 'inherit' }
+      );
+    } else {
+      // On Unix, use tail -f
+      execSync(`tail -f "${backendLogPath}" "${frontendLogPath}"`, { stdio: 'inherit' });
+    }
+  } catch {
+    // User pressed Ctrl+C
+    console.log();
+    log('Stopped tailing logs.');
+  }
 }

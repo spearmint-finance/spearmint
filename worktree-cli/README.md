@@ -120,15 +120,23 @@ worktree dev
 
 # Start a specific worktree from anywhere
 worktree dev -n wt-a3f2
+
+# Check server status
+worktree dev --status
+
+# View server logs (tail -f)
+worktree dev --logs
+
+# Stop running servers
+worktree dev --stop
 ```
 
 This command:
 1. Auto-detects if you're in main project or a worktree
-2. Configures VS Code tasks with correct ports
-3. Opens VS Code with the project
-4. Creates "Start Dev Servers" task that runs backend + frontend in parallel
-
-**In VS Code:** Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Start Dev Servers"
+2. Reads correct ports from `.env` (worktrees) or config (main)
+3. Starts backend and frontend as background processes
+4. Logs output to `.dev-logs/backend.log` and `.dev-logs/frontend.log`
+5. Stores PIDs for clean shutdown with `--stop`
 
 ## Port Assignments
 

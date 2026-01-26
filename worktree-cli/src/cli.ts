@@ -14,6 +14,9 @@ import {
   listWorktrees,
   cleanupAll,
   startDev,
+  stopDev,
+  statusDev,
+  logsDev,
 } from './operations.js';
 
 const program = new Command();
@@ -152,12 +155,26 @@ program
 
 program
   .command('dev')
-  .description('Start development servers (backend + frontend) in VS Code terminals')
+  .description('Start development servers (backend + frontend) as background processes')
   .option('-n, --name <name>', 'Worktree name (uses current context if not specified)')
+  .option('--stop', 'Stop running servers')
+  .option('--status', 'Show server status')
+  .option('--logs', 'Tail the log files')
   .action((options) => {
     try {
-      const success = startDev(options.name);
-      process.exit(success ? 0 : 1);
+      if (options.stop) {
+        const success = stopDev(options.name);
+        process.exit(success ? 0 : 1);
+      } else if (options.status) {
+        statusDev(options.name);
+        process.exit(0);
+      } else if (options.logs) {
+        logsDev(options.name);
+        process.exit(0);
+      } else {
+        const success = startDev(options.name);
+        process.exit(success ? 0 : 1);
+      }
     } catch (error) {
       console.log(chalk.red(`Error: ${error}`));
       process.exit(1);

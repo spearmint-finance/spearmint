@@ -137,3 +137,4 @@ web-app/.env.production
 
 # Worktrees (managed by worktree CLI)
 .worktrees/
+.dev-logs/
