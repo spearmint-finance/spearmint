@@ -12,6 +12,7 @@ export interface Transaction {
   category_name?: string;
   classification_id?: number;
   classification_name?: string;
+  related_transaction_id?: number;
   source?: string;
   payment_method?: string;
   transfer_account_from?: string;

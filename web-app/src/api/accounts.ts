@@ -19,6 +19,69 @@ import {
   NetWorth,
 } from "../types/account";
 
+/**
+ * Transform backend account to frontend format
+ * Handles both snake_case (direct API) and camelCase (SDK) field names
+ */
+const transformAccount = (backendAccount: any): Account => {
+  const accountId =
+    backendAccount.accountId ?? backendAccount.account_id;
+  const accountName =
+    backendAccount.accountName ?? backendAccount.account_name;
+  const accountType =
+    backendAccount.accountType ?? backendAccount.account_type;
+  const accountSubtype =
+    backendAccount.accountSubtype ?? backendAccount.account_subtype;
+  const institutionName =
+    backendAccount.institutionName ?? backendAccount.institution_name;
+  const accountNumberLast4 =
+    backendAccount.accountNumberLast4 ?? backendAccount.account_number_last4;
+  const isActive =
+    backendAccount.isActive ?? backendAccount.is_active;
+  const hasCashComponent =
+    backendAccount.hasCashComponent ?? backendAccount.has_cash_component;
+  const hasInvestmentComponent =
+    backendAccount.hasInvestmentComponent ?? backendAccount.has_investment_component;
+  const openingBalance =
+    backendAccount.openingBalance ?? backendAccount.opening_balance;
+  const openingBalanceDate =
+    backendAccount.openingBalanceDate ?? backendAccount.opening_balance_date;
+  const createdAt =
+    backendAccount.createdAt ?? backendAccount.created_at;
+  const updatedAt =
+    backendAccount.updatedAt ?? backendAccount.updated_at;
+  const currentBalance =
+    backendAccount.currentBalance ?? backendAccount.current_balance;
+  const currentBalanceDate =
+    backendAccount.currentBalanceDate ?? backendAccount.current_balance_date;
+  const cashBalance =
+    backendAccount.cashBalance ?? backendAccount.cash_balance;
+  const investmentValue =
+    backendAccount.investmentValue ?? backendAccount.investment_value;
+
+  return {
+    account_id: accountId,
+    account_name: accountName,
+    account_type: accountType,
+    account_subtype: accountSubtype,
+    institution_name: institutionName,
+    account_number_last4: accountNumberLast4,
+    currency: backendAccount.currency || "USD",
+    is_active: isActive ?? true,
+    has_cash_component: hasCashComponent ?? false,
+    has_investment_component: hasInvestmentComponent ?? false,
+    opening_balance: parseFloat(openingBalance) || 0,
+    opening_balance_date: openingBalanceDate,
+    notes: backendAccount.notes,
+    created_at: createdAt,
+    updated_at: updatedAt,
+    current_balance: currentBalance != null ? parseFloat(currentBalance) : undefined,
+    current_balance_date: currentBalanceDate,
+    cash_balance: cashBalance != null ? parseFloat(cashBalance) : undefined,
+    investment_value: investmentValue != null ? parseFloat(investmentValue) : undefined,
+  };
+};
+
 // ==================== Account Management ====================
 
 export const getAccounts = async (params?: {
@@ -29,21 +92,21 @@ export const getAccounts = async (params?: {
     isActive: params?.is_active,
     accountType: params?.account_type,
   });
-  return response.data as unknown as Account[];
+  return (response.data as any[]).map(transformAccount);
 };
 
 export const createAccount = async (
   account: AccountCreate
 ): Promise<Account> => {
   const response = await accountsApi.createAccountApiAccountsPost(account);
-  return response.data as unknown as Account;
+  return transformAccount(response.data);
 };
 
 export const getAccount = async (accountId: number): Promise<Account> => {
   const response = await accountsApi.getAccountApiAccountsAccountIdGet(
     accountId
   );
-  return response.data as unknown as Account;
+  return transformAccount(response.data);
 };
 
 export const updateAccount = async (
@@ -54,7 +117,7 @@ export const updateAccount = async (
     accountId,
     account
   );
-  return response.data as unknown as Account;
+  return transformAccount(response.data);
 };
 
 export const deleteAccount = async (accountId: number): Promise<void> => {

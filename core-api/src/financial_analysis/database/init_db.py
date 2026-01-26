@@ -15,12 +15,13 @@ from financial_analysis.database.views import create_views, drop_views
 from financial_analysis.database.seed_data import seed_all
 
 
-def initialize_database(reset: bool = False):
+def initialize_database(reset: bool = False, with_demo_data: bool = False):
     """
     Initialize the database with tables, views, and seed data.
-    
+
     Args:
         reset: If True, drop existing tables before creating new ones
+        with_demo_data: If True, also seed demo transaction data
     """
     print("=" * 60)
     print("Financial Analysis Tool - Database Initialization")
@@ -50,9 +51,15 @@ def initialize_database(reset: bool = False):
     db = SessionLocal()
     try:
         seed_all(db)
+
+        if with_demo_data:
+            print("\nSeeding demo transaction data...")
+            from financial_analysis.database.seed_demo_data import seed_demo_transactions
+            result = seed_demo_transactions(db)
+            print(f"+ Demo data: {result['total']} transactions created")
     finally:
         db.close()
-    
+
     print("\n" + "=" * 60)
     print("+ Database initialization complete!")
     print("=" * 60)
@@ -67,7 +74,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Reset the database (drop all tables and recreate)"
     )
-    
+    parser.add_argument(
+        "--with-demo-data",
+        action="store_true",
+        help="Include demo transaction data (12 months of sample transactions)"
+    )
+
     args = parser.parse_args()
-    initialize_database(reset=args.reset)
+    initialize_database(reset=args.reset, with_demo_data=args.with_demo_data)
 
