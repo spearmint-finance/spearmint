@@ -27,7 +27,7 @@ python verify_setup.py
 
 **Option A - Windows Batch File (Easiest):**
 ```bash
-start_api.bat
+scripts\start_api.bat
 ```
 
 **Option B - Python Script:**
@@ -168,7 +168,7 @@ python verify_setup.py
 **Solution:**
 ```bash
 # Use the batch file (it activates venv automatically)
-start_api.bat
+scripts\start_api.bat
 
 # OR activate venv manually first
 venv\Scripts\activate

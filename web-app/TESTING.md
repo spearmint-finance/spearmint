@@ -15,7 +15,7 @@ In a separate terminal:
 
 ```bash
 # From project root
-start_api.bat
+scripts\start_api.bat
 ```
 
 Verify it's running:

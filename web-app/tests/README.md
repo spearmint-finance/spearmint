@@ -424,7 +424,7 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e
 1. Start backend manually:
    ```bash
    cd ..
-   start_api.bat
+   scripts\start_api.bat
    ```
 2. Verify backend is running:
    ```bash

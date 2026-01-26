@@ -57,7 +57,7 @@ Now you can make changes and see them immediately:
 
 **Terminal 1 - Backend:**
 ```powershell
-.\start_api.bat
+.\scripts\start_api.bat
 ```
 
 **Terminal 2 - Frontend:**
@@ -265,7 +265,7 @@ Use volume mounts or file path reference instead (see Docker section above).
 ## 📚 **Related Documentation**
 
 - **SDK Generation:** `sdk/scripts/README.md`
-- **Docker Hot Reload:** `DOCKER_HOT_RELOAD.md`
+- **Docker Hot Reload:** `docs/DOCKER_HOT_RELOAD.md`
 - **API Development:** `core-api/docs/`
 
 ---

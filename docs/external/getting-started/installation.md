@@ -67,8 +67,8 @@ After setup, start the development servers:
 
 ```bash
 # Terminal 1 - Backend API
-.\start_api.ps1              # Windows
-./start_api.sh               # Linux/macOS
+.\scripts\start_api.ps1      # Windows
+./scripts/start_api.sh       # Linux/macOS
 # API runs on http://localhost:8000
 
 # Terminal 2 - Frontend

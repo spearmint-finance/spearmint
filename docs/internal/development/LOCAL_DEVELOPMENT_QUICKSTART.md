@@ -27,7 +27,7 @@ cd ..
 
 **Terminal 1:**
 ```powershell
-.\start_api.ps1
+.\scripts\start_api.ps1
 ```
 
 **What it does:**
@@ -265,7 +265,7 @@ uvicorn src.financial_analysis.api.main:app --reload
 
 ```powershell
 # Terminal 1 - Backend
-.\start_api.ps1
+.\scripts\start_api.ps1
 
 # Terminal 2 - Frontend
 cd web-app
@@ -294,7 +294,7 @@ cd web-app
 
 ## 🎯 **Next Steps**
 
-1. ✅ Start backend: `.\start_api.ps1`
+1. ✅ Start backend: `.\scripts\start_api.ps1`
 2. ✅ Start frontend: `cd web-app && .\start_frontend.bat`
 3. ✅ Open browser: http://localhost:5173
 4. ✅ Make changes and see them instantly!

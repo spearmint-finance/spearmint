@@ -401,7 +401,7 @@ fi
 
 echo -e "${CYAN}Documentation:${NC}"
 echo "  - Complete Guide: dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md"
-echo "  - Quick Start:    LOCAL_DEVELOPMENT_QUICKSTART.md"
-echo "  - SDK Guide:      LOCAL_SDK_DEVELOPMENT.md"
+echo "  - Quick Start:    docs/LOCAL_DEVELOPMENT_QUICKSTART.md"
+echo "  - SDK Guide:      docs/LOCAL_SDK_DEVELOPMENT.md"
 echo ""
 

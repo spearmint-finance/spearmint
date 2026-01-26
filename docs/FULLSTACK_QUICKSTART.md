@@ -24,7 +24,7 @@ cd d:\CodingProjects\financial-analysis
 venv\Scripts\activate
 
 # Start API server (Option A - Batch file)
-start_api.bat
+scripts\start_api.bat
 
 # OR Option B - Python script
 python run_api.py
@@ -97,7 +97,7 @@ npm run build
 ### 1. Start Both Servers
 
 Open two terminal windows and run:
-- **Terminal 1:** Backend API (`start_api.bat`)
+- **Terminal 1:** Backend API (`scripts\start_api.bat`)
 - **Terminal 2:** Frontend dev server (`cd frontend && start_frontend.bat`)
 
 ### 2. Access the Application

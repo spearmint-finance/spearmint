@@ -325,8 +325,8 @@ try {
 
         # Start backend in new terminal
         Write-Host "  Starting backend API server..." -ForegroundColor Yellow
-        $backendPath = Join-Path $startLocation "start_api.ps1"
-        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$startLocation'; .\start_api.ps1"
+        $backendPath = Join-Path $startLocation "scripts\start_api.ps1"
+        Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$startLocation'; .\scripts\start_api.ps1"
         Write-Host "  [OK] Backend started in new terminal" -ForegroundColor Green
 
         # Wait a moment for backend to initialize
@@ -351,7 +351,7 @@ try {
         Write-Host "Next Steps:" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "  1. Start Backend (Terminal 1):" -ForegroundColor Yellow
-        Write-Host "     .\start_api.ps1" -ForegroundColor White
+        Write-Host "     .\scripts\start_api.ps1" -ForegroundColor White
         Write-Host ""
         Write-Host "  2. Start Frontend (Terminal 2):" -ForegroundColor Yellow
         Write-Host "     cd web-app" -ForegroundColor White
@@ -372,8 +372,8 @@ try {
 
     Write-Host "Documentation:" -ForegroundColor Cyan
     Write-Host "  - Complete Guide: dev-tools\docs\LOCAL_DEVELOPMENT_GUIDE.md" -ForegroundColor White
-    Write-Host "  - Quick Start:    LOCAL_DEVELOPMENT_QUICKSTART.md" -ForegroundColor White
-    Write-Host "  - SDK Guide:      LOCAL_SDK_DEVELOPMENT.md" -ForegroundColor White
+    Write-Host "  - Quick Start:    docs\LOCAL_DEVELOPMENT_QUICKSTART.md" -ForegroundColor White
+    Write-Host "  - SDK Guide:      docs\LOCAL_SDK_DEVELOPMENT.md" -ForegroundColor White
     Write-Host ""
 
 } catch {
