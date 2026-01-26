@@ -1,0 +1,27 @@
+{
+  "workspace": {
+    "id": "7c17ec6b-3b41-46ca-83fa-2c25654c4ca8"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [
+      "..\\sdk\\openapi-min.json",
+      "..\\sdk\\openapi.json",
+      "..\\dev-tools\\local-debug\\meta-missing-3.0.json",
+      "..\\dev-tools\\local-debug\\old-openapi.json",
+      "..\\dev-tools\\local-debug\\valid-3.0-missing-meta.json",
+      "..\\dev-tools\\local-debug\\valid-3.1-missing-meta.json",
+      "..\\core-api\\scripts\\openapi-validated.json",
+      "..\\core-api\\legacy_scripts\\openapi.json",
+      "..\\core-api\\sdk\\openapi.json",
+      "..\\core-api\\scripts\\api_validation\\openapi-validated.json",
+      "..\\core-api\\scripts\\sdk\\openapi.json"
+    ],
+    "collections": [
+      "..\\core-api\\legacy_scripts\\postman_collection.json"
+    ]
+  }
+}

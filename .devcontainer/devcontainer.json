@@ -1,0 +1,45 @@
+{
+  "name": "Spearmint",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  "overrideCommand": false,
+
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+  "mounts": [
+    "source=spearmint-core-api-venv,target=/workspace/core-api/venv,type=volume",
+    "source=spearmint-web-app-node-modules,target=/workspace/web-app/node_modules,type=volume",
+    "source=spearmint-worktree-cli-node-modules,target=/workspace/worktree-cli/node_modules,type=volume",
+    "source=spearmint-shell-history,target=/commandhistory,type=volume",
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/core-api/venv/bin/python",
+        "python.terminal.activateEnvironment": true,
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "forwardPorts": [
+    8000, 8001, 8002, 8003, 8004, 8005, 5173, 5174, 5175, 5176, 5177, 5178
+  ],
+
+  "postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
+  "postStartCommand": "bash /workspace/.devcontainer/post-start.sh",
+
+  "remoteUser": "vscode"
+}
