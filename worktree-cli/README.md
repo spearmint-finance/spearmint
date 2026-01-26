@@ -108,6 +108,28 @@ worktree init --name my-awesome-project
 worktree init --force
 ```
 
+### Start Development Servers
+
+```bash
+# Start from main project (uses ports 8000/5173)
+worktree dev
+
+# Start from inside a worktree (auto-detects ports from .env)
+cd .worktrees/wt-a3f2
+worktree dev
+
+# Start a specific worktree from anywhere
+worktree dev -n wt-a3f2
+```
+
+This command:
+1. Auto-detects if you're in main project or a worktree
+2. Configures VS Code tasks with correct ports
+3. Opens VS Code with the project
+4. Creates "Start Dev Servers" task that runs backend + frontend in parallel
+
+**In VS Code:** Press `Ctrl+Shift+P` → "Tasks: Run Task" → "Start Dev Servers"
+
 ## Port Assignments
 
 Ports are **auto-assigned** by scanning existing worktrees:

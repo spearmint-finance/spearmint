@@ -13,6 +13,7 @@ import {
   removeWorktree,
   listWorktrees,
   cleanupAll,
+  startDev,
 } from './operations.js';
 
 const program = new Command();
@@ -143,6 +144,20 @@ program
   .action((options) => {
     try {
       cleanupAll(options.force, options.keepDbs);
+    } catch (error) {
+      console.log(chalk.red(`Error: ${error}`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('dev')
+  .description('Start development servers (backend + frontend) in VS Code terminals')
+  .option('-n, --name <name>', 'Worktree name (uses current context if not specified)')
+  .action((options) => {
+    try {
+      const success = startDev(options.name);
+      process.exit(success ? 0 : 1);
     } catch (error) {
       console.log(chalk.red(`Error: ${error}`));
       process.exit(1);
