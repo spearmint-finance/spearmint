@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import chalk from 'chalk';
 import {
   WorktreeConfig,
@@ -9,6 +9,15 @@ import {
   getExistingWorktrees,
   getWorktreeName,
 } from './config.js';
+
+export interface DevContext {
+  projectRoot: string;
+  workingDir: string;
+  isWorktree: boolean;
+  worktreeName: string | null;
+  backendPort: number;
+  frontendPort: number;
+}
 import {
   fetchOrigin,
   createWorktree as gitCreateWorktree,
@@ -364,4 +373,320 @@ export function cleanupAll(force: boolean = false, keepDatabases: boolean = fals
     console.log();
     console.log(chalk.green.bold(`Cleaned up ${removed} worktree(s).`));
   }
+}
+
+/**
+ * Find the real project root (handles being inside a worktree)
+ */
+function findRealProjectRoot(): { projectRoot: string; isInWorktree: boolean; worktreeName: string | null } {
+  const cwd = process.cwd();
+
+  // Check if current directory has a .env with WORKTREE_NAME (most reliable worktree detection)
+  const cwdEnvPath = join(cwd, '.env');
+  if (existsSync(cwdEnvPath)) {
+    const content = readFileSync(cwdEnvPath, 'utf-8');
+    const worktreeMatch = content.match(/WORKTREE_NAME=(.+)/);
+    if (worktreeMatch) {
+      // We're in a worktree - find the main project root
+      // Worktrees are typically in <project>/.worktrees/<name>
+      const worktreeName = worktreeMatch[1].trim();
+
+      // Walk up to find the real project root (the one with worktree.toml)
+      let current = dirname(cwd); // Go up from worktree dir
+      while (current !== dirname(current)) {
+        if (existsSync(join(current, 'worktree.toml'))) {
+          return { projectRoot: current, isInWorktree: true, worktreeName };
+        }
+        current = dirname(current);
+      }
+
+      // Fallback: assume we're two levels deep (.worktrees/wt-xxxx)
+      const assumedRoot = dirname(dirname(cwd));
+      return { projectRoot: assumedRoot, isInWorktree: true, worktreeName };
+    }
+  }
+
+  // Not in a worktree - find project root normally
+  return { projectRoot: findProjectRoot(), isInWorktree: false, worktreeName: null };
+}
+
+/**
+ * Detect the current development context (main project or worktree)
+ */
+export function getDevContext(worktreeName?: string): DevContext {
+  const { projectRoot, isInWorktree, worktreeName: detectedWorktreeName } = findRealProjectRoot();
+  const projectConfig = loadProjectConfig(projectRoot);
+  const cwd = process.cwd();
+
+  // If a worktree name is specified, use that
+  if (worktreeName) {
+    const worktreePath = join(projectRoot, projectConfig.project.worktree_dir, worktreeName);
+    const envPath = join(worktreePath, '.env');
+
+    if (!existsSync(worktreePath)) {
+      throw new Error(`Worktree '${worktreeName}' not found`);
+    }
+
+    const { backendPort, frontendPort } = readPortsFromEnv(envPath, projectConfig);
+
+    return {
+      projectRoot,
+      workingDir: worktreePath,
+      isWorktree: true,
+      worktreeName,
+      backendPort,
+      frontendPort,
+    };
+  }
+
+  // If we detected we're in a worktree via .env
+  if (isInWorktree && detectedWorktreeName) {
+    const worktreePath = join(projectRoot, projectConfig.project.worktree_dir, detectedWorktreeName);
+    const envPath = join(worktreePath, '.env');
+    const { backendPort, frontendPort } = readPortsFromEnv(envPath, projectConfig);
+
+    return {
+      projectRoot,
+      workingDir: worktreePath,
+      isWorktree: true,
+      worktreeName: detectedWorktreeName,
+      backendPort,
+      frontendPort,
+    };
+  }
+
+  // Check if we're inside a worktree by path
+  const worktreesDir = join(projectRoot, projectConfig.project.worktree_dir);
+  const normalizedCwd = cwd.replace(/\\/g, '/').toLowerCase();
+  const normalizedWorktreesDir = worktreesDir.replace(/\\/g, '/').toLowerCase();
+
+  if (normalizedCwd.startsWith(normalizedWorktreesDir)) {
+    // We're inside a worktree - extract name from path
+    const relativePath = cwd.slice(worktreesDir.length + 1);
+    const name = relativePath.split(/[/\\]/)[0];
+    const worktreePath = join(worktreesDir, name);
+    const envPath = join(worktreePath, '.env');
+
+    const { backendPort, frontendPort } = readPortsFromEnv(envPath, projectConfig);
+
+    return {
+      projectRoot,
+      workingDir: worktreePath,
+      isWorktree: true,
+      worktreeName: name,
+      backendPort,
+      frontendPort,
+    };
+  }
+
+  // We're in the main project
+  return {
+    projectRoot,
+    workingDir: projectRoot,
+    isWorktree: false,
+    worktreeName: null,
+    backendPort: projectConfig.ports.backend_base,
+    frontendPort: projectConfig.ports.frontend_base,
+  };
+}
+
+function readPortsFromEnv(
+  envPath: string,
+  projectConfig: ReturnType<typeof loadProjectConfig>
+): { backendPort: number; frontendPort: number } {
+  let backendPort = projectConfig.ports.backend_base;
+  let frontendPort = projectConfig.ports.frontend_base;
+
+  if (existsSync(envPath)) {
+    const content = readFileSync(envPath, 'utf-8');
+    const apiMatch = content.match(/API_PORT=(\d+)/);
+    const viteMatch = content.match(/VITE_PORT=(\d+)/);
+    if (apiMatch) backendPort = parseInt(apiMatch[1], 10);
+    if (viteMatch) frontendPort = parseInt(viteMatch[1], 10);
+  }
+
+  return { backendPort, frontendPort };
+}
+
+/**
+ * Start development servers (backend + frontend) in VS Code terminals
+ */
+export function startDev(worktreeName?: string): boolean {
+  const context = getDevContext(worktreeName);
+  const isWindows = process.platform === 'win32';
+
+  console.log();
+  console.log(chalk.cyan.bold('Starting Development Servers'));
+  console.log(chalk.dim('─'.repeat(40)));
+  console.log(`  ${chalk.bold('Context:')}  ${context.isWorktree ? chalk.magenta(`[${context.worktreeName}]`) : chalk.white('[MAIN]')}`);
+  console.log(`  ${chalk.bold('Path:')}     ${context.workingDir}`);
+  console.log(`  ${chalk.bold('Backend:')}  http://localhost:${context.backendPort}`);
+  console.log(`  ${chalk.bold('Frontend:')} http://localhost:${context.frontendPort}`);
+  console.log();
+
+  // Check if VS Code CLI is available
+  try {
+    execSync('code --version', { stdio: 'ignore' });
+  } catch {
+    logError('VS Code CLI not found. Please install VS Code and add it to PATH.');
+    log('On Mac: Open VS Code, press Cmd+Shift+P, type "Shell Command: Install \'code\' command"');
+    log('On Windows: VS Code installer should add it automatically');
+    return false;
+  }
+
+  // Build the commands for each server
+  const backendCmd = buildBackendCommand(context, isWindows);
+  const frontendCmd = buildFrontendCommand(context, isWindows);
+
+  try {
+    // Create VS Code tasks configuration
+    createVSCodeTasks(context, isWindows);
+
+    logDim('Opening VS Code...');
+
+    // Open VS Code with the project folder
+    execSync(`code "${context.workingDir}"`, { stdio: 'ignore' });
+
+    console.log();
+    logSuccess('VS Code opened with development configuration!');
+    console.log();
+    console.log(chalk.bold('Start the servers:'));
+    console.log(chalk.cyan('  Press Ctrl+Shift+P → "Tasks: Run Task" → "Start Dev Servers"'));
+    console.log();
+    console.log(chalk.bold('Server URLs (once started):'));
+    console.log(`  ${chalk.green('API Docs:')}  http://localhost:${context.backendPort}/api/docs`);
+    console.log(`  ${chalk.green('Frontend:')} http://localhost:${context.frontendPort}`);
+    console.log();
+    console.log(chalk.dim('Or start manually:'));
+    console.log(chalk.dim(`  Backend:  ${backendCmd}`));
+    console.log(chalk.dim(`  Frontend: ${frontendCmd}`));
+    console.log();
+
+    return true;
+  } catch (error) {
+    logError(`Failed to open VS Code: ${error}`);
+    console.log();
+    console.log(chalk.bold('Manual startup commands:'));
+    console.log(`  ${chalk.cyan('Backend:')}  ${backendCmd}`);
+    console.log(`  ${chalk.cyan('Frontend:')} ${frontendCmd}`);
+    console.log();
+    return false;
+  }
+}
+
+function buildBackendCommand(context: DevContext, isWindows: boolean): string {
+  const venvActivate = isWindows
+    ? `core-api\\venv\\Scripts\\activate`
+    : `source core-api/venv/bin/activate`;
+
+  return isWindows
+    ? `cd /d "${context.workingDir}" && ${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`
+    : `cd "${context.workingDir}" && ${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`;
+}
+
+function buildFrontendCommand(context: DevContext, isWindows: boolean): string {
+  return isWindows
+    ? `cd /d "${context.workingDir}\\web-app" && npm run dev -- --port ${context.frontendPort}`
+    : `cd "${context.workingDir}/web-app" && npm run dev -- --port ${context.frontendPort}`;
+}
+
+function createVSCodeTasks(context: DevContext, isWindows: boolean): void {
+  const vscodeDir = join(context.workingDir, '.vscode');
+  if (!existsSync(vscodeDir)) {
+    mkdirSync(vscodeDir, { recursive: true });
+  }
+
+  const tasksPath = join(vscodeDir, 'tasks.json');
+
+  // Read existing tasks or create new
+  let tasks: {
+    version: string;
+    tasks: Array<{
+      label: string;
+      type: string;
+      command?: string;
+      args?: string[];
+      options?: { cwd?: string; shell?: { executable?: string; args?: string[] } };
+      isBackground?: boolean;
+      problemMatcher?: string[];
+      presentation?: { reveal?: string; panel?: string; group?: string };
+      dependsOn?: string[];
+      dependsOrder?: string;
+      runOptions?: { runOn?: string };
+    }>;
+  } = { version: '2.0.0', tasks: [] };
+
+  if (existsSync(tasksPath)) {
+    try {
+      tasks = JSON.parse(readFileSync(tasksPath, 'utf-8'));
+    } catch {
+      // If parsing fails, use default
+    }
+  }
+
+  // Remove existing dev server tasks
+  tasks.tasks = tasks.tasks.filter(
+    (t) => !['Start Backend', 'Start Frontend', 'Start Dev Servers'].includes(t.label)
+  );
+
+  const venvActivate = isWindows
+    ? '.\\core-api\\venv\\Scripts\\Activate.ps1'
+    : 'source core-api/venv/bin/activate';
+
+  const backendCommand = isWindows
+    ? `${venvActivate}; cd core-api; python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`
+    : `${venvActivate} && cd core-api && python -m uvicorn src.financial_analysis.api.main:app --reload --port ${context.backendPort}`;
+
+  const frontendCommand = `npm run dev -- --port ${context.frontendPort}`;
+
+  // Add new tasks
+  tasks.tasks.push(
+    {
+      label: 'Start Backend',
+      type: 'shell',
+      command: backendCommand,
+      options: {
+        cwd: '${workspaceFolder}',
+        shell: isWindows
+          ? { executable: 'powershell.exe', args: ['-NoProfile', '-Command'] }
+          : undefined,
+      },
+      isBackground: true,
+      problemMatcher: [],
+      presentation: {
+        reveal: 'always',
+        panel: 'dedicated',
+        group: 'dev-servers',
+      },
+    },
+    {
+      label: 'Start Frontend',
+      type: 'shell',
+      command: frontendCommand,
+      options: {
+        cwd: '${workspaceFolder}/web-app',
+      },
+      isBackground: true,
+      problemMatcher: [],
+      presentation: {
+        reveal: 'always',
+        panel: 'dedicated',
+        group: 'dev-servers',
+      },
+    },
+    {
+      label: 'Start Dev Servers',
+      type: 'shell',
+      command: 'echo "Starting dev servers..."',
+      dependsOn: ['Start Backend', 'Start Frontend'],
+      dependsOrder: 'parallel',
+      problemMatcher: [],
+      runOptions: {
+        runOn: 'default',
+      },
+    }
+  );
+
+  writeFileSync(tasksPath, JSON.stringify(tasks, null, 2));
+  logSuccess('VS Code tasks configured (.vscode/tasks.json)');
 }
