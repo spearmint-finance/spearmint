@@ -2,9 +2,10 @@
 """
 Ensure an OpenAPI spec exists in Postman's Spec Hub.
 
-Checks if the spec exists (by ID). If it doesn't exist or the ID is empty,
-creates a new spec in the specified workspace. This enables bootstrap/first-run
-support for the CI/CD workflow.
+Checks if the spec exists (by ID) AND is in the target workspace.
+If it doesn't exist, is inaccessible, or is in a different workspace,
+creates a new spec in the specified workspace. This enables bootstrap/
+first-run support for the CI/CD workflow.
 
 Usage:
     python ensure_spec.py \
@@ -29,6 +30,25 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from postman.common import get_api_key, make_request, read_spec_file, set_github_output
+
+
+def get_workspace_specs(workspace_id: str) -> list:
+    """
+    Get all spec IDs in a workspace.
+
+    Args:
+        workspace_id: ID of the workspace
+
+    Returns:
+        List of spec ID strings in this workspace
+    """
+    try:
+        response = make_request(method='GET', path=f"/workspaces/{workspace_id}")
+        workspace = response.get('workspace', {})
+        specs = workspace.get('specs', [])
+        return [s.get('id', '') for s in specs]
+    except Exception:
+        return []
 
 
 def check_spec_exists(spec_id: str) -> dict | None:
@@ -158,32 +178,41 @@ def main():
     print()
 
     try:
-        # Check if spec already exists
+        # Check if spec already exists AND is in the target workspace
         if args.spec_id:
             print(f"Checking if spec {args.spec_id} exists...")
             spec_info = check_spec_exists(args.spec_id)
 
             if spec_info is not None:
-                current_name = spec_info.get('name', '')
-                print(f"  Spec exists: {current_name}")
+                # Verify the spec is in the target workspace
+                print(f"  Spec exists: {spec_info.get('name', 'N/A')}")
+                print(f"  Verifying spec is in workspace {args.workspace_id}...")
+                workspace_spec_ids = get_workspace_specs(args.workspace_id)
 
-                # Update name if it doesn't match (best-effort)
-                if current_name != args.spec_name:
-                    print(f"  Updating name: {current_name} -> {args.spec_name}")
-                    try:
-                        update_spec_name(args.spec_id, args.spec_name)
-                        print(f"  Name updated.")
-                    except Exception as e:
-                        print(f"  Warning: Could not update spec name: {e}")
+                if args.spec_id in workspace_spec_ids:
+                    print(f"  Confirmed: spec is in target workspace.")
+                    current_name = spec_info.get('name', '')
 
-                print()
-                print("Spec already exists, no creation needed.")
+                    # Update name if it doesn't match (best-effort)
+                    if current_name != args.spec_name:
+                        print(f"  Updating name: {current_name} -> {args.spec_name}")
+                        try:
+                            update_spec_name(args.spec_id, args.spec_name)
+                            print(f"  Name updated.")
+                        except Exception as e:
+                            print(f"  Warning: Could not update spec name: {e}")
 
-                set_github_output("spec_id", args.spec_id)
-                set_github_output("spec_created", "false")
-                return 0
+                    print()
+                    print("Spec already exists in target workspace, no creation needed.")
 
-            print(f"  Spec not found or inaccessible. Will create a new one.")
+                    set_github_output("spec_id", args.spec_id)
+                    set_github_output("spec_created", "false")
+                    return 0
+                else:
+                    print(f"  Spec exists but is NOT in target workspace. Will create a new one.")
+            else:
+                print(f"  Spec not found or inaccessible. Will create a new one.")
+
             print()
 
         # Read the spec file
