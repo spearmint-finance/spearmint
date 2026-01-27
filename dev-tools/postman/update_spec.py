@@ -82,11 +82,11 @@ def update_spec_properties(spec_id: str, name: str) -> dict:
         API response dictionary
     """
     response = make_request(
-        method='PUT',
+        method='PATCH',
         path=f"/specs/{spec_id}",
         data={"name": name}
     )
-    
+
     return response
 
 

@@ -83,7 +83,7 @@ def update_spec_name(spec_id: str, name: str) -> dict:
         API response dictionary
     """
     return make_request(
-        method='PUT',
+        method='PATCH',
         path=f"/specs/{spec_id}",
         data={"name": name}
     )
@@ -167,11 +167,14 @@ def main():
                 current_name = spec_info.get('name', '')
                 print(f"  Spec exists: {current_name}")
 
-                # Update name if it doesn't match
+                # Update name if it doesn't match (best-effort)
                 if current_name != args.spec_name:
                     print(f"  Updating name: {current_name} -> {args.spec_name}")
-                    update_spec_name(args.spec_id, args.spec_name)
-                    print(f"  Name updated.")
+                    try:
+                        update_spec_name(args.spec_id, args.spec_name)
+                        print(f"  Name updated.")
+                    except Exception as e:
+                        print(f"  Warning: Could not update spec name: {e}")
 
                 print()
                 print("Spec already exists, no creation needed.")
