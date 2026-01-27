@@ -71,6 +71,24 @@ def detect_spec_type(spec_content: str) -> str:
     return "openapi:3"
 
 
+def update_spec_name(spec_id: str, name: str) -> dict:
+    """
+    Update the name of an existing spec.
+
+    Args:
+        spec_id: ID of the spec to update
+        name: New name for the spec
+
+    Returns:
+        API response dictionary
+    """
+    return make_request(
+        method='PUT',
+        path=f"/specs/{spec_id}",
+        data={"name": name}
+    )
+
+
 def create_spec(workspace_id: str, spec_name: str, spec_content: str, spec_type: str) -> dict:
     """
     Create a new spec in Postman's Spec Hub.
@@ -146,9 +164,17 @@ def main():
             spec_info = check_spec_exists(args.spec_id)
 
             if spec_info is not None:
-                print(f"  Spec exists: {spec_info.get('name', 'N/A')}")
+                current_name = spec_info.get('name', '')
+                print(f"  Spec exists: {current_name}")
+
+                # Update name if it doesn't match
+                if current_name != args.spec_name:
+                    print(f"  Updating name: {current_name} -> {args.spec_name}")
+                    update_spec_name(args.spec_id, args.spec_name)
+                    print(f"  Name updated.")
+
                 print()
-                print("Spec already exists, no action needed.")
+                print("Spec already exists, no creation needed.")
 
                 set_github_output("spec_id", args.spec_id)
                 set_github_output("spec_created", "false")

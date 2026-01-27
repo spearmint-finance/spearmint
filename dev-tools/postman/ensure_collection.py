@@ -50,6 +50,24 @@ def check_collection_exists(collection_id: str) -> dict | None:
         raise
 
 
+def update_collection_name(collection_id: str, name: str) -> dict:
+    """
+    Update the name of an existing collection.
+
+    Args:
+        collection_id: UID of the collection to update
+        name: New name for the collection
+
+    Returns:
+        API response dictionary
+    """
+    return make_request(
+        method='PATCH',
+        path=f"/collections/{collection_id}",
+        data={"collection": {"info": {"name": name}}}
+    )
+
+
 def create_collection_from_spec(workspace_id: str, spec_content: str, collection_name: str) -> dict:
     """
     Create a new collection by importing an OpenAPI spec.
@@ -134,10 +152,17 @@ def main():
 
             if collection_info is not None:
                 collection = collection_info.get('collection', {})
-                name = collection.get('info', {}).get('name', 'N/A')
-                print(f"  Collection exists: {name}")
+                current_name = collection.get('info', {}).get('name', '')
+                print(f"  Collection exists: {current_name}")
+
+                # Update name if it doesn't match
+                if current_name != args.collection_name:
+                    print(f"  Updating name: {current_name} -> {args.collection_name}")
+                    update_collection_name(args.collection_id, args.collection_name)
+                    print(f"  Name updated.")
+
                 print()
-                print("Collection already exists, no action needed.")
+                print("Collection already exists, no creation needed.")
 
                 set_github_output("collection_uid", args.collection_id)
                 set_github_output("collection_created", "false")
