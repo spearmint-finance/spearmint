@@ -155,11 +155,14 @@ def main():
                 current_name = collection.get('info', {}).get('name', '')
                 print(f"  Collection exists: {current_name}")
 
-                # Update name if it doesn't match
+                # Update name if it doesn't match (best-effort)
                 if current_name != args.collection_name:
                     print(f"  Updating name: {current_name} -> {args.collection_name}")
-                    update_collection_name(args.collection_id, args.collection_name)
-                    print(f"  Name updated.")
+                    try:
+                        update_collection_name(args.collection_id, args.collection_name)
+                        print(f"  Name updated.")
+                    except Exception as e:
+                        print(f"  Warning: Could not update collection name: {e}")
 
                 print()
                 print("Collection already exists, no creation needed.")
