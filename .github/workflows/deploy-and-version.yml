@@ -421,7 +421,8 @@ jobs:
           python dev-tools/postman/update_spec.py \
             --spec-id "${{ steps.ensure-spec.outputs.spec_id }}" \
             --spec-file "sdk/openapi.json" \
-            --version "${{ needs.bump-version.outputs.new_version }}"
+            --version "${{ needs.bump-version.outputs.new_version }}" \
+            --update-name --spec-name "Spearmint Core API"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
