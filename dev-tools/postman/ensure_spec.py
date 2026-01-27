@@ -218,29 +218,43 @@ def main():
         spec_type = detect_spec_type(spec_content)
         print(f"  Detected spec type: {spec_type}")
 
-        # Create the spec
+        # Try to create the spec
         print(f"Creating new spec: {args.spec_name}...")
-        response = create_spec(args.workspace_id, args.spec_name, spec_content, spec_type)
+        try:
+            response = create_spec(args.workspace_id, args.spec_name, spec_content, spec_type)
 
-        new_spec_id = response.get('id', '')
-        if not new_spec_id:
-            # Try alternate response structures
-            new_spec_id = response.get('spec', {}).get('id', '')
+            new_spec_id = response.get('id', '')
+            if not new_spec_id:
+                # Try alternate response structures
+                new_spec_id = response.get('spec', {}).get('id', '')
 
-        if not new_spec_id:
-            print("ERROR: Could not extract spec ID from creation response", file=sys.stderr)
-            print(f"  Response: {response}", file=sys.stderr)
+            if not new_spec_id:
+                raise Exception(f"Could not extract spec ID from response: {response}")
+
+            print()
+            print("Spec created successfully!")
+            print(f"  New Spec ID: {new_spec_id}")
+            print(f"  Name: {args.spec_name}")
+
+            set_github_output("spec_id", new_spec_id)
+            set_github_output("spec_created", "true")
+            return 0
+
+        except Exception as create_err:
+            print(f"  Warning: Could not create spec: {create_err}")
+
+            # Fall back to existing spec ID if available (usable even if in another workspace)
+            if args.spec_id and spec_info is not None:
+                print(f"  Falling back to existing spec: {args.spec_id}")
+                print(f"  Note: Spec is accessible but not in target workspace.")
+                print(f"  To fix: create a spec manually in the target workspace and update POSTMAN_SPEC_ID.")
+
+                set_github_output("spec_id", args.spec_id)
+                set_github_output("spec_created", "false")
+                return 0
+
+            print("ERROR: No spec available and creation failed.", file=sys.stderr)
             sys.exit(1)
-
-        print()
-        print("Spec created successfully!")
-        print(f"  New Spec ID: {new_spec_id}")
-        print(f"  Name: {args.spec_name}")
-
-        set_github_output("spec_id", new_spec_id)
-        set_github_output("spec_created", "true")
-
-        return 0
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
