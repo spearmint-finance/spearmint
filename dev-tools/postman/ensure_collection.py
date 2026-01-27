@@ -208,37 +208,51 @@ def main():
         print("Reading spec file...")
         spec_content = read_spec_file(args.spec_file)
 
-        # Create collection via OpenAPI import
+        # Try to create collection via OpenAPI import
         print(f"Creating collection from OpenAPI spec: {args.collection_name}...")
-        response = create_collection_from_spec(
-            args.workspace_id, spec_content, args.collection_name
-        )
+        try:
+            response = create_collection_from_spec(
+                args.workspace_id, spec_content, args.collection_name
+            )
 
-        # Extract collection UID from response
-        # The import/openapi endpoint returns {"collections": [{"id": "...", "uid": "..."}]}
-        collections = response.get('collections', [])
-        if collections:
-            new_uid = collections[0].get('uid', '')
-            new_id = collections[0].get('id', '')
-        else:
-            new_uid = ''
-            new_id = ''
+            # Extract collection UID from response
+            # The import/openapi endpoint returns {"collections": [{"id": "...", "uid": "..."}]}
+            collections = response.get('collections', [])
+            if collections:
+                new_uid = collections[0].get('uid', '')
+                new_id = collections[0].get('id', '')
+            else:
+                new_uid = ''
+                new_id = ''
 
-        if not new_uid:
-            print("ERROR: Could not extract collection UID from import response", file=sys.stderr)
-            print(f"  Response: {response}", file=sys.stderr)
+            if not new_uid:
+                raise Exception(f"Could not extract collection UID from response: {response}")
+
+            print()
+            print("Collection created successfully!")
+            print(f"  Collection UID: {new_uid}")
+            print(f"  Collection ID: {new_id}")
+            print(f"  Name: {args.collection_name}")
+
+            set_github_output("collection_uid", new_uid)
+            set_github_output("collection_created", "true")
+            return 0
+
+        except Exception as create_err:
+            print(f"  Warning: Could not create collection: {create_err}")
+
+            # Fall back to existing collection ID if available
+            if args.collection_id and collection_info is not None:
+                print(f"  Falling back to existing collection: {args.collection_id}")
+                print(f"  Note: Collection is accessible but not in target workspace.")
+                print(f"  To fix: create a collection manually in the target workspace and update POSTMAN_COLLECTION_UID.")
+
+                set_github_output("collection_uid", args.collection_id)
+                set_github_output("collection_created", "false")
+                return 0
+
+            print("ERROR: No collection available and creation failed.", file=sys.stderr)
             sys.exit(1)
-
-        print()
-        print("Collection created successfully!")
-        print(f"  Collection UID: {new_uid}")
-        print(f"  Collection ID: {new_id}")
-        print(f"  Name: {args.collection_name}")
-
-        set_github_output("collection_uid", new_uid)
-        set_github_output("collection_created", "true")
-
-        return 0
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
