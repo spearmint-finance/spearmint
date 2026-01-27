@@ -379,56 +379,120 @@ jobs:
           name: openapi-spec
           path: sdk/
 
-      # Step 1: Fork the current collection as a version snapshot (preserves previous version)
+      # Step 1: Ensure spec exists (creates if missing or stale)
+      - name: Ensure spec exists
+        id: ensure-spec
+        run: |
+          python dev-tools/postman/ensure_spec.py \
+            --spec-id "${{ secrets.POSTMAN_SPEC_ID }}" \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --spec-file "sdk/openapi.json"
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      # Step 2: Ensure collection exists (creates from spec if missing or stale)
+      - name: Ensure collection exists
+        id: ensure-collection
+        run: |
+          python dev-tools/postman/ensure_collection.py \
+            --collection-id "${{ secrets.POSTMAN_COLLECTION_UID }}" \
+            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --spec-file "sdk/openapi.json"
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      # Step 3: Fork the current collection as a version snapshot (skip on first run)
       - name: Fork collection as version snapshot
         id: fork-collection
+        if: steps.ensure-collection.outputs.collection_created != 'true'
         run: |
           python dev-tools/postman/fork_collection.py \
-            --collection-id "${{ secrets.POSTMAN_COLLECTION_UID }}" \
+            --collection-id "${{ steps.ensure-collection.outputs.collection_uid }}" \
             --workspace-id "${{ secrets.POSTMAN_ARCHIVE_WORKSPACE_ID }}" \
             --version "${{ needs.bump-version.outputs.previous_version }}"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 2: Update the spec file content in-place
+      # Step 4: Update the spec file content in-place
       - name: Update spec in Postman
         id: update-spec
         run: |
           python dev-tools/postman/update_spec.py \
-            --spec-id "${{ secrets.POSTMAN_SPEC_ID }}" \
+            --spec-id "${{ steps.ensure-spec.outputs.spec_id }}" \
             --spec-file "sdk/openapi.json" \
             --version "${{ needs.bump-version.outputs.new_version }}"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Note: Sync step removed - only works for collections generated from spec via API
-      # The spec is updated in-place, and users can manually sync in Postman if needed
-      # To enable auto-sync, generate a new collection from the spec using:
-      #   POST /specs/{specId}/generations/collection
-
-      # Step 3: Update collection description with version changelog
+      # Step 5: Update collection description with version changelog (skip on first run)
       - name: Update collection description
         id: update-description
+        if: steps.ensure-collection.outputs.collection_created != 'true'
         run: |
           python dev-tools/postman/update_collection_description.py \
-            --collection-id "${{ secrets.POSTMAN_COLLECTION_UID }}" \
+            --collection-id "${{ steps.ensure-collection.outputs.collection_uid }}" \
             --version "${{ needs.bump-version.outputs.new_version }}"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
+      # Step 6: Remind to update secrets if new resources were created
+      - name: Secrets update reminder
+        if: steps.ensure-spec.outputs.spec_created == 'true' || steps.ensure-collection.outputs.collection_created == 'true'
+        run: |
+          if [ "${{ steps.ensure-spec.outputs.spec_created }}" == "true" ]; then
+            echo "::warning::New spec was created. Update the POSTMAN_SPEC_ID secret to: ${{ steps.ensure-spec.outputs.spec_id }}"
+          fi
+          if [ "${{ steps.ensure-collection.outputs.collection_created }}" == "true" ]; then
+            echo "::warning::New collection was created. Update the POSTMAN_COLLECTION_UID secret to: ${{ steps.ensure-collection.outputs.collection_uid }}"
+          fi
+
+          echo "## ⚠️ Secrets Update Required" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "New Postman resources were created during this run. Update the following GitHub secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.ensure-spec.outputs.spec_created }}" == "true" ]; then
+            echo "- **POSTMAN_SPEC_ID**: \`${{ steps.ensure-spec.outputs.spec_id }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ steps.ensure-collection.outputs.collection_created }}" == "true" ]; then
+            echo "- **POSTMAN_COLLECTION_UID**: \`${{ steps.ensure-collection.outputs.collection_uid }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
       - name: Summary
         run: |
+          SPEC_ID="${{ steps.ensure-spec.outputs.spec_id }}"
+          COLLECTION_UID="${{ steps.ensure-collection.outputs.collection_uid }}"
+          SPEC_CREATED="${{ steps.ensure-spec.outputs.spec_created }}"
+          COLLECTION_CREATED="${{ steps.ensure-collection.outputs.collection_created }}"
+
           echo "## 📋 Postman Assets Updated (v${{ needs.bump-version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Update-in-Place Strategy" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
-          echo "- ℹ️ **Collection sync**: Manual sync available in Postman" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$SPEC_CREATED" == "true" ] || [ "$COLLECTION_CREATED" == "true" ]; then
+            echo "### Bootstrap Run (First-Time Setup)" >> $GITHUB_STEP_SUMMARY
+            if [ "$SPEC_CREATED" == "true" ]; then
+              echo "- 🆕 **Spec created**: New spec bootstrapped in workspace" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
+            fi
+            if [ "$COLLECTION_CREATED" == "true" ]; then
+              echo "- 🆕 **Collection created**: Imported from OpenAPI spec" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+              echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "### Update-in-Place Strategy" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
+            echo "- ℹ️ **Collection sync**: Manual sync available in Postman" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Links" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${{ secrets.POSTMAN_SPEC_ID }})" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 **Collection**: [Postman Collection](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/collection/${{ secrets.POSTMAN_COLLECTION_UID }})" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **Collection**: [Postman Collection](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/collection/${COLLECTION_UID})" >> $GITHUB_STEP_SUMMARY
           echo "- 📁 **Archive**: [Version History](https://app.postman.com/workspace/${{ secrets.POSTMAN_ARCHIVE_WORKSPACE_ID }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Version History" >> $GITHUB_STEP_SUMMARY
