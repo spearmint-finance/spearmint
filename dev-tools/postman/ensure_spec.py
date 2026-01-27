@@ -74,21 +74,16 @@ def detect_spec_type(spec_content: str) -> str:
     """
     Detect the OpenAPI spec type from its content.
 
+    The Postman API accepts: OPENAPI:3.0, ASYNCAPI:2.0
+
     Args:
         spec_content: Raw spec content string
 
     Returns:
-        Spec type string (e.g., "openapi:3_1" or "openapi:3")
+        Spec type string for Postman API (e.g., "OPENAPI:3.0")
     """
-    try:
-        spec_data = json.loads(spec_content)
-    except json.JSONDecodeError:
-        return "openapi:3"
-
-    openapi_version = spec_data.get("openapi", "")
-    if openapi_version.startswith("3.1"):
-        return "openapi:3_1"
-    return "openapi:3"
+    # Postman API only accepts OPENAPI:3.0 for all OpenAPI 3.x specs
+    return "OPENAPI:3.0"
 
 
 def update_spec_name(spec_id: str, name: str) -> dict:
