@@ -33,18 +33,19 @@ from postman.common import get_api_key, make_request, read_spec_file, set_github
 
 def check_spec_exists(spec_id: str) -> dict | None:
     """
-    Check if a spec exists in Postman.
+    Check if a spec exists and is accessible in Postman.
 
     Args:
         spec_id: ID of the spec to check
 
     Returns:
-        Spec info dictionary if it exists, None if not found (404)
+        Spec info dictionary if it exists, None if not found (404) or
+        inaccessible (403)
     """
     try:
         return make_request(method='GET', path=f"/specs/{spec_id}")
     except Exception as e:
-        if "HTTP 404" in str(e):
+        if "HTTP 404" in str(e) or "HTTP 403" in str(e):
             return None
         raise
 
@@ -123,8 +124,8 @@ def main():
     )
     parser.add_argument(
         '--spec-name',
-        default='Spearmint Finance API',
-        help='Name for the spec (default: "Spearmint Finance API")'
+        default='Spearmint Core API',
+        help='Name for the spec (default: "Spearmint Core API")'
     )
 
     args = parser.parse_args()
@@ -153,7 +154,7 @@ def main():
                 set_github_output("spec_created", "false")
                 return 0
 
-            print(f"  Spec not found (404). Will create a new one.")
+            print(f"  Spec not found or inaccessible. Will create a new one.")
             print()
 
         # Read the spec file
