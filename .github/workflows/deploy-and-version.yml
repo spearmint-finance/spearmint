@@ -405,6 +405,7 @@ jobs:
       - name: Fork collection as version snapshot
         id: fork-collection
         if: steps.ensure-collection.outputs.collection_created != 'true'
+        continue-on-error: true
         run: |
           python dev-tools/postman/fork_collection.py \
             --collection-id "${{ steps.ensure-collection.outputs.collection_uid }}" \
@@ -464,6 +465,7 @@ jobs:
           COLLECTION_UID="${{ steps.ensure-collection.outputs.collection_uid }}"
           SPEC_CREATED="${{ steps.ensure-spec.outputs.spec_created }}"
           COLLECTION_CREATED="${{ steps.ensure-collection.outputs.collection_created }}"
+          FORK_OUTCOME="${{ steps.fork-collection.outcome }}"
 
           echo "## 📋 Postman Assets Updated (v${{ needs.bump-version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -478,12 +480,20 @@ jobs:
             if [ "$COLLECTION_CREATED" == "true" ]; then
               echo "- 🆕 **Collection created**: Imported from OpenAPI spec" >> $GITHUB_STEP_SUMMARY
             else
-              echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+              if [ "$FORK_OUTCOME" == "success" ]; then
+                echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "- ⚠️ **Fork skipped**: Could not archive previous version (check POSTMAN_ARCHIVE_WORKSPACE_ID permissions)" >> $GITHUB_STEP_SUMMARY
+              fi
               echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "### Update-in-Place Strategy" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+            if [ "$FORK_OUTCOME" == "success" ]; then
+              echo "- ✅ **Previous version archived**: v${{ needs.bump-version.outputs.previous_version }} fork created" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ **Fork failed**: Could not archive previous version (check POSTMAN_ARCHIVE_WORKSPACE_ID permissions)" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
             echo "- ℹ️ **Collection sync**: Manual sync available in Postman" >> $GITHUB_STEP_SUMMARY
