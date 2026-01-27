@@ -143,7 +143,7 @@ def main():
     )
     parser.add_argument(
         '--spec-name',
-        help='Custom name for the spec (default: "Spearmint Finance API")'
+        help='Custom name for the spec (default: "Spearmint Core API")'
     )
     
     args = parser.parse_args()
@@ -151,7 +151,7 @@ def main():
     # Ensure API key is available
     get_api_key()
     
-    spec_name = args.spec_name or "Spearmint Finance API"
+    spec_name = args.spec_name or "Spearmint Core API"
     
     print(f"Updating OpenAPI spec in Postman Spec Hub...")
     print(f"  Spec ID: {args.spec_id}")
