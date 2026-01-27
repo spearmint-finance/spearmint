@@ -2,7 +2,8 @@
 """
 Ensure a Postman collection exists for the API.
 
-Checks if the collection exists (by ID). If it doesn't exist or the ID is empty,
+Checks if the collection exists (by ID) AND is in the target workspace.
+If it doesn't exist, is inaccessible, or is in a different workspace,
 imports the OpenAPI spec as a new collection in the specified workspace.
 This enables bootstrap/first-run support for the CI/CD workflow.
 
@@ -29,6 +30,25 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from postman.common import get_api_key, make_request, read_spec_file, set_github_output
+
+
+def get_workspace_collection_uids(workspace_id: str) -> list:
+    """
+    Get all collection UIDs in a workspace.
+
+    Args:
+        workspace_id: ID of the workspace
+
+    Returns:
+        List of collection UID strings in this workspace
+    """
+    try:
+        response = make_request(method='GET', path=f"/workspaces/{workspace_id}")
+        workspace = response.get('workspace', {})
+        collections = workspace.get('collections', [])
+        return [c.get('uid', '') for c in collections]
+    except Exception:
+        return []
 
 
 def check_collection_exists(collection_id: str) -> dict | None:
@@ -145,7 +165,7 @@ def main():
     print()
 
     try:
-        # Check if collection already exists
+        # Check if collection already exists AND is in the target workspace
         if args.collection_id:
             print(f"Checking if collection {args.collection_id} exists...")
             collection_info = check_collection_exists(args.collection_id)
@@ -155,23 +175,33 @@ def main():
                 current_name = collection.get('info', {}).get('name', '')
                 print(f"  Collection exists: {current_name}")
 
-                # Update name if it doesn't match (best-effort)
-                if current_name != args.collection_name:
-                    print(f"  Updating name: {current_name} -> {args.collection_name}")
-                    try:
-                        update_collection_name(args.collection_id, args.collection_name)
-                        print(f"  Name updated.")
-                    except Exception as e:
-                        print(f"  Warning: Could not update collection name: {e}")
+                # Verify the collection is in the target workspace
+                print(f"  Verifying collection is in workspace {args.workspace_id}...")
+                workspace_collection_uids = get_workspace_collection_uids(args.workspace_id)
 
-                print()
-                print("Collection already exists, no creation needed.")
+                if args.collection_id in workspace_collection_uids:
+                    print(f"  Confirmed: collection is in target workspace.")
 
-                set_github_output("collection_uid", args.collection_id)
-                set_github_output("collection_created", "false")
-                return 0
+                    # Update name if it doesn't match (best-effort)
+                    if current_name != args.collection_name:
+                        print(f"  Updating name: {current_name} -> {args.collection_name}")
+                        try:
+                            update_collection_name(args.collection_id, args.collection_name)
+                            print(f"  Name updated.")
+                        except Exception as e:
+                            print(f"  Warning: Could not update collection name: {e}")
 
-            print(f"  Collection not found or inaccessible. Will create a new one.")
+                    print()
+                    print("Collection already exists in target workspace, no creation needed.")
+
+                    set_github_output("collection_uid", args.collection_id)
+                    set_github_output("collection_created", "false")
+                    return 0
+                else:
+                    print(f"  Collection exists but is NOT in target workspace. Will create a new one.")
+            else:
+                print(f"  Collection not found or inaccessible. Will create a new one.")
+
             print()
 
         # Read the spec file for import
