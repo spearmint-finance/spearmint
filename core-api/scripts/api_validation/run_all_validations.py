@@ -414,10 +414,11 @@ class PreCommitTestRunner:
         latest_json = self.log_dir / "latest_report.json"
         latest_md = self.log_dir / "latest_report.md"
 
-        # Copy files (Windows-compatible)
+        # Copy file content only (use copyfile to avoid PermissionError from
+        # copystat/copymode on filesystems that restrict metadata changes)
         import shutil
-        shutil.copy2(json_file, latest_json)
-        shutil.copy2(md_file, latest_md)
+        shutil.copyfile(json_file, latest_json)
+        shutil.copyfile(md_file, latest_md)
 
         if self.verbose:
             print(f"[OK] Latest reports updated")
