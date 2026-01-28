@@ -138,12 +138,17 @@ def validate_spec(spec_file: str, workspace_id: str = None, fail_severity: str =
         'violations': []
     }
 
-    # Check for Postman API errors (workspace not found, auth issues, etc.)
-    if result.stderr and 'requested resource could not be found' in result.stderr.lower():
-        print("\n[WARNING] Postman workspace not configured or not accessible.")
+    # Check for Postman API errors (workspace not found, auth issues, governance not available, etc.)
+    non_fatal_errors = [
+        'requested resource could not be found',
+        'unable to retrieve workspace governance rulesets',
+    ]
+    combined_output = ((result.stderr or '') + ' ' + (result.stdout or '')).lower()
+    if any(err in combined_output for err in non_fatal_errors):
+        print("\n[WARNING] Postman workspace not configured or governance rulesets not available.")
         print("Skipping Postman governance validation.")
-        print("To enable validation, set POSTMAN_WORKSPACE_ID environment variable.")
-        # Return success to allow commit to proceed
+        print("To enable validation, configure governance rulesets in the Postman workspace.")
+        # Return success to allow pipeline to proceed
         validation_result['success'] = True
         validation_result['exit_code'] = 0
         return validation_result
