@@ -74,6 +74,8 @@ def validate_spec(spec_file: str, workspace_id: str = None, fail_severity: str =
     Returns:
         dict with validation results
     """
+    import tempfile
+
     if not os.path.exists(spec_file):
         raise FileNotFoundError(f"Spec file not found: {spec_file}")
 
@@ -94,40 +96,41 @@ def validate_spec(spec_file: str, workspace_id: str = None, fail_severity: str =
     print(f"   Fail severity: {fail_severity}")
     print(f"   Output format: {output_format}")
     print(f"\n   Running: {' '.join(cmd)}\n")
-    
-    if verbose:
-        # Run with real-time output (stream to console) and also capture for parsing
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1
-        )
-        captured_stdout_lines = []
-        captured_stderr_lines = []
-        try:
-            for line in process.stdout:
-                captured_stdout_lines.append(line)
-                sys.stdout.write(line)
-            stderr_text = process.stderr.read()
-            if stderr_text:
-                captured_stderr_lines.append(stderr_text)
-        finally:
+
+    # Use temp files to avoid 64KB pipe buffer limit for large JSON outputs
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as stdout_file:
+        stdout_path = stdout_file.name
+
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as stderr_file:
+        stderr_path = stderr_file.name
+
+    try:
+        with open(stdout_path, 'w') as stdout_f, open(stderr_path, 'w') as stderr_f:
+            process = subprocess.Popen(
+                cmd,
+                stdout=stdout_f,
+                stderr=stderr_f,
+                text=True
+            )
             ret = process.wait()
-        stdout = "".join(captured_stdout_lines)
-        stderr = "".join(captured_stderr_lines)
+
+        # Read captured output from temp files
+        with open(stdout_path, 'r') as f:
+            stdout = f.read()
+        with open(stderr_path, 'r') as f:
+            stderr = f.read()
+
+        if verbose and stdout:
+            print(stdout)
+
         result = subprocess.CompletedProcess(cmd, ret, stdout, stderr)
-    else:
-        # Non-verbose: capture output safely using subprocess.run (no deadlock)
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        stdout = result.stdout
-        stderr = result.stderr
+    finally:
+        # Clean up temp files
+        try:
+            os.unlink(stdout_path)
+            os.unlink(stderr_path)
+        except OSError:
+            pass
 
     # Parse output
     validation_result = {
@@ -180,19 +183,37 @@ def print_validation_results(result: dict, summary_only: bool = False):
     print("VALIDATION RESULTS")
     print("="*80)
 
-    if result['success']:
-        print("\n[PASSED] No governance or security violations found!")
-    else:
-        print(f"\n[FAILED] Found {len(result['violations'])} violation(s)")
+    # Count violations by severity
+    violations = result.get('violations', [])
+    error_count = sum(1 for v in violations if str(v.get('severity', '')).upper() == 'ERROR')
+    warning_count = sum(1 for v in violations if str(v.get('severity', '')).upper() == 'WARNING')
+    info_count = sum(1 for v in violations if str(v.get('severity', '')).upper() == 'INFO')
+    hint_count = sum(1 for v in violations if str(v.get('severity', '')).upper() == 'HINT')
 
-        if not summary_only and result['violations']:
-            print("\nViolations:")
-            print("-" * 80)
-            for i, violation in enumerate(result['violations'], 1):
-                print(f"\n{i}. {violation.get('severity', 'UNKNOWN')} - Line {violation.get('line number', 'N/A')}")
-                print(f"   File: {violation.get('file', 'N/A')}")
-                print(f"   Path: {violation.get('path', 'N/A')}")
-                print(f"   Issue: {violation.get('issue', 'N/A')}")
+    if result['success']:
+        if warning_count > 0 or info_count > 0 or hint_count > 0:
+            print(f"\n[PASSED] with {warning_count} warning(s), {info_count} info(s), {hint_count} hint(s)")
+        else:
+            print("\n[PASSED] No governance or security violations found!")
+    else:
+        print(f"\n[FAILED] Found {error_count} error(s), {warning_count} warning(s)")
+
+    # Show violations (warnings included) unless summary_only
+    if not summary_only and violations:
+        # Group by severity for cleaner output
+        print(f"\nTotal violations: {len(violations)}")
+        print(f"  - Errors: {error_count}")
+        print(f"  - Warnings: {warning_count}")
+        print(f"  - Info: {info_count}")
+        print(f"  - Hints: {hint_count}")
+
+        print("\nViolations:")
+        print("-" * 80)
+        for i, violation in enumerate(violations, 1):
+            print(f"\n{i}. {violation.get('severity', 'UNKNOWN')} - Line {violation.get('line number', 'N/A')}")
+            print(f"   File: {violation.get('file', 'N/A')}")
+            print(f"   Path: {violation.get('path', 'N/A')}")
+            print(f"   Issue: {violation.get('issue', 'N/A')}")
 
     if result['stderr'] and not summary_only:
         print(f"\nErrors/Warnings:\n{result['stderr']}")
