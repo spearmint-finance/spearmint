@@ -2,19 +2,25 @@
 """
 Ensure a Postman collection exists for the API.
 
-Checks if the collection exists (by ID) AND is in the target workspace.
-If it doesn't exist, is inaccessible, or is in a different workspace,
-imports the OpenAPI spec as a new collection in the specified workspace.
-This enables bootstrap/first-run support for the CI/CD workflow.
+This script uses a "find or create" strategy:
+1. Check if the provided collection ID exists (optional hint)
+2. Search the workspace for a collection with the given name
+3. If found, use that collection (self-healing - no hardcoded ID needed)
+4. If not found, import the OpenAPI spec as a new collection
+
+This approach makes the workflow self-healing - if a collection is deleted or
+the hardcoded ID becomes stale, the workflow will find or recreate it.
 
 Usage:
+    # Find or create by name (recommended - self-healing)
+    python ensure_collection.py \
+        --workspace-id WORKSPACE_ID \
+        --spec-file sdk/openapi.json \
+        --collection-name "Spearmint Core API"
+
+    # Check specific ID first, fall back to find-by-name
     python ensure_collection.py \
         --collection-id COLLECTION_UID \
-        --workspace-id WORKSPACE_ID \
-        --spec-file sdk/openapi.json
-
-    # First run (no existing collection):
-    python ensure_collection.py \
         --workspace-id WORKSPACE_ID \
         --spec-file sdk/openapi.json
 
@@ -32,23 +38,41 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from postman.common import get_api_key, make_request, read_spec_file, set_github_output
 
 
-def get_workspace_collection_uids(workspace_id: str) -> list:
+def get_workspace_collections(workspace_id: str) -> list:
     """
-    Get all collection UIDs in a workspace.
+    Get all collections in a workspace with their details.
 
     Args:
         workspace_id: ID of the workspace
 
     Returns:
-        List of collection UID strings in this workspace
+        List of collection dictionaries with id, uid, name, etc.
     """
     try:
         response = make_request(method='GET', path=f"/workspaces/{workspace_id}")
         workspace = response.get('workspace', {})
-        collections = workspace.get('collections', [])
-        return [c.get('uid', '') for c in collections]
-    except Exception:
+        return workspace.get('collections', [])
+    except Exception as e:
+        print(f"  Warning: Could not list workspace collections: {e}")
         return []
+
+
+def find_collection_by_name(workspace_id: str, collection_name: str) -> dict | None:
+    """
+    Find a collection in the workspace by name.
+
+    Args:
+        workspace_id: ID of the workspace
+        collection_name: Name of the collection to find
+
+    Returns:
+        Collection info dictionary if found, None otherwise
+    """
+    collections = get_workspace_collections(workspace_id)
+    for collection in collections:
+        if collection.get('name') == collection_name:
+            return collection
+    return None
 
 
 def check_collection_exists(collection_id: str) -> dict | None:
@@ -135,12 +159,12 @@ def main():
     parser.add_argument(
         '--collection-id',
         default='',
-        help='UID of the existing collection to check (optional, empty means create new)'
+        help='UID of an existing collection to check first (optional, falls back to find-by-name)'
     )
     parser.add_argument(
         '--workspace-id',
         required=True,
-        help='Workspace ID to create the collection in (if needed)'
+        help='Workspace ID to find/create the collection in'
     )
     parser.add_argument(
         '--spec-file',
@@ -150,7 +174,7 @@ def main():
     parser.add_argument(
         '--collection-name',
         default='Spearmint Core API',
-        help='Name for the collection (default: "Spearmint Core API")'
+        help='Name for the collection (used for find-by-name and creation)'
     )
 
     args = parser.parse_args()
@@ -159,100 +183,97 @@ def main():
     get_api_key()
 
     print("Ensuring Postman collection exists...")
-    print(f"  Collection ID: {args.collection_id or '(not provided)'}")
     print(f"  Workspace ID: {args.workspace_id}")
+    print(f"  Collection name: {args.collection_name}")
     print(f"  Spec file: {args.spec_file}")
+    if args.collection_id:
+        print(f"  Collection ID hint: {args.collection_id}")
     print()
 
     try:
-        # Check if collection already exists AND is in the target workspace
+        # Strategy 1: Check if the provided collection ID exists and is accessible
         if args.collection_id:
-            print(f"Checking if collection {args.collection_id} exists...")
+            print(f"Step 1: Checking if collection ID {args.collection_id} exists...")
             collection_info = check_collection_exists(args.collection_id)
 
             if collection_info is not None:
                 collection = collection_info.get('collection', {})
                 current_name = collection.get('info', {}).get('name', '')
-                print(f"  Collection exists: {current_name}")
+                print(f"  Found collection: {current_name}")
 
-                # Verify the collection is in the target workspace
-                print(f"  Verifying collection is in workspace {args.workspace_id}...")
-                workspace_collection_uids = get_workspace_collection_uids(args.workspace_id)
+                # Update name if needed
+                if current_name != args.collection_name:
+                    print(f"  Updating name: {current_name} -> {args.collection_name}")
+                    try:
+                        update_collection_name(args.collection_id, args.collection_name)
+                    except Exception as e:
+                        print(f"  Warning: Could not update name: {e}")
 
-                if args.collection_id in workspace_collection_uids:
-                    print(f"  Confirmed: collection is in target workspace.")
-
-                    # Update name if it doesn't match (best-effort)
-                    if current_name != args.collection_name:
-                        print(f"  Updating name: {current_name} -> {args.collection_name}")
-                        try:
-                            update_collection_name(args.collection_id, args.collection_name)
-                            print(f"  Name updated.")
-                        except Exception as e:
-                            print(f"  Warning: Could not update collection name: {e}")
-
-                    print()
-                    print("Collection already exists in target workspace, no creation needed.")
-
-                    set_github_output("collection_uid", args.collection_id)
-                    set_github_output("collection_created", "false")
-                    return 0
-                else:
-                    print(f"  Collection exists but is NOT in target workspace. Will create a new one.")
-            else:
-                print(f"  Collection not found or inaccessible. Will create a new one.")
-
-            print()
-
-        # Read the spec file for import
-        print("Reading spec file...")
-        spec_content = read_spec_file(args.spec_file)
-
-        # Try to create collection via OpenAPI import
-        print(f"Creating collection from OpenAPI spec: {args.collection_name}...")
-        try:
-            response = create_collection_from_spec(
-                args.workspace_id, spec_content, args.collection_name
-            )
-
-            # Extract collection UID from response
-            # The import/openapi endpoint returns {"collections": [{"id": "...", "uid": "..."}]}
-            collections = response.get('collections', [])
-            if collections:
-                new_uid = collections[0].get('uid', '')
-                new_id = collections[0].get('id', '')
-            else:
-                new_uid = ''
-                new_id = ''
-
-            if not new_uid:
-                raise Exception(f"Could not extract collection UID from response: {response}")
-
-            print()
-            print("Collection created successfully!")
-            print(f"  Collection UID: {new_uid}")
-            print(f"  Collection ID: {new_id}")
-            print(f"  Name: {args.collection_name}")
-
-            set_github_output("collection_uid", new_uid)
-            set_github_output("collection_created", "true")
-            return 0
-
-        except Exception as create_err:
-            print(f"  Warning: Could not create collection: {create_err}")
-
-            # Fall back to existing collection ID if available
-            if args.collection_id and collection_info is not None:
-                print(f"  Falling back to existing collection: {args.collection_id}")
-                print(f"  Note: Collection is accessible but not in target workspace.")
-                print(f"  To fix: create a collection manually in the target workspace and update POSTMAN_COLLECTION_UID.")
-
+                print()
+                print(f"Using existing collection (ID: {args.collection_id})")
                 set_github_output("collection_uid", args.collection_id)
                 set_github_output("collection_created", "false")
                 return 0
+            else:
+                print(f"  Collection ID not found or inaccessible.")
+        else:
+            print("Step 1: No collection ID provided, skipping ID check.")
 
-            print("ERROR: No collection available and creation failed.", file=sys.stderr)
-            sys.exit(1)
+        # Strategy 2: Find collection by name in the workspace
+        print()
+        print(f"Step 2: Searching workspace for collection named '{args.collection_name}'...")
+        existing_collection = find_collection_by_name(args.workspace_id, args.collection_name)
+
+        if existing_collection:
+            found_uid = existing_collection.get('uid', '')
+            print(f"  Found existing collection: {found_uid}")
+            print()
+            print(f"Using existing collection (found by name)")
+            print(f"  UID: {found_uid}")
+            print(f"  Name: {existing_collection.get('name', 'N/A')}")
+
+            set_github_output("collection_uid", found_uid)
+            set_github_output("collection_created", "false")
+            return 0
+
+        print(f"  No collection found with name '{args.collection_name}'")
+
+        # Strategy 3: Create a new collection from OpenAPI spec
+        print()
+        print("Step 3: Creating new collection from OpenAPI spec...")
+
+        # Read the spec file
+        print("  Reading spec file...")
+        spec_content = read_spec_file(args.spec_file)
+
+        # Create collection via OpenAPI import
+        print(f"  Importing spec as collection: {args.collection_name}...")
+        response = create_collection_from_spec(
+            args.workspace_id, spec_content, args.collection_name
+        )
+
+        # Extract collection UID from response
+        # The import/openapi endpoint returns {"collections": [{"id": "...", "uid": "..."}]}
+        collections = response.get('collections', [])
+        if collections:
+            new_uid = collections[0].get('uid', '')
+            new_id = collections[0].get('id', '')
+        else:
+            new_uid = ''
+            new_id = ''
+
+        if not new_uid:
+            raise Exception(f"Could not extract collection UID from response: {response}")
+
+        print()
+        print("Collection created successfully!")
+        print(f"  UID: {new_uid}")
+        print(f"  ID: {new_id}")
+        print(f"  Name: {args.collection_name}")
+
+        set_github_output("collection_uid", new_uid)
+        set_github_output("collection_created", "true")
+        return 0
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
