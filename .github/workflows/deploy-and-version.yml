@@ -15,9 +15,12 @@ permissions:
   contents: write
   pull-requests: write
 
-# Hardcoded Postman workspace ID (PROD)
+# Hardcoded Postman IDs (PROD workspace)
+# These are not secrets - they are public resource identifiers
 env:
   POSTMAN_WORKSPACE_ID: d9ca9bbd-2779-4e25-bb0e-737d252a3122
+  POSTMAN_SPEC_ID: 34d82ccc-5bb5-464e-a3b2-fde3b58a71bb
+  POSTMAN_COLLECTION_UID: 44359130-7ba080bd-21fe-43cf-a53f-08c7d2ef785d
 
 jobs:
   # STEP 1: Run integration tests (can run in parallel with spec generation)
@@ -413,7 +416,7 @@ jobs:
         id: ensure-spec
         run: |
           python dev-tools/postman/ensure_spec.py \
-            --spec-id "${{ secrets.POSTMAN_SPEC_ID }}" \
+            --spec-id "${{ env.POSTMAN_SPEC_ID }}" \
             --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
             --spec-file "sdk/openapi.json"
         env:
@@ -424,7 +427,7 @@ jobs:
         id: ensure-collection
         run: |
           python dev-tools/postman/ensure_collection.py \
-            --collection-id "${{ secrets.POSTMAN_COLLECTION_UID }}" \
+            --collection-id "${{ env.POSTMAN_COLLECTION_UID }}" \
             --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
             --spec-file "sdk/openapi.json"
         env:
@@ -466,20 +469,20 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 6: Remind to update secrets if new resources were created
-      - name: Secrets update reminder
+      # Step 6: Remind to update workflow env vars if new resources were created
+      - name: Workflow update reminder
         if: steps.ensure-spec.outputs.spec_created == 'true' || steps.ensure-collection.outputs.collection_created == 'true'
         run: |
           if [ "${{ steps.ensure-spec.outputs.spec_created }}" == "true" ]; then
-            echo "::warning::New spec was created. Update the POSTMAN_SPEC_ID secret to: ${{ steps.ensure-spec.outputs.spec_id }}"
+            echo "::warning::New spec was created. Update POSTMAN_SPEC_ID in workflow env to: ${{ steps.ensure-spec.outputs.spec_id }}"
           fi
           if [ "${{ steps.ensure-collection.outputs.collection_created }}" == "true" ]; then
-            echo "::warning::New collection was created. Update the POSTMAN_COLLECTION_UID secret to: ${{ steps.ensure-collection.outputs.collection_uid }}"
+            echo "::warning::New collection was created. Update POSTMAN_COLLECTION_UID in workflow env to: ${{ steps.ensure-collection.outputs.collection_uid }}"
           fi
 
-          echo "## ⚠️ Secrets Update Required" >> $GITHUB_STEP_SUMMARY
+          echo "## ⚠️ Workflow Update Required" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "New Postman resources were created during this run. Update the following GitHub secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "New Postman resources were created during this run. Update the env vars in \`.github/workflows/deploy-and-version.yml\`:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.ensure-spec.outputs.spec_created }}" == "true" ]; then
             echo "- **POSTMAN_SPEC_ID**: \`${{ steps.ensure-spec.outputs.spec_id }}\`" >> $GITHUB_STEP_SUMMARY
