@@ -60,7 +60,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TransactionResponse"
+                  "type": "object",
+                  "description": "Inline schema to trigger governance rule violation",
+                  "properties": {
+                    "id": {"type": "integer"},
+                    "amount": {"type": "number"}
+                  }
                 }
               }
             }
