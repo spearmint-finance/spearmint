@@ -19,7 +19,7 @@ permissions:
 # These are not secrets - they are public resource identifiers
 env:
   POSTMAN_WORKSPACE_ID: d9ca9bbd-2779-4e25-bb0e-737d252a3122
-  POSTMAN_SPEC_ID: 34d82ccc-5bb5-464e-a3b2-fde3b58a71bb
+  POSTMAN_SPEC_ID: d26cae51-7764-4ae5-a7a7-8a0736a94908
   POSTMAN_COLLECTION_UID: 44359130-7ba080bd-21fe-43cf-a53f-08c7d2ef785d
 
 jobs:
@@ -411,25 +411,29 @@ jobs:
           name: openapi-spec
           path: sdk/
 
-      # Step 1: Ensure spec exists (creates if missing or stale)
+      # Step 1: Ensure spec exists (finds by name or creates if missing)
+      # Self-healing: if the hardcoded ID is stale, falls back to find-by-name
       - name: Ensure spec exists
         id: ensure-spec
         run: |
           python dev-tools/postman/ensure_spec.py \
             --spec-id "${{ env.POSTMAN_SPEC_ID }}" \
             --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
-            --spec-file "sdk/openapi.json"
+            --spec-file "sdk/openapi.json" \
+            --spec-name "Spearmint Core API"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 2: Ensure collection exists (creates from spec if missing or stale)
+      # Step 2: Ensure collection exists (finds by name or creates from spec if missing)
+      # Self-healing: if the hardcoded ID is stale, falls back to find-by-name
       - name: Ensure collection exists
         id: ensure-collection
         run: |
           python dev-tools/postman/ensure_collection.py \
             --collection-id "${{ env.POSTMAN_COLLECTION_UID }}" \
             --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
-            --spec-file "sdk/openapi.json"
+            --spec-file "sdk/openapi.json" \
+            --collection-name "Spearmint Core API"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
