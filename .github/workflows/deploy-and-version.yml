@@ -15,6 +15,10 @@ permissions:
   contents: write
   pull-requests: write
 
+# Hardcoded Postman workspace ID (PROD)
+env:
+  POSTMAN_WORKSPACE_ID: d9ca9bbd-2779-4e25-bb0e-737d252a3122
+
 jobs:
   # STEP 1: Run integration tests (can run in parallel with spec generation)
   integration-tests:
@@ -92,12 +96,12 @@ jobs:
           set -e
           export PATH="$HOME/.postman/bin:$PATH"
           echo "Running Postman governance and security validation..."
-          echo "Workspace ID: ${{ secrets.POSTMAN_WORKSPACE_ID }}"
+          echo "Workspace ID: ${{ env.POSTMAN_WORKSPACE_ID }}"
           echo "Fail severity: ERROR"
           echo ""
           python core-api/scripts/api_validation/postman_validation.py \
             --spec-file sdk/openapi.json \
-            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
             --fail-severity ERROR \
             --output-file spec-validation-results.json
           echo ""
@@ -410,7 +414,7 @@ jobs:
         run: |
           python dev-tools/postman/ensure_spec.py \
             --spec-id "${{ secrets.POSTMAN_SPEC_ID }}" \
-            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
             --spec-file "sdk/openapi.json"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
@@ -421,7 +425,7 @@ jobs:
         run: |
           python dev-tools/postman/ensure_collection.py \
             --collection-id "${{ secrets.POSTMAN_COLLECTION_UID }}" \
-            --workspace-id "${{ secrets.POSTMAN_WORKSPACE_ID }}" \
+            --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
             --spec-file "sdk/openapi.json"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
@@ -527,8 +531,8 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Links" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 **Collection**: [Postman Collection](https://app.postman.com/workspace/${{ secrets.POSTMAN_WORKSPACE_ID }}/collection/${COLLECTION_UID})" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔗 **Spec**: [Postman Spec Hub](https://app.postman.com/workspace/${{ env.POSTMAN_WORKSPACE_ID }}/specs/${SPEC_ID})" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **Collection**: [Postman Collection](https://app.postman.com/workspace/${{ env.POSTMAN_WORKSPACE_ID }}/collection/${COLLECTION_UID})" >> $GITHUB_STEP_SUMMARY
           echo "- 📁 **Archive**: [Version History](https://app.postman.com/workspace/${{ secrets.POSTMAN_ARCHIVE_WORKSPACE_ID }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Version History" >> $GITHUB_STEP_SUMMARY
