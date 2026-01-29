@@ -6,10 +6,12 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
+  Box,
+  Typography,
   Divider,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import logo from "../../assets/logo.jpg";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
@@ -59,7 +61,43 @@ function Sidebar({
 
   const drawer = (
     <>
-      <Toolbar />
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          py: 2,
+          px: 2,
+          minHeight: 64,
+          background: "linear-gradient(135deg, #E8F5E9 0%, #B2DFDB 100%)",
+        }}
+      >
+        <Box
+          component="img"
+          src={logo}
+          alt="Spearmint Finance"
+          sx={{
+            height: 48,
+            width: 48,
+            borderRadius: "50%",
+            objectFit: "cover",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            mb: 1,
+          }}
+        />
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 600,
+            color: "primary.dark",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Spearmint Finance
+        </Typography>
+      </Box>
+      <Divider />
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>

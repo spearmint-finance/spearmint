@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Box, useMediaQuery, useTheme } from "@mui/material";
-import Header from "./Header";
+import { Box, useMediaQuery, useTheme, Fab } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import Sidebar from "./Sidebar";
 
 const DRAWER_WIDTH = 240;
@@ -17,7 +17,22 @@ function Layout() {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <Header drawerWidth={DRAWER_WIDTH} onMenuClick={handleDrawerToggle} />
+      {/* Mobile menu button */}
+      {isMobile && (
+        <Fab
+          color="primary"
+          size="small"
+          onClick={handleDrawerToggle}
+          sx={{
+            position: "fixed",
+            top: 16,
+            left: 16,
+            zIndex: theme.zIndex.drawer + 1,
+          }}
+        >
+          <MenuIcon />
+        </Fab>
+      )}
       <Sidebar
         drawerWidth={DRAWER_WIDTH}
         mobileOpen={mobileOpen}
@@ -31,9 +46,8 @@ function Layout() {
           p: 3,
           width: { xs: "100%", md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
-          mt: "64px", // Height of AppBar
           backgroundColor: "background.default",
-          minHeight: "calc(100vh - 64px)",
+          minHeight: "100vh",
         }}
       >
         <Outlet />

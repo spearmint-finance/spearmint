@@ -1,6 +1,6 @@
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
+import logo from '../../assets/logo.jpg'
 
 interface HeaderProps {
   drawerWidth: number
@@ -26,9 +26,20 @@ function Header({ drawerWidth, onMenuClick }: HeaderProps) {
         >
           <MenuIcon />
         </IconButton>
-        <AccountBalanceWalletIcon sx={{ mr: 2 }} />
+        <Box
+          component="img"
+          src={logo}
+          alt="Spearmint Finance Logo"
+          sx={{
+            height: 40,
+            width: 40,
+            borderRadius: '50%',
+            mr: 2,
+            objectFit: 'cover',
+          }}
+        />
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-          Financial Analysis Tool
+          Spearmint Finance
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* Future: Add user menu, notifications, etc. */}
