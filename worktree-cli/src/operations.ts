@@ -208,7 +208,7 @@ function runPostCreateHooks(config: WorktreeConfig): void {
 
   logDim('Running post-create hooks...');
 
-  let hadChmodError = false;
+  let hadHookFailure = false;
 
   for (const hook of hooks) {
     try {
@@ -224,23 +224,32 @@ function runPostCreateHooks(config: WorktreeConfig): void {
         console.log(output);
       }
     } catch (error: unknown) {
+      hadHookFailure = true;
       const errorMsg = error instanceof Error ? error.message : String(error);
       const errorOutput = (error as { stderr?: string })?.stderr || '';
 
-      // Detect chmod/permission errors
-      if (errorMsg.includes('chmod') || errorMsg.includes('EPERM') ||
-          errorOutput.includes('chmod') || errorOutput.includes('Operation not permitted')) {
-        hadChmodError = true;
-        logWarning(`Hook failed (chmod error): ${hook}`);
+      // Detect permission-related errors (chmod, EPERM, or common permission failure patterns)
+      const isPermissionError =
+        errorMsg.includes('chmod') ||
+        errorMsg.includes('EPERM') ||
+        errorMsg.includes('Operation not permitted') ||
+        errorMsg.includes('ensurepip') ||  // venv creation fails with ensurepip in permission-restricted envs
+        errorOutput.includes('chmod') ||
+        errorOutput.includes('Operation not permitted') ||
+        errorOutput.includes('Permission denied');
+
+      if (isPermissionError) {
+        logWarning(`Hook failed (permission error): ${hook}`);
       } else {
         logWarning(`Hook failed: ${hook}`);
       }
     }
   }
 
-  // If chmod errors occurred, try to use symlinks as fallback
-  if (hadChmodError) {
-    logDim('Detected permission errors. Attempting symlink fallback...');
+  // Always check for broken venv/node_modules after hooks complete (regardless of error detection)
+  // This handles cases where permission errors manifest as unexpected failures
+  if (hadHookFailure) {
+    logDim('Hook failures detected. Checking for broken environments...');
     trySymlinkFallback(worktreePath, projectRoot);
   }
 
@@ -248,8 +257,9 @@ function runPostCreateHooks(config: WorktreeConfig): void {
 }
 
 /**
- * When chmod errors prevent venv/node_modules from being created properly,
- * fall back to symlinking from the main workspace
+ * When permission errors prevent venv/node_modules from being created properly,
+ * fall back to symlinking from the main workspace.
+ * This handles Docker/devcontainer environments where file permissions are restricted.
  */
 function trySymlinkFallback(worktreePath: string, projectRoot: string): void {
   // Try to symlink venv
@@ -259,10 +269,12 @@ function trySymlinkFallback(worktreePath: string, projectRoot: string): void {
   if (existsSync(mainVenv)) {
     try {
       let shouldSymlink = false;
+      let reason = '';
 
       if (!existsSync(worktreeVenv)) {
         // venv doesn't exist at all
         shouldSymlink = true;
+        reason = 'venv missing';
       } else {
         const stat = lstatSync(worktreeVenv);
         if (stat.isSymbolicLink()) {
@@ -275,20 +287,24 @@ function trySymlinkFallback(worktreePath: string, projectRoot: string): void {
           // If no activate script, venv is broken
           if (!hasActivate) {
             shouldSymlink = true;
+            reason = 'venv broken (missing activate script)';
           }
         }
       }
 
       if (shouldSymlink) {
+        logDim(`  Detected: ${reason}`);
         if (existsSync(worktreeVenv)) {
           rmSync(worktreeVenv, { recursive: true, force: true });
         }
         symlinkSync(mainVenv, worktreeVenv);
-        logSuccess('Linked venv to main workspace (chmod fallback)');
+        logSuccess('Linked venv to main workspace');
       }
     } catch (error) {
-      logWarning(`Could not create venv symlink fallback: ${error}`);
+      logWarning(`Could not create venv symlink: ${error}`);
     }
+  } else {
+    logWarning('Main workspace venv not found - cannot create symlink fallback');
   }
 
   // Try to symlink node_modules
@@ -298,10 +314,12 @@ function trySymlinkFallback(worktreePath: string, projectRoot: string): void {
   if (existsSync(mainNodeModules)) {
     try {
       let shouldSymlink = false;
+      let reason = '';
 
       if (!existsSync(worktreeNodeModules)) {
         // node_modules doesn't exist at all
         shouldSymlink = true;
+        reason = 'node_modules missing';
       } else {
         const stat = lstatSync(worktreeNodeModules);
         if (stat.isSymbolicLink()) {
@@ -312,19 +330,21 @@ function trySymlinkFallback(worktreePath: string, projectRoot: string): void {
           const binPath = join(worktreeNodeModules, '.bin');
           if (!existsSync(binPath)) {
             shouldSymlink = true;
+            reason = 'node_modules broken (missing .bin)';
           }
         }
       }
 
       if (shouldSymlink) {
+        logDim(`  Detected: ${reason}`);
         if (existsSync(worktreeNodeModules)) {
           rmSync(worktreeNodeModules, { recursive: true, force: true });
         }
         symlinkSync(mainNodeModules, worktreeNodeModules);
-        logSuccess('Linked node_modules to main workspace (chmod fallback)');
+        logSuccess('Linked node_modules to main workspace');
       }
     } catch (error) {
-      logWarning(`Could not create node_modules symlink fallback: ${error}`);
+      logWarning(`Could not create node_modules symlink: ${error}`);
     }
   }
 }
