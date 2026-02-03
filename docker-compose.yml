@@ -9,8 +9,10 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - core-api
-      - web-app
+      core-api:
+        condition: service_healthy
+      web-app:
+        condition: service_started
 
   # ----------------------------------------------------------------
   # CORE API (Backend Service)
@@ -26,6 +28,12 @@ services:
       - DATABASE_URL=sqlite:////app/data/financial_data.db
     # Pass --reload to entrypoint for hot reloading in dev
     command: ["--reload"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ----------------------------------------------------------------
   # WEB APP (Frontend Service)
@@ -55,7 +63,8 @@ services:
       - MCP_PORT=3001
       - MCP_MODE=http
     depends_on:
-      - core-api
+      core-api:
+        condition: service_healthy
 
   # ----------------------------------------------------------------
   # DATABASE (Postgres - Future Proofing)
