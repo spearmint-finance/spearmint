@@ -1,0 +1,50 @@
+# Dependencies
+**/node_modules
+**/__pycache__
+**/venv
+**/.venv
+
+# Build outputs
+**/dist
+**/build
+**/*.pyc
+**/*.pyo
+
+# IDE and editor
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+
+# Git
+.git
+.gitignore
+
+# Test and coverage
+**/coverage
+**/.pytest_cache
+**/.nyc_output
+
+# Environment files (keep .env.example)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs
+**/*.log
+**/npm-debug.log*
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Documentation (not needed in containers)
+**/docs
+**/*.md
+!README.md
+
+# Worktrees
+.worktrees
+
+# Dev tools
+dev-tools
