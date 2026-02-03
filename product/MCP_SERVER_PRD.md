@@ -1204,14 +1204,155 @@ If running Spearmint on a home server with Tailscale:
 
 ---
 
-## Next Steps
+## Implementation Plan (Phase 1)
 
-1. **Scaffold MCP server project:** Create `mcp-server/` with TypeScript + FastMCP
-2. **SDK integration:** Wire up MCP tools to use `@spearmint/sdk`
-3. **Docker integration:** Multi-process container with pm2
-4. **Prototype:** Build 2-3 tools, test with Claude Desktop
-5. **Security review:** Validate API key approach
-6. **User testing:** Alpha test with Claude Desktop users
+This section details the specific implementation approach for the codebase.
+
+### Implementation Order
+
+1. **Backend: Database Model** - Add APIKey model
+2. **Backend: Service + Routes** - Auth service and API endpoints
+3. **Frontend: API Keys Tab** - Settings UI for key management
+4. **MCP Server: Scaffolding** - New TypeScript project
+5. **MCP Server: Tools** - 5 core tools using SDK
+6. **Docker: Integration** - Add mcp-server service (separate container)
+7. **Documentation** - Setup guides
+
+### Backend Changes
+
+#### 1. Database Model (`core-api/src/financial_analysis/database/models.py`)
+
+Add `APIKey` class:
+
+```python
+class APIKey(Base):
+    """API keys for MCP server authentication."""
+    __tablename__ = "api_keys"
+
+    key_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)  # e.g., "Claude Desktop"
+    key_prefix = Column(String(12), nullable=False)  # "smint_live_" + first 4 chars
+    key_hash = Column(String(128), nullable=False)  # SHA-256 hash
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    expires_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index('idx_api_key_hash', 'key_hash'),
+        Index('idx_api_key_active', 'is_active'),
+    )
+```
+
+#### 2. New Files to Create
+
+| File | Purpose |
+|------|---------|
+| `api/schemas/auth.py` | Pydantic schemas: APIKeyCreate, APIKeyResponse, APIKeyCreatedResponse |
+| `services/auth_service.py` | AuthService class with key generation, validation, revocation |
+| `api/routes/auth.py` | Router with POST/GET/DELETE endpoints |
+
+#### 3. API Endpoints
+
+```
+POST   /api/auth/api-keys     → Generate new key (returns full key once)
+GET    /api/auth/api-keys     → List keys (masked)
+DELETE /api/auth/api-keys/{id} → Revoke key
+```
+
+#### 4. Register Router (`api/main.py`)
+
+```python
+from .routes import auth
+app.include_router(auth.router, prefix="/api", tags=["auth"])
+```
+
+### Frontend Changes
+
+#### New Files
+
+| File | Purpose |
+|------|---------|
+| `types/auth.ts` | TypeScript interfaces for API keys |
+| `api/auth.ts` | API client functions |
+| `hooks/useApiKeys.ts` | React Query hooks for key management |
+| `components/Settings/APIKeysManagement.tsx` | UI component for key management |
+
+#### Update Settings Page (`components/Settings/SettingsPage.tsx`)
+
+- Add `VpnKey` icon import
+- Add 4th tab "API Keys" at index 3
+- Add TabPanel with `<APIKeysManagement />`
+
+#### UI Features
+
+- List existing keys (masked: `smint_live_xxxx...`)
+- "Generate New Key" button with name input dialog
+- One-time full key display with copy button
+- "Copy Config" buttons for Claude/Gemini/ChatGPT
+- Revoke button with confirmation
+
+### MCP Server Structure
+
+Create directory `mcp-server/`:
+
+```
+mcp-server/
+├── package.json
+├── tsconfig.json
+├── Dockerfile
+├── src/
+│   ├── index.ts           # Entry point, HTTP server
+│   ├── server.ts          # FastMCP configuration
+│   ├── middleware/
+│   │   └── auth.ts        # API key validation
+│   ├── tools/
+│   │   ├── index.ts       # Tool registry
+│   │   ├── financial.ts   # get_financial_summary
+│   │   ├── expenses.ts    # get_expense_breakdown
+│   │   ├── transactions.ts # search_transactions
+│   │   ├── accounts.ts    # get_account_balances
+│   │   └── cashflow.ts    # get_cashflow_trend
+│   └── utils/
+│       └── tokenOptimizer.ts
+└── tests/
+```
+
+#### Dependencies
+
+```json
+{
+  "dependencies": {
+    "@spearmint-finance/sdk": "^0.0.15",
+    "fastmcp": "^1.0.0"
+  }
+}
+```
+
+### Docker Integration
+
+**Approach:** Separate containers for development. Can consolidate with pm2 later for production.
+
+Add to `docker-compose.yml`:
+
+```yaml
+  mcp-server:
+    build: ./mcp-server
+    ports:
+      - "3001:3001"
+    environment:
+      - SPEARMINT_API_URL=http://core-api:8000
+      - MCP_PORT=3001
+    depends_on:
+      - core-api
+```
+
+### Verification Steps
+
+1. **Backend:** `curl -X POST http://localhost:8000/api/auth/api-keys -H "Content-Type: application/json" -d '{"name": "Test"}'`
+2. **Frontend:** Navigate to Settings → API Keys, generate and copy config
+3. **MCP Server:** `curl http://localhost:3001/sse -H "Authorization: Bearer smint_live_xxx"`
+4. **E2E:** Configure Claude Desktop and ask "What's my financial summary?"
 
 ---
 

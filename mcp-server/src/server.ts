@@ -3,6 +3,9 @@
  *
  * Configures and initializes the Model Context Protocol server
  * with all available tools for AI agent integration.
+ *
+ * Tools are auto-generated from the OpenAPI spec.
+ * Run `npm run generate:tools` to regenerate after API changes.
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -12,20 +15,51 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
+// Import generated tools
 import {
+  getFinancialSummaryTool,
+  executeGetFinancialSummary,
+  getExpenseBreakdownTool,
+  executeGetExpenseBreakdown,
+  searchTransactionsTool,
+  executeSearchTransactions,
+  getAccountBalancesTool,
+  executeGetAccountBalances,
+  getCashflowTrendTool,
+  executeGetCashflowTrend,
+  getIncomeBreakdownTool,
+  executeGetIncomeBreakdown,
+  getSpendingTrendTool,
+  executeGetSpendingTrend,
+  getFinancialHealthTool,
+  executeGetFinancialHealth,
+  GENERATED_TOOL_NAMES,
+} from "./tools/generated/index.js";
+
+// All available tools
+const ALL_TOOLS = [
   getFinancialSummaryTool,
   getExpenseBreakdownTool,
   searchTransactionsTool,
   getAccountBalancesTool,
   getCashflowTrendTool,
-  TOOL_NAMES,
-} from "./tools/index.js";
+  getIncomeBreakdownTool,
+  getSpendingTrendTool,
+  getFinancialHealthTool,
+];
 
-import { executeFinancialSummary } from "./tools/financial.js";
-import { executeExpenseBreakdown } from "./tools/expenses.js";
-import { executeSearchTransactions } from "./tools/transactions.js";
-import { executeGetAccountBalances } from "./tools/accounts.js";
-import { executeGetCashflowTrend } from "./tools/cashflow.js";
+// Tool executor map for cleaner dispatch
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TOOL_EXECUTORS: Record<string, (args: any) => Promise<unknown>> = {
+  [GENERATED_TOOL_NAMES.GET_FINANCIAL_SUMMARY]: executeGetFinancialSummary,
+  [GENERATED_TOOL_NAMES.GET_EXPENSE_BREAKDOWN]: executeGetExpenseBreakdown,
+  [GENERATED_TOOL_NAMES.SEARCH_TRANSACTIONS]: executeSearchTransactions,
+  [GENERATED_TOOL_NAMES.GET_ACCOUNT_BALANCES]: executeGetAccountBalances,
+  [GENERATED_TOOL_NAMES.GET_CASHFLOW_TREND]: executeGetCashflowTrend,
+  [GENERATED_TOOL_NAMES.GET_INCOME_BREAKDOWN]: executeGetIncomeBreakdown,
+  [GENERATED_TOOL_NAMES.GET_SPENDING_TREND]: executeGetSpendingTrend,
+  [GENERATED_TOOL_NAMES.GET_FINANCIAL_HEALTH]: executeGetFinancialHealth,
+};
 
 /**
  * Create and configure the MCP server
@@ -46,13 +80,7 @@ export function createMCPServer(): Server {
   // Register tool listing handler
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
-      tools: [
-        getFinancialSummaryTool,
-        getExpenseBreakdownTool,
-        searchTransactionsTool,
-        getAccountBalancesTool,
-        getCashflowTrendTool,
-      ],
+      tools: ALL_TOOLS,
     };
   });
 
@@ -61,32 +89,13 @@ export function createMCPServer(): Server {
     const { name, arguments: args } = request.params;
 
     try {
-      let result: unknown;
+      const executor = TOOL_EXECUTORS[name];
 
-      switch (name) {
-        case TOOL_NAMES.FINANCIAL_SUMMARY:
-          result = await executeFinancialSummary(args || {});
-          break;
-
-        case TOOL_NAMES.EXPENSE_BREAKDOWN:
-          result = await executeExpenseBreakdown(args || {});
-          break;
-
-        case TOOL_NAMES.SEARCH_TRANSACTIONS:
-          result = await executeSearchTransactions(args || {});
-          break;
-
-        case TOOL_NAMES.ACCOUNT_BALANCES:
-          result = await executeGetAccountBalances(args || {});
-          break;
-
-        case TOOL_NAMES.CASHFLOW_TREND:
-          result = await executeGetCashflowTrend(args || {});
-          break;
-
-        default:
-          throw new Error(`Unknown tool: ${name}`);
+      if (!executor) {
+        throw new Error(`Unknown tool: ${name}`);
       }
+
+      const result = await executor(args || {});
 
       return {
         content: [
@@ -124,3 +133,6 @@ export async function runStdioServer(): Promise<void> {
   await server.connect(transport);
   console.error("Spearmint MCP server running on stdio");
 }
+
+// Re-export for backward compatibility
+export { GENERATED_TOOL_NAMES as TOOL_NAMES };
