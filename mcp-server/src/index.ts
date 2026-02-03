@@ -3,6 +3,9 @@
  *
  * Starts the MCP server with HTTP/SSE transport for remote connections,
  * or stdio for local Claude Desktop integration.
+ *
+ * Tools are auto-generated from the OpenAPI spec.
+ * Run `npm run generate:tools` to regenerate after API changes.
  */
 
 import express, { Request, Response } from "express";
@@ -11,8 +14,54 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createMCPServer, runStdioServer } from "./server.js";
 import { authMiddleware, AuthenticatedRequest } from "./middleware/auth.js";
 
+// Import all generated tools
+import {
+  getFinancialSummaryTool,
+  executeGetFinancialSummary,
+  getExpenseBreakdownTool,
+  executeGetExpenseBreakdown,
+  searchTransactionsTool,
+  executeSearchTransactions,
+  getAccountBalancesTool,
+  executeGetAccountBalances,
+  getCashflowTrendTool,
+  executeGetCashflowTrend,
+  getIncomeBreakdownTool,
+  executeGetIncomeBreakdown,
+  getSpendingTrendTool,
+  executeGetSpendingTrend,
+  getFinancialHealthTool,
+  executeGetFinancialHealth,
+  GENERATED_TOOL_NAMES,
+} from "./tools/generated/index.js";
+
 const PORT = parseInt(process.env.MCP_PORT || "3001", 10);
 const MODE = process.env.MCP_MODE || "http"; // "http" or "stdio"
+
+// All available tools
+const ALL_TOOLS = [
+  getFinancialSummaryTool,
+  getExpenseBreakdownTool,
+  searchTransactionsTool,
+  getAccountBalancesTool,
+  getCashflowTrendTool,
+  getIncomeBreakdownTool,
+  getSpendingTrendTool,
+  getFinancialHealthTool,
+];
+
+// Tool executor map for cleaner dispatch
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TOOL_EXECUTORS: Record<string, (args: any) => Promise<unknown>> = {
+  [GENERATED_TOOL_NAMES.GET_FINANCIAL_SUMMARY]: executeGetFinancialSummary,
+  [GENERATED_TOOL_NAMES.GET_EXPENSE_BREAKDOWN]: executeGetExpenseBreakdown,
+  [GENERATED_TOOL_NAMES.SEARCH_TRANSACTIONS]: executeSearchTransactions,
+  [GENERATED_TOOL_NAMES.GET_ACCOUNT_BALANCES]: executeGetAccountBalances,
+  [GENERATED_TOOL_NAMES.GET_CASHFLOW_TREND]: executeGetCashflowTrend,
+  [GENERATED_TOOL_NAMES.GET_INCOME_BREAKDOWN]: executeGetIncomeBreakdown,
+  [GENERATED_TOOL_NAMES.GET_SPENDING_TREND]: executeGetSpendingTrend,
+  [GENERATED_TOOL_NAMES.GET_FINANCIAL_HEALTH]: executeGetFinancialHealth,
+};
 
 /**
  * Start HTTP/SSE server for remote MCP connections
@@ -30,6 +79,7 @@ async function runHttpServer(): Promise<void> {
       status: "healthy",
       service: "spearmint-mcp-server",
       version: "0.0.1",
+      tools: ALL_TOOLS.length,
     });
   });
 
@@ -99,30 +149,7 @@ async function runHttpServer(): Promise<void> {
     "/tools",
     authMiddleware,
     async (_req: AuthenticatedRequest, res: Response) => {
-      try {
-        // Import tools directly for the listing
-        const {
-          getFinancialSummaryTool,
-          getExpenseBreakdownTool,
-          searchTransactionsTool,
-          getAccountBalancesTool,
-          getCashflowTrendTool,
-        } = await import("./tools/index.js");
-
-        res.json({
-          tools: [
-            getFinancialSummaryTool,
-            getExpenseBreakdownTool,
-            searchTransactionsTool,
-            getAccountBalancesTool,
-            getCashflowTrendTool,
-          ],
-        });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        res.status(500).json({ error: errorMessage });
-      }
+      res.json({ tools: ALL_TOOLS });
     }
   );
 
@@ -135,55 +162,18 @@ async function runHttpServer(): Promise<void> {
       const { toolName } = req.params;
       const args = req.body;
 
+      const executor = TOOL_EXECUTORS[toolName];
+
+      if (!executor) {
+        res.status(404).json({
+          error: `Unknown tool: ${toolName}`,
+          availableTools: Object.keys(TOOL_EXECUTORS),
+        });
+        return;
+      }
+
       try {
-        let result: unknown;
-
-        switch (toolName) {
-          case "get_financial_summary": {
-            const { executeFinancialSummary } = await import(
-              "./tools/financial.js"
-            );
-            result = await executeFinancialSummary(args);
-            break;
-          }
-
-          case "get_expense_breakdown": {
-            const { executeExpenseBreakdown } = await import(
-              "./tools/expenses.js"
-            );
-            result = await executeExpenseBreakdown(args);
-            break;
-          }
-
-          case "search_transactions": {
-            const { executeSearchTransactions } = await import(
-              "./tools/transactions.js"
-            );
-            result = await executeSearchTransactions(args);
-            break;
-          }
-
-          case "get_account_balances": {
-            const { executeGetAccountBalances } = await import(
-              "./tools/accounts.js"
-            );
-            result = await executeGetAccountBalances(args);
-            break;
-          }
-
-          case "get_cashflow_trend": {
-            const { executeGetCashflowTrend } = await import(
-              "./tools/cashflow.js"
-            );
-            result = await executeGetCashflowTrend(args);
-            break;
-          }
-
-          default:
-            res.status(404).json({ error: `Unknown tool: ${toolName}` });
-            return;
-        }
-
+        const result = await executor(args);
         res.json(result);
       } catch (error) {
         const errorMessage =
@@ -199,6 +189,7 @@ async function runHttpServer(): Promise<void> {
     console.log(`  - Health check: http://localhost:${PORT}/health`);
     console.log(`  - SSE endpoint: http://localhost:${PORT}/sse`);
     console.log(`  - Tools list:   http://localhost:${PORT}/tools`);
+    console.log(`  - Available tools: ${ALL_TOOLS.length}`);
   });
 }
 
