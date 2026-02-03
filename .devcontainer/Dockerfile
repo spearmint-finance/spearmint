@@ -1,5 +1,9 @@
 FROM mcr.microsoft.com/devcontainers/python:3.12
 
+# Remove stale yarn repo (has expired GPG key in base image) and install curl
+RUN rm -f /etc/apt/sources.list.d/yarn.list && \
+    apt-get update && apt-get install -y curl
+
 # Install Node.js 22 directly (NOT via features - they fail with exit code 100)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
@@ -20,6 +24,9 @@ RUN apt-get update && apt-get install -y \
 
 # Install Docker CLI (for Docker-outside-of-Docker via socket mount)
 RUN curl -fsSL https://get.docker.com | sh
+
+# Install Postman CLI (for API governance validation)
+RUN curl -o- 'https://dl-cli.pstmn.io/install/linux64.sh' | sh
 
 WORKDIR /workspace
 
