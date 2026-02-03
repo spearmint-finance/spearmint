@@ -7,6 +7,7 @@
 
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createMCPServer, runStdioServer } from "./server.js";
 import { authMiddleware, AuthenticatedRequest } from "./middleware/auth.js";
 
@@ -32,59 +33,63 @@ async function runHttpServer(): Promise<void> {
     });
   });
 
+  // Store active transports for message routing
+  const transports = new Map<string, SSEServerTransport>();
+
   // SSE endpoint for MCP connections
-  app.get("/sse", authMiddleware, (req: AuthenticatedRequest, res: Response) => {
+  app.get("/sse", authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     console.log(`MCP SSE connection from key: ${req.apiKeyName}`);
 
-    // Set SSE headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
+    // Create SSE transport for this connection
+    const transport = new SSEServerTransport("/message", res);
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    transports.set(sessionId, transport);
 
-    // Send initial connection event
-    res.write(
-      `data: ${JSON.stringify({
-        type: "connection",
-        status: "connected",
-        server: "spearmint-finance",
-        version: "0.0.1",
-      })}\n\n`
-    );
-
-    // Keep connection alive
-    const keepAlive = setInterval(() => {
-      res.write(": keepalive\n\n");
-    }, 30000);
+    // Create and connect MCP server for this session
+    const server = createMCPServer();
 
     // Handle client disconnect
     req.on("close", () => {
       console.log(`MCP SSE connection closed for key: ${req.apiKeyName}`);
-      clearInterval(keepAlive);
+      transports.delete(sessionId);
     });
+
+    try {
+      await server.connect(transport);
+    } catch (error) {
+      console.error("Error connecting MCP server:", error);
+      transports.delete(sessionId);
+    }
   });
 
-  // MCP message endpoint
+  // MCP message endpoint - handles incoming JSON-RPC messages from clients
   app.post(
     "/message",
     authMiddleware,
     async (req: AuthenticatedRequest, res: Response) => {
       console.log(`MCP message from key: ${req.apiKeyName}`);
 
-      try {
-        // For now, return tools list as a basic response
-        // Full MCP protocol handling would go here
-        const server = createMCPServer();
+      // Find an active transport to handle this message
+      // In a production setup, you'd want to route to the correct session
+      const activeTransports = Array.from(transports.values());
+      if (activeTransports.length === 0) {
+        res.status(503).json({ error: "No active MCP sessions" });
+        return;
+      }
 
-        res.json({
-          success: true,
-          message: "MCP message received",
-          // In a full implementation, this would process the MCP protocol message
-        });
+      // Use the most recent transport
+      const transport = activeTransports[activeTransports.length - 1];
+
+      try {
+        // Let the transport handle the incoming message
+        await transport.handlePostMessage(req, res);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
-        res.status(500).json({ error: errorMessage });
+        console.error("Error handling MCP message:", errorMessage);
+        if (!res.headersSent) {
+          res.status(500).json({ error: errorMessage });
+        }
       }
     }
   );
