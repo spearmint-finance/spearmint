@@ -39,7 +39,7 @@
       "excludeParameters": ["mode", "type"]
     },
     {
-      "name": "search_transactions",
+      "name": "search-transactions",
       "operationId": "listTransactions",
       "path": "/api/transactions",
       "method": "get",
