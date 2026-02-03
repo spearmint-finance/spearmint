@@ -22,7 +22,7 @@ async function runHttpServer(): Promise<void> {
 
   // Middleware
   app.use(cors());
-  app.use(express.json());
+  // Note: Don't use express.json() globally - /message needs raw body for MCP transport
 
   // Health check endpoint (no auth required)
   app.get("/health", (_req: Request, res: Response) => {
@@ -129,6 +129,7 @@ async function runHttpServer(): Promise<void> {
   // Execute a tool directly (REST API fallback)
   app.post(
     "/tools/:toolName",
+    express.json(),
     authMiddleware,
     async (req: AuthenticatedRequest, res: Response) => {
       const { toolName } = req.params;
