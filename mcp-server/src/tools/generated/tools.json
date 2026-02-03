@@ -51,15 +51,15 @@
         },
         "transaction_type": {
           "type": "string",
-          "description": "Transaction type filter"
+          "description": "Filter by transaction type: 'Income' or 'Expense'"
         },
         "category_id": {
           "type": "number",
-          "description": "Category ID filter"
+          "description": "Filter by category ID"
         },
         "is_transfer": {
           "type": "boolean",
-          "description": "Is transfer filter"
+          "description": "Filter by transfer status: true for transfers only, false to exclude transfers"
         },
         "min_amount": {
           "type": "number",
