@@ -1,5 +1,5 @@
 /**
- * search_transactions Tool (Auto-generated)
+ * search-transactions Tool (Auto-generated)
  *
  * Search and filter transactions by various criteria. Use this when the user wants to find specific transactions, search by merchant name, filter by date range, or look up purchases.
  * 
@@ -13,7 +13,7 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 const SPEARMINT_API_URL = process.env.SPEARMINT_API_URL || "http://localhost:8000";
 
 export const searchTransactionsTool: Tool = {
-  name: "search_transactions",
+  name: "search-transactions",
   description: "Search and filter transactions by various criteria. Use this when the user wants to find specific transactions, search by merchant name, filter by date range, or look up purchases.",
   inputSchema: {
     type: "object",
@@ -82,7 +82,7 @@ export interface SearchTransactionsInput {
 }
 
 /**
- * Execute the search_transactions tool
+ * Execute the search-transactions tool
  */
 export async function executeSearchTransactions(
   input: SearchTransactionsInput
@@ -105,7 +105,7 @@ export async function executeSearchTransactions(
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`Failed to execute search_transactions: ${response.statusText}`);
+    throw new Error(`Failed to execute search-transactions: ${response.statusText}`);
   }
 
   return await response.json();

@@ -35,7 +35,7 @@
       "required": []
     }
   },
-  "search_transactions": {
+  "search-transactions": {
     "description": "Search and filter transactions by various criteria. Use this when the user wants to find specific transactions, search by merchant name, filter by date range, or look up purchases.",
     "usageHint": "Find all Amazon transactions over $50",
     "inputSchema": {

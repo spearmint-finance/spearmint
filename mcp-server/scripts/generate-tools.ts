@@ -220,7 +220,7 @@ function generateTool(
  * Convert tool name to various case formats
  */
 function toCase(name: string, format: "camel" | "pascal" | "constant"): string {
-  const parts = name.split("_");
+  const parts = name.split(/[_-]/);  // Split on underscore or dash
 
   switch (format) {
     case "camel":
