@@ -12,7 +12,10 @@ COPY web-app/package.json web-app/package-lock.json ./
 RUN npm install
 
 # Copy source code (will be overridden by volume mount)
-COPY web-app/ .
+# Note: node_modules excluded via .dockerignore
+COPY web-app/src ./src
+COPY web-app/public ./public
+COPY web-app/index.html web-app/vite.config.ts web-app/tsconfig*.json ./
 
 # Expose Vite dev server port
 EXPOSE 5173
