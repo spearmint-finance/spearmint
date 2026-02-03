@@ -9,10 +9,12 @@ import {
   Category as CategoryIcon,
   Tune as TuneIcon,
   Palette as PaletteIcon,
+  VpnKey as VpnKeyIcon,
 } from "@mui/icons-material";
 import CategoryManagement from "./CategoryManagement";
 import UserPreferences from "./UserPreferences";
 import ThemeCustomization from "./ThemeCustomization";
+import APIKeysManagement from "./APIKeysManagement";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,6 +68,7 @@ export default function SettingsPage() {
           <Tab icon={<CategoryIcon />} label="Categories" {...a11yProps(0)} />
           <Tab icon={<TuneIcon />} label="Preferences" {...a11yProps(1)} />
           <Tab icon={<PaletteIcon />} label="Theme" {...a11yProps(2)} />
+          <Tab icon={<VpnKeyIcon />} label="API Keys" {...a11yProps(3)} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -77,6 +80,9 @@ export default function SettingsPage() {
           </TabPanel>
           <TabPanel value={currentTab} index={2}>
             <ThemeCustomization />
+          </TabPanel>
+          <TabPanel value={currentTab} index={3}>
+            <APIKeysManagement />
           </TabPanel>
         </Box>
       </Paper>

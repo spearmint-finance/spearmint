@@ -592,6 +592,33 @@ class InvestmentHolding(Base):
         return f"<InvestmentHolding(id={self.holding_id}, symbol='{self.symbol}', quantity={self.quantity})>"
 
 
+class APIKey(Base):
+    """
+    API keys for MCP server authentication.
+
+    Stores hashed API keys for authenticating external MCP clients
+    (Claude Desktop, Gemini CLI, ChatGPT, etc.) to the Spearmint API.
+    """
+    __tablename__ = "api_keys"
+
+    key_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)  # e.g., "Claude Desktop"
+    key_prefix = Column(String(16), nullable=False)  # "smint_live_" + first 4 chars
+    key_hash = Column(String(128), nullable=False)  # SHA-256 hash
+    is_active = Column(Boolean, default=True)
+    last_used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    expires_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index('idx_api_key_hash', 'key_hash'),
+        Index('idx_api_key_active', 'is_active'),
+    )
+
+    def __repr__(self):
+        return f"<APIKey(id={self.key_id}, name='{self.name}', prefix='{self.key_prefix}')>"
+
+
 class Reconciliation(Base):
     """
     Reconciliations table for tracking account reconciliation history.

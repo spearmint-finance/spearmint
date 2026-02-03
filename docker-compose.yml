@@ -44,6 +44,20 @@ services:
       - VITE_API_URL=http://localhost:8080
 
   # ----------------------------------------------------------------
+  # MCP SERVER (AI Agent Integration)
+  # ----------------------------------------------------------------
+  mcp-server:
+    build: ./mcp-server
+    ports:
+      - "3001:3001"
+    environment:
+      - SPEARMINT_API_URL=http://core-api:8000
+      - MCP_PORT=3001
+      - MCP_MODE=http
+    depends_on:
+      - core-api
+
+  # ----------------------------------------------------------------
   # DATABASE (Postgres - Future Proofing)
   # ----------------------------------------------------------------
   # Using SQLite file mount for now as per current setup, 
