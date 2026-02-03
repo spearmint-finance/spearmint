@@ -50,15 +50,16 @@ def get_net_worth(
 ):
     """Get total net worth across all accounts."""
     service = AccountService(db)
+    effective_date = as_of_date or date.today()
     net_worth = service.get_net_worth(as_of_date)
 
-    # Add account breakdown
+    # Add account breakdown (respecting the same date filter as net worth calculation)
     account_breakdown = {}
     accounts = service.get_accounts(is_active=True)
 
     for account in accounts:
         balance = service.get_current_balance(account.account_id)
-        if balance:
+        if balance and balance.balance_date <= effective_date:
             if account.account_type not in account_breakdown:
                 account_breakdown[account.account_type] = Decimal('0')
             account_breakdown[account.account_type] += balance.total_balance
