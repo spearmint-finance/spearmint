@@ -17,7 +17,7 @@ export { getFinancialHealthTool, executeGetFinancialHealth } from "./get-financi
 export const GENERATED_TOOL_NAMES = {
   GET_FINANCIAL_SUMMARY: "get_financial_summary",
   GET_EXPENSE_BREAKDOWN: "get_expense_breakdown",
-  SEARCH_TRANSACTIONS: "search_transactions",
+  SEARCH_TRANSACTIONS: "search-transactions",
   GET_ACCOUNT_BALANCES: "get_account_balances",
   GET_CASHFLOW_TREND: "get_cashflow_trend",
   GET_INCOME_BREAKDOWN: "get_income_breakdown",
