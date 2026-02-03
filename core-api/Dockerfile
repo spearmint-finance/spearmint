@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY src /app/src
 COPY .env.example /app/.env
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Set Python Path
 ENV PYTHONPATH=/app
@@ -25,5 +27,6 @@ ENV PORT=8000
 
 EXPOSE 8000
 
-# Run via uvicorn directly
-CMD ["uvicorn", "src.financial_analysis.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run via entrypoint script (initializes DB then starts uvicorn)
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD []
