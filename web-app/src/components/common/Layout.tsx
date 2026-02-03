@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Box, useMediaQuery, useTheme, Fab } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Sidebar from "./Sidebar";
+import { AssistantFAB } from "../Assistant";
 
 const DRAWER_WIDTH = 240;
 
@@ -52,6 +53,9 @@ function Layout() {
       >
         <Outlet />
       </Box>
+
+      {/* AI Assistant FAB */}
+      <AssistantFAB />
     </Box>
   );
 }
