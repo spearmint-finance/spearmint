@@ -10,7 +10,9 @@
     "dev": "tsx watch src/index.ts",
     "lint": "eslint src/",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate:tools": "tsx scripts/generate-tools.ts",
+    "generate:tools:dry-run": "tsx scripts/generate-tools.ts --dry-run"
   },
   "keywords": [
     "mcp",
