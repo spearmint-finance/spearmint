@@ -225,9 +225,9 @@ def seed_classification_rules(db: Session) -> None:
     print("[OK] Classification rules seeded successfully")
 
 
-# Demo API key for development/testing
-# Key: smint_live_demo1234567890abcdef
-DEMO_API_KEY = "smint_live_demo1234567890abcdef"
+# Demo API key for development/testing (43 chars total)
+# Key: smint_live_demokey1234567890abcdefghijklmn
+DEMO_API_KEY = "smint_live_demokey1234567890abcdefghijklmn"
 DEMO_API_KEY_HASH = hashlib.sha256(DEMO_API_KEY.encode()).hexdigest()
 
 
@@ -248,7 +248,7 @@ def seed_api_keys(db: Session) -> None:
     if not existing:
         demo_key = APIKey(
             name="Demo Key (Development)",
-            key_prefix="smint_live_demo",
+            key_prefix="smint_live_demo...",
             key_hash=DEMO_API_KEY_HASH,
             is_active=True,
         )
