@@ -66,7 +66,7 @@ async def health_check():
 # Import routers
 from .routes import (
     transactions, categories, import_routes, analysis, relationships, projections, reports, classifications,
-    persons, splits, scenarios, accounts, maintenance
+    persons, splits, scenarios, accounts, maintenance, auth
 )
 
 # Register routers
@@ -83,6 +83,7 @@ app.include_router(splits.router, prefix="/api", tags=["splits"])
 app.include_router(scenarios.router, prefix="/api", tags=["scenarios"])
 app.include_router(accounts.router, prefix="/api", tags=["accounts"])
 app.include_router(maintenance.router, prefix="/api", tags=["maintenance"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 
 
 # Root endpoint
