@@ -631,13 +631,32 @@ class AccountService:
 
                 # Categorize by account type
                 if account.account_type in ['credit_card', 'loan']:
-                    liabilities += abs(amount) if amount < 0 else amount
+                    # For credit cards/loans: negative or positive balance = amount owed (liability)
+                    # But if balance is negative (credit in your favor), it's an asset
+                    if amount < 0:
+                        # Credit in your favor (overpayment) - treat as asset
+                        assets += abs(amount)
+                        liquid_assets += abs(amount)
+                    else:
+                        # Amount owed - treat as liability
+                        liabilities += amount
                 else:
                     assets += amount
 
-                    if account.account_type in ['checking', 'savings']:
+                    # Categorize into liquid assets or investments
+                    if account.account_type in ['checking', 'savings', 'money_market']:
                         liquid_assets += amount
+                    elif account.account_type in ['brokerage', 'investment', 'retirement', '401k', 'ira', 'roth_ira', 'hsa']:
+                        # Investment-type accounts
+                        if account.has_investment_component and balance.investment_value:
+                            investments += balance.investment_value
+                            if balance.cash_balance:
+                                liquid_assets += balance.cash_balance
+                        else:
+                            # No breakdown available, treat full balance as investment
+                            investments += amount
                     elif account.has_investment_component:
+                        # Other accounts with investment component
                         if balance.investment_value:
                             investments += balance.investment_value
                         if balance.cash_balance:

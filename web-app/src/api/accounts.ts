@@ -286,5 +286,27 @@ export const getNetWorth = async (as_of_date?: string): Promise<NetWorth> => {
   const response = await accountsApi.getNetWorthApiAccountsNetWorthGet({
     asOfDate: as_of_date,
   });
-  return response.data as unknown as NetWorth;
+  // SDK returns camelCase, map to our interface format
+  const data = response.data as {
+    assets: string;
+    liabilities: string;
+    netWorth: string;
+    liquidAssets: string;
+    investments: string;
+    asOfDate: string;
+    accountBreakdown?: Record<string, string>;
+  };
+  return {
+    assets: data.assets,
+    liabilities: data.liabilities,
+    net_worth: data.netWorth,
+    netWorth: data.netWorth,
+    liquid_assets: data.liquidAssets,
+    liquidAssets: data.liquidAssets,
+    investments: data.investments,
+    as_of_date: data.asOfDate,
+    asOfDate: data.asOfDate,
+    account_breakdown: data.accountBreakdown,
+    accountBreakdown: data.accountBreakdown,
+  };
 };
