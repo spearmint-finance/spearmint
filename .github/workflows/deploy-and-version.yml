@@ -8,6 +8,7 @@ on:
       - 'core-api/**'
       - 'web-app/**'
       - 'sdk/**'
+      - 'mcp-server/**'  # Include MCP server changes
       - 'dev-tools/**'  # Include dev-tools changes to trigger workflow for publishing scripts
       - '.github/workflows/deploy-and-version.yml'
 
@@ -266,9 +267,82 @@ jobs:
           path: sdk/output/typescript/
           retention-days: 7
 
-  # STEP 4: Bump version (only if SDK built successfully)
+  # STEP 3b: Generate MCP tools from OpenAPI spec (runs in parallel with SDK build)
+  generate-mcp-tools:
+    needs: generate-and-validate-spec
+    runs-on: ubuntu-latest
+    outputs:
+      tools_changed: ${{ steps.check-changes.outputs.changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download OpenAPI spec artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: core-api/sdk/
+
+      - name: Install MCP server dependencies
+        working-directory: ./mcp-server
+        run: npm install
+
+      - name: Generate MCP tools from OpenAPI spec
+        working-directory: ./mcp-server
+        run: |
+          echo "Generating MCP tools from OpenAPI spec..."
+          npm run generate:tools
+          echo "✓ MCP tools generated successfully"
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if git diff --quiet mcp-server/src/tools/generated/; then
+            echo "No changes to generated tools"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Generated tools have changed"
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git diff --stat mcp-server/src/tools/generated/
+          fi
+
+      - name: Configure git
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit generated tools
+        if: steps.check-changes.outputs.changed == 'true'
+        run: |
+          git add mcp-server/src/tools/generated/
+          git commit -m "chore(mcp-server): auto-generate MCP tools from OpenAPI spec [skip ci]"
+          git push origin main
+          echo "✓ Committed updated MCP tools"
+
+      - name: Add summary
+        run: |
+          echo "## 🔧 MCP Tool Generation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check-changes.outputs.changed }}" == "true" ]; then
+            echo "✅ **Tools regenerated and committed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following tools were updated:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            ls -1 mcp-server/src/tools/generated/*.ts | xargs -n1 basename >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **No changes needed** - tools are up to date" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # STEP 4: Bump version (only if SDK built and MCP tools generated)
   bump-version:
-    needs: build-sdk
+    needs: [build-sdk, generate-mcp-tools]
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.bump.outputs.new_version }}
