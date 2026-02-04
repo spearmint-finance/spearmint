@@ -266,11 +266,11 @@ function Dashboard() {
                     variant="h4"
                     component="div"
                     color={
-                      netWorth.net_worth >= 0 ? "primary.main" : "error.main"
+                      parseFloat(String(netWorth.netWorth || netWorth.net_worth || 0)) >= 0 ? "primary.main" : "error.main"
                     }
                     gutterBottom
                   >
-                    {formatCurrency(netWorth.net_worth)}
+                    {formatCurrency(netWorth.netWorth || netWorth.net_worth || 0)}
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
@@ -295,7 +295,7 @@ function Dashboard() {
                     color="text.secondary"
                     sx={{ mt: 1, display: "block" }}
                   >
-                    As of {formatDate(netWorth.as_of_date)}
+                    As of {formatDate(netWorth.asOfDate || netWorth.as_of_date || '')}
                   </Typography>
                 </Box>
               ) : (
