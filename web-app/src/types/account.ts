@@ -171,13 +171,18 @@ export interface ReconciliationCreate {
 }
 
 export interface NetWorth {
-  assets: number;
-  liabilities: number;
-  net_worth: number;
-  liquid_assets: number;
-  investments: number;
-  as_of_date: string;
-  account_breakdown?: Record<string, number>;
+  assets: number | string;
+  liabilities: number | string;
+  investments: number | string;
+  // Support both snake_case (API) and camelCase (SDK) formats
+  net_worth?: number | string;
+  netWorth?: number | string;
+  liquid_assets?: number | string;
+  liquidAssets?: number | string;
+  as_of_date?: string;
+  asOfDate?: string;
+  account_breakdown?: Record<string, number | string>;
+  accountBreakdown?: Record<string, number | string>;
 }
 
 // Helper functions for account types
