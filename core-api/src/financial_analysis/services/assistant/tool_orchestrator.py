@@ -24,6 +24,17 @@ from .tools import READ_ONLY_TOOLS, CONFIRMATION_REQUIRED_TOOLS
 logger = logging.getLogger(__name__)
 
 
+def _convert_decimals(obj: Any) -> Any:
+    """Recursively convert Decimal values to float for JSON serialization."""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    elif isinstance(obj, dict):
+        return {k: _convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_decimals(item) for item in obj]
+    return obj
+
+
 class ToolOrchestrator:
     """
     Executes tool calls and manages action confirmations.
@@ -141,9 +152,8 @@ class ToolOrchestrator:
                 }
 
         # Query expenses
-        result = self.analysis_service.get_expense_analysis(
+        result = self.analysis_service.analyze_expenses(
             date_range=DateRange(start_date=start_date, end_date=end_date),
-            category_id=category_id,
             mode=AnalysisMode.ANALYSIS
         )
 
@@ -157,7 +167,7 @@ class ToolOrchestrator:
                 "label": period
             },
             "category": category_name,
-            "breakdown": result.breakdown_by_category if not category_name else None
+            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
         }
 
     async def _execute_get_income_summary(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -179,9 +189,8 @@ class ToolOrchestrator:
                 category_id = category.category_id
 
         # Query income
-        result = self.analysis_service.get_income_analysis(
+        result = self.analysis_service.analyze_income(
             date_range=DateRange(start_date=start_date, end_date=end_date),
-            category_id=category_id,
             mode=AnalysisMode.ANALYSIS
         )
 
@@ -195,7 +204,7 @@ class ToolOrchestrator:
                 "label": period
             },
             "category": category_name,
-            "breakdown": result.breakdown_by_category if not category_name else None
+            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
         }
 
     async def _execute_get_top_categories(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -207,18 +216,18 @@ class ToolOrchestrator:
         start_date, end_date = self._get_date_range(period)
 
         if category_type == "expense":
-            result = self.analysis_service.get_expense_analysis(
+            result = self.analysis_service.analyze_expenses(
                 date_range=DateRange(start_date=start_date, end_date=end_date),
                 mode=AnalysisMode.ANALYSIS
             )
-            categories = result.top_categories[:limit]
+            categories = _convert_decimals(result.top_categories[:limit])
         else:
-            result = self.analysis_service.get_income_analysis(
+            result = self.analysis_service.analyze_income(
                 date_range=DateRange(start_date=start_date, end_date=end_date),
                 mode=AnalysisMode.ANALYSIS
             )
             # Convert breakdown to ranked list
-            breakdown = result.breakdown_by_category
+            breakdown = _convert_decimals(result.breakdown_by_category)
             categories = sorted(
                 [{"name": k, "total": v.get("total", 0), "count": v.get("count", 0)}
                  for k, v in breakdown.items()],
@@ -353,7 +362,7 @@ class ToolOrchestrator:
 
         start_date, end_date = self._get_date_range(period)
 
-        cash_flow = self.analysis_service.get_cash_flow(
+        cash_flow = self.analysis_service.analyze_cash_flow(
             date_range=DateRange(start_date=start_date, end_date=end_date),
             mode=AnalysisMode.ANALYSIS
         )
@@ -400,37 +409,33 @@ class ToolOrchestrator:
 
         # Get values for each period
         if metric == "spending":
-            result_1 = self.analysis_service.get_expense_analysis(
+            result_1 = self.analysis_service.analyze_expenses(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
-                category_id=category_id,
                 mode=AnalysisMode.ANALYSIS
             )
-            result_2 = self.analysis_service.get_expense_analysis(
+            result_2 = self.analysis_service.analyze_expenses(
                 date_range=DateRange(start_date=start_2, end_date=end_2),
-                category_id=category_id,
                 mode=AnalysisMode.ANALYSIS
             )
             value_1 = float(result_1.total_expenses)
             value_2 = float(result_2.total_expenses)
         elif metric == "income":
-            result_1 = self.analysis_service.get_income_analysis(
+            result_1 = self.analysis_service.analyze_income(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
-                category_id=category_id,
                 mode=AnalysisMode.ANALYSIS
             )
-            result_2 = self.analysis_service.get_income_analysis(
+            result_2 = self.analysis_service.analyze_income(
                 date_range=DateRange(start_date=start_2, end_date=end_2),
-                category_id=category_id,
                 mode=AnalysisMode.ANALYSIS
             )
             value_1 = float(result_1.total_income)
             value_2 = float(result_2.total_income)
         else:  # net_cash_flow
-            cf_1 = self.analysis_service.get_cash_flow(
+            cf_1 = self.analysis_service.analyze_cash_flow(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
                 mode=AnalysisMode.ANALYSIS
             )
-            cf_2 = self.analysis_service.get_cash_flow(
+            cf_2 = self.analysis_service.analyze_cash_flow(
                 date_range=DateRange(start_date=start_2, end_date=end_2),
                 mode=AnalysisMode.ANALYSIS
             )

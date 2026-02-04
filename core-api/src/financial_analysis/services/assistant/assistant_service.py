@@ -134,6 +134,20 @@ class AssistantService:
 
         # Execute tool calls if any
         if tool_calls:
+            # Save assistant message with tool_calls first (before tool execution)
+            self.conversation_manager.add_message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content="",  # Content is empty when making tool calls
+                tool_calls=[
+                    {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
+                    for tc in tool_calls
+                ],
+                tokens_used=0,
+                model=model,
+            )
+
+            tool_results = []
             for tc in tool_calls:
                 yield {
                     "event": "tool_call",
@@ -149,6 +163,7 @@ class AssistantService:
                     tc.name,
                     tc.arguments
                 )
+                tool_results.append((tc, result))
 
                 yield {
                     "event": "tool_result",
@@ -195,6 +210,14 @@ class AssistantService:
                     "content": json.dumps(result)
                 })
 
+                # Save tool response message to database
+                self.conversation_manager.add_message(
+                    conversation_id=conversation.id,
+                    role="tool",
+                    content=json.dumps(result),
+                    tool_call_id=tc.id,
+                )
+
             # Get final response from LLM after tool execution
             async for event in self.llm.chat_completion(
                 messages=messages,
@@ -214,18 +237,26 @@ class AssistantService:
                 elif event.type == "done":
                     model = event.data.get("model", "")
 
-        # Save assistant message
-        self.conversation_manager.add_message(
-            conversation_id=conversation.id,
-            role="assistant",
-            content=full_content,
-            tool_calls=[
-                {"id": tc.id, "name": tc.name, "arguments": tc.arguments}
-                for tc in tool_calls
-            ] if tool_calls else None,
-            tokens_used=tokens_used,
-            model=model,
-        )
+        # Save final assistant message (response after tool execution or direct response)
+        if full_content:
+            self.conversation_manager.add_message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content=full_content,
+                tool_calls=None,  # Final response has no tool calls
+                tokens_used=tokens_used,
+                model=model,
+            )
+        elif not tool_calls:
+            # No tool calls and no content - save empty response
+            self.conversation_manager.add_message(
+                conversation_id=conversation.id,
+                role="assistant",
+                content=full_content,
+                tool_calls=None,
+                tokens_used=tokens_used,
+                model=model,
+            )
 
         # Emit completion
         yield {

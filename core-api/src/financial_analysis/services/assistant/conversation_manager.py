@@ -7,6 +7,7 @@ Handles conversation history, context building, and system prompt generation.
 from datetime import date, datetime, timezone
 from typing import List, Dict, Any, Optional
 from uuid import uuid4
+import json
 import logging
 
 from sqlalchemy.orm import Session
@@ -172,9 +173,19 @@ class ConversationManager:
         for msg in messages:
             msg_dict = {"role": msg.role, "content": msg.content}
 
-            # Handle tool calls
+            # Handle tool calls - convert to OpenAI format
             if msg.tool_calls:
-                msg_dict["tool_calls"] = msg.tool_calls
+                msg_dict["tool_calls"] = [
+                    {
+                        "id": tc.get("id"),
+                        "type": "function",
+                        "function": {
+                            "name": tc.get("name"),
+                            "arguments": json.dumps(tc.get("arguments", {})) if isinstance(tc.get("arguments"), dict) else tc.get("arguments", "{}")
+                        }
+                    }
+                    for tc in msg.tool_calls
+                ]
 
             # Handle tool responses
             if msg.tool_call_id:

@@ -1,5 +1,15 @@
 version: '3.8'
 
+# ================================================================
+# PORT CONFIGURATION
+# ================================================================
+# Override these in a .env file to avoid conflicts with other instances:
+#   GATEWAY_PORT=8090
+#   WEB_PORT=5183
+#   MCP_PORT=3011
+#   DB_PORT=5442
+# ================================================================
+
 services:
   # ----------------------------------------------------------------
   # API GATEWAY (Entry Point)
@@ -7,10 +17,12 @@ services:
   gateway:
     build: ./api-gateway
     ports:
-      - "8080:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
     depends_on:
-      - core-api
-      - web-app
+      core-api:
+        condition: service_healthy
+      web-app:
+        condition: service_started
 
   # ----------------------------------------------------------------
   # CORE API (Backend Service)
@@ -26,6 +38,12 @@ services:
       - DATABASE_URL=sqlite:////app/data/financial_data.db
     # Pass --reload to entrypoint for hot reloading in dev
     command: ["--reload"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ----------------------------------------------------------------
   # WEB APP (Frontend Service)
@@ -39,9 +57,9 @@ services:
       - ./web-app/public:/app/public     # Mount public assets
       - /app/node_modules                # Prevent overwriting node_modules
     ports:
-      - "5173:5173"                      # Expose Vite dev server
+      - "${WEB_PORT:-5173}:5173"
     environment:
-      - VITE_API_URL=http://localhost:8080
+      - VITE_API_URL=http://localhost:${GATEWAY_PORT:-8080}
 
   # ----------------------------------------------------------------
   # MCP SERVER (AI Agent Integration)
@@ -49,18 +67,19 @@ services:
   mcp-server:
     build: ./mcp-server
     ports:
-      - "3001:3001"
+      - "${MCP_PORT:-3001}:3001"
     environment:
       - SPEARMINT_API_URL=http://core-api:8000
       - MCP_PORT=3001
       - MCP_MODE=http
     depends_on:
-      - core-api
+      core-api:
+        condition: service_healthy
 
   # ----------------------------------------------------------------
   # DATABASE (Postgres - Future Proofing)
   # ----------------------------------------------------------------
-  # Using SQLite file mount for now as per current setup, 
+  # Using SQLite file mount for now as per current setup,
   # but adding postgres here so we are ready to switch.
   db:
     image: postgres:15-alpine
@@ -71,7 +90,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
 
 volumes:
   postgres_data:

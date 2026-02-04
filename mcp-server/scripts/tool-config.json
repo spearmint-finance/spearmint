@@ -1,0 +1,136 @@
+{
+  "$schema": "./tool-config.schema.json",
+  "description": "Configuration for auto-generating MCP tools from OpenAPI spec",
+  "openApiPath": "../../core-api/sdk/openapi.json",
+  "outputDir": "../src/tools/generated",
+  "tools": [
+    {
+      "name": "get_financial_summary",
+      "operationId": "getFinancialSummary",
+      "path": "/api/analysis/summary",
+      "method": "get",
+      "description": "Get a comprehensive financial summary including total income, total expenses, net cash flow, and key financial metrics. Use this when the user asks about their overall financial health, monthly overview, or wants to know how much they earned/spent.",
+      "usageHint": "What's my financial summary for this month?",
+      "parameterOverrides": {
+        "start_date": {
+          "description": "Start date for the summary period (YYYY-MM-DD format). Defaults to beginning of current month."
+        },
+        "end_date": {
+          "description": "End date for the summary period (YYYY-MM-DD format). Defaults to today."
+        }
+      },
+      "excludeParameters": ["mode", "top_n", "recent_count"]
+    },
+    {
+      "name": "get_expense_breakdown",
+      "operationId": "getCategoryBreakdown",
+      "path": "/api/analysis/category-breakdown",
+      "method": "get",
+      "description": "Get expenses broken down by category with amounts and percentages. Use this when the user asks where their money is going, wants to see spending by category, or asks about specific expense categories.",
+      "usageHint": "Show me my expense breakdown by category",
+      "parameterOverrides": {
+        "start_date": {
+          "description": "Start date for the breakdown period (YYYY-MM-DD format). Defaults to beginning of current month."
+        },
+        "end_date": {
+          "description": "End date for the breakdown period (YYYY-MM-DD format). Defaults to today."
+        }
+      },
+      "excludeParameters": ["mode", "type"]
+    },
+    {
+      "name": "search-transactions",
+      "operationId": "listTransactions",
+      "path": "/api/transactions",
+      "method": "get",
+      "description": "Search and filter transactions by various criteria. Use this when the user wants to find specific transactions, search by merchant name, filter by date range, or look up purchases.",
+      "usageHint": "Find all Amazon transactions over $50",
+      "parameterOverrides": {
+        "search": {
+          "description": "Search term to filter transactions by description (e.g., merchant name, store name)"
+        },
+        "min_amount": {
+          "description": "Minimum transaction amount to include in results"
+        },
+        "max_amount": {
+          "description": "Maximum transaction amount to include in results"
+        },
+        "limit": {
+          "description": "Maximum number of transactions to return (default: 20, max: 100)"
+        }
+      },
+      "excludeParameters": ["offset", "include_in_analysis", "classification_id", "account_id", "sort_by", "sort_order"]
+    },
+    {
+      "name": "get_account_balances",
+      "operationId": "getAccountSummary",
+      "path": "/api/accounts/summary",
+      "method": "get",
+      "description": "Get current balances for all financial accounts including total assets, liabilities, and net worth. Use this when the user asks about their account balances, net worth, or wants to see all their accounts.",
+      "usageHint": "What are my current account balances?",
+      "parameterOverrides": {},
+      "excludeParameters": []
+    },
+    {
+      "name": "get_cashflow_trend",
+      "operationId": "getCashflowTrends",
+      "path": "/api/analysis/cashflow/trends",
+      "method": "get",
+      "description": "Get cash flow trends over time showing income and expenses by period. Use this when the user asks about cash flow patterns, spending trends over time, or wants to see how their finances have changed month-to-month.",
+      "usageHint": "Show me my cash flow trend for the last 6 months",
+      "parameterOverrides": {
+        "period": {
+          "description": "Time period for grouping: 'monthly', 'weekly', 'daily', 'quarterly', or 'yearly'"
+        },
+        "periods": {
+          "description": "Number of periods to include in the trend (e.g., 6 for last 6 months)"
+        }
+      },
+      "excludeParameters": ["mode"]
+    },
+    {
+      "name": "get_income_breakdown",
+      "operationId": "getIncomeAnalysis",
+      "path": "/api/analysis/income",
+      "method": "get",
+      "description": "Get income broken down by source/category with amounts and percentages. Use this when the user asks about their income sources, where their money comes from, or wants to analyze their earnings.",
+      "usageHint": "Where does my income come from?",
+      "parameterOverrides": {
+        "start_date": {
+          "description": "Start date for the income analysis (YYYY-MM-DD format). Defaults to beginning of current month."
+        },
+        "end_date": {
+          "description": "End date for the income analysis (YYYY-MM-DD format). Defaults to today."
+        }
+      },
+      "excludeParameters": ["mode"]
+    },
+    {
+      "name": "get_spending_trend",
+      "operationId": "getExpenseTrends",
+      "path": "/api/analysis/expenses/trends",
+      "method": "get",
+      "description": "Get spending trends over time for expenses. Use this when the user asks how their spending has changed, wants to see expense patterns, or track spending over multiple months.",
+      "usageHint": "How has my spending changed over the last 3 months?",
+      "parameterOverrides": {
+        "period": {
+          "description": "Time period for grouping: 'monthly', 'weekly', 'daily', 'quarterly', or 'yearly'"
+        },
+        "periods": {
+          "description": "Number of periods to include (e.g., 3 for last 3 months)"
+        }
+      },
+      "excludeParameters": ["mode"]
+    },
+    {
+      "name": "get_financial_health",
+      "operationId": "getFinancialHealth",
+      "path": "/api/analysis/health",
+      "method": "get",
+      "description": "Get financial health indicators and scores. Use this when the user asks about their financial health, wants a financial checkup, or asks how they're doing financially.",
+      "usageHint": "How healthy are my finances?",
+      "parameterOverrides": {},
+      "excludeParameters": ["mode"]
+    }
+  ]
+}
