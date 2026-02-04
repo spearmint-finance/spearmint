@@ -98,7 +98,20 @@ export const getAccounts = async (params?: {
 export const createAccount = async (
   account: AccountCreate
 ): Promise<Account> => {
-  const response = await accountsApi.createAccountApiAccountsPost(account);
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    accountName: account.account_name,
+    accountType: account.account_type,
+    accountSubtype: account.account_subtype || undefined,
+    institutionName: account.institution_name || undefined,
+    accountNumberLast4: account.account_number_last4 || undefined,
+    currency: account.currency || undefined,
+    openingBalance: account.opening_balance,
+    openingBalanceDate: account.opening_balance_date,
+    notes: account.notes || undefined,
+  };
+  const response = await accountsApi.createAccountApiAccountsPost(sdkPayload as any);
   return transformAccount(response.data);
 };
 
@@ -113,9 +126,19 @@ export const updateAccount = async (
   accountId: number,
   account: AccountUpdate
 ): Promise<Account> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    accountName: account.account_name || undefined,
+    accountSubtype: account.account_subtype || undefined,
+    institutionName: account.institution_name || undefined,
+    accountNumberLast4: account.account_number_last4 || undefined,
+    isActive: account.is_active,
+    notes: account.notes || undefined,
+  };
   const response = await accountsApi.updateAccountApiAccountsAccountIdPut(
     accountId,
-    account
+    sdkPayload as any
   );
   return transformAccount(response.data);
 };
@@ -155,10 +178,20 @@ export const addBalanceSnapshot = async (
   accountId: number,
   balance: BalanceCreate
 ): Promise<Balance> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    balanceDate: balance.balance_date,
+    totalBalance: balance.total_balance,
+    balanceType: balance.balance_type || undefined,
+    cashBalance: balance.cash_balance,
+    investmentValue: balance.investment_value,
+    notes: balance.notes || undefined,
+  };
   const response =
     await accountsApi.addBalanceSnapshotApiAccountsAccountIdBalancesPost(
       accountId,
-      balance
+      sdkPayload as any
     );
   return response.data as unknown as Balance;
 };
@@ -207,9 +240,21 @@ export const addHolding = async (
   accountId: number,
   holding: HoldingCreate
 ): Promise<InvestmentHolding> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    symbol: holding.symbol,
+    quantity: holding.quantity,
+    asOfDate: holding.as_of_date,
+    description: holding.description || undefined,
+    costBasis: holding.cost_basis,
+    currentValue: holding.current_value,
+    assetClass: holding.asset_class || undefined,
+    sector: holding.sector || undefined,
+  };
   const response = await accountsApi.addHoldingApiAccountsAccountIdHoldingsPost(
     accountId,
-    holding
+    sdkPayload as any
   );
   return response.data as unknown as InvestmentHolding;
 };
@@ -230,10 +275,19 @@ export const createReconciliation = async (
   accountId: number,
   reconciliation: ReconciliationCreate
 ): Promise<Reconciliation> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    statementDate: reconciliation.statement_date,
+    statementBalance: reconciliation.statement_balance,
+    statementCashBalance: reconciliation.statement_cash_balance,
+    statementInvestmentValue: reconciliation.statement_investment_value,
+    notes: reconciliation.notes || undefined,
+  };
   const response =
     await accountsApi.createReconciliationApiAccountsAccountIdReconcilePost(
       accountId,
-      reconciliation
+      sdkPayload as any
     );
   return response.data as unknown as Reconciliation;
 };
@@ -257,13 +311,16 @@ export const completeReconciliation = async (
     cleared_transaction_ids?: number[];
   }
 ): Promise<Reconciliation> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  // SDK validates optional fields - empty strings must be converted to undefined
+  const sdkPayload = {
+    reconciledBy: data.reconciled_by || undefined,
+    clearedTransactionIds: data.cleared_transaction_ids,
+  };
   const response =
     await accountsApi.completeReconciliationApiAccountsReconciliationsReconciliationIdCompletePut(
       reconciliationId,
-      {
-        reconciled_by: data.reconciled_by,
-        cleared_transaction_ids: data.cleared_transaction_ids,
-      }
+      sdkPayload as any
     );
   return response.data as unknown as Reconciliation;
 };
@@ -272,11 +329,15 @@ export const clearTransactions = async (
   transaction_ids: number[],
   cleared_date?: string
 ): Promise<{ message: string; cleared_count: number }> => {
+  // Transform snake_case frontend format to camelCase SDK format
+  const sdkPayload = {
+    transactionIds: transaction_ids,
+    clearedDate: cleared_date,
+  };
   const response =
-    await accountsApi.clearTransactionsApiAccountsTransactionsClearPost({
-      transaction_ids,
-      cleared_date,
-    });
+    await accountsApi.clearTransactionsApiAccountsTransactionsClearPost(
+      sdkPayload as any
+    );
   return response.data as unknown as { message: string; cleared_count: number };
 };
 
