@@ -598,7 +598,60 @@ This classification can be derived from existing category metadata (`category_ty
 
 ---
 
-## Technical Architecture
+## Hybrid Architecture: Determinism + LLM
+
+The Budget Advisor uses a **hybrid architecture** where deterministic computation and LLM reasoning each handle what they're best at. The rubric is simple: **if you can write an if/else for it, use determinism. If the answer requires interpretation, use the LLM.**
+
+### Decision Rubric
+
+| Use determinism when... | Use the LLM when... |
+|---|---|
+| The logic is a formula or threshold | The answer requires interpretation |
+| The inputs are structured (numbers, categories) | The inputs are unstructured (descriptions, cross-category patterns) |
+| The output is a known shape (alert/no-alert, number) | The output is open-ended (explanation, novel insight, advice) |
+| Being wrong is costly (financial calculations) | Being approximate is fine (tone, framing, creative connections) |
+| The rules are stable and domain-standard | The rules would require infinite branching to cover all cases |
+
+### What Each Layer Does
+
+**Deterministic layer** (SpendingAnalyzer, SavingsRecommender):
+- Calculate monthly averages, trends, variance (math)
+- Detect if a category exceeds a threshold (if/else)
+- Generate budget numbers (arithmetic)
+- Classify categories as fixed/variable/discretionary (lookup)
+- Detect duplicate recurring charges (pattern match on amount + frequency)
+- Rank opportunities by annual impact (sort)
+
+**LLM layer** (Advisor reasoning):
+- Explain *why* spending changed ("You started ordering delivery after you moved")
+- Prioritize recommendations *for this specific person* ("Cutting dining won't work for you — you eat out for work. Focus on subscriptions instead")
+- Correlate across categories ("Your gas spending dropped when your gym membership started")
+- Generate advice that accounts for context ("You mentioned expecting a baby — here's how to adjust")
+- Decide what's worth mentioning vs. noise ("Entertainment spiked, but it was a one-time concert — not actionable")
+- Negotiate in natural language when data quality is poor
+
+### Data Flow
+
+```
+Transactions
+    │
+    ▼
+[Deterministic: SpendingAnalyzer]
+    │  Monthly averages, trends, variance, category stats
+    ▼
+[Deterministic: SavingsRecommender]
+    │  Structured signals: "dining +12%", "variance: high", "3 streaming subs"
+    ▼
+[LLM: Advisor Reasoning]
+    │  Receives structured signals + transaction descriptions as context
+    │  Reasons about what matters, what to say, how to prioritize
+    ▼
+Personalized advice
+    "You're spending more on delivery since February.
+     Cooking 2 more meals/week would save ~$80/month."
+```
+
+The LLM never does the math — it interprets the math. The deterministic layer never generates prose — it produces structured data for the LLM to reason about.
 
 ### Agent Implementation
 
@@ -610,14 +663,13 @@ core-api/
 │   │   ├── base.py              # A2A base agent class (discovery, negotiation, state)
 │   │   ├── budget_advisor/
 │   │   │   ├── __init__.py
-│   │   │   ├── agent.py         # BudgetAdvisorAgent (main entry point)
-│   │   │   ├── analyzer.py      # SpendingAnalyzer (data crunching)
-│   │   │   ├── recommender.py   # SavingsRecommender (opportunity detection)
-│   │   │   ├── budget_builder.py # BudgetBuilder (budget generation)
-│   │   │   ├── monitor.py       # SpendingMonitor (continuous monitoring)
-│   │   │   ├── follower.py      # BudgetFollowUp (adherence tracking)
+│   │   │   ├── agent.py         # BudgetAdvisorAgent (orchestrator — routes to deterministic or LLM)
+│   │   │   ├── analyzer.py      # SpendingAnalyzer (deterministic: data crunching)
+│   │   │   ├── recommender.py   # SavingsRecommender (deterministic: detection rules, ranking)
+│   │   │   ├── advisor.py       # AdvisorReasoning (LLM: interpretation, personalization, advice)
+│   │   │   ├── budget_builder.py # BudgetBuilder (deterministic: budget generation)
+│   │   │   ├── monitor.py       # SpendingMonitor (deterministic: anomaly detection)
 │   │   │   ├── orchestrator.py  # SubAgentOrchestrator (delegates to sub-agents)
-│   │   │   ├── negotiator.py    # Negotiation logic (data quality, trade-offs)
 │   │   │   ├── state.py         # State persistence (budgets, history, prefs)
 │   │   │   └── schemas.py       # Request/response Pydantic models
 │   │   └── registry.py          # Agent registry for A2A discovery
@@ -677,25 +729,39 @@ A third party can implement the Budget Advisor agent card interface, deploy thei
 
 ## Implementation Phases
 
-### Phase 1: Spending Analysis & Recommendations (MVP)
+### Phase 1: Hybrid Spending Analysis & Recommendations (MVP)
 
 **Scope:**
-- `SpendingAnalyzer`: Pull transaction data, compute category-level stats (averages, trends, variance)
-- `SavingsRecommender`: Apply detection rules, rank opportunities, generate reasoning text
+- `SpendingAnalyzer` (deterministic): Pull transaction data, compute category-level stats (averages, trends, variance)
+- `SavingsRecommender` (deterministic): Apply detection rules, rank opportunities by annual impact
+- `AdvisorReasoning` (LLM): Interpret structured signals, generate personalized explanations and actionable tips, decide what's worth mentioning vs. noise
 - A2A endpoint: `POST /a2a/budget-advisor` with `analyze-spending` skill
 - Agent card registration and discovery endpoint
-- Basic negotiation: respond with `needs_input` when data is insufficient (<3 months or >20% uncategorized)
+- Negotiation: LLM explains data quality trade-offs conversationally when data is insufficient (<3 months or >20% uncategorized)
+
+**Hybrid split in Phase 1:**
+| Component | Layer | What it does |
+|-----------|-------|-------------|
+| Monthly averages, trends, variance | Deterministic | Math on transaction data |
+| Detection rules (upward trend, high variance, etc.) | Deterministic | Threshold-based signal detection |
+| Ranking by annual impact | Deterministic | Sort by savings potential |
+| Reasoning text ("why this matters") | LLM | Interprets signals with transaction-level context |
+| Actionable tips | LLM | Generates personalized advice from transaction descriptions |
+| What to prioritize for *this* user | LLM | Filters noise, accounts for user context |
+| Negotiation messaging | LLM | Explains data quality issues conversationally |
 
 **Dependencies:**
-- Existing `AnalysisService` for filtered transaction queries
+- Existing `AnalysisService` for filtered transaction query patterns
 - Existing `Category` model for category metadata
+- Claude API (Anthropic SDK) for LLM reasoning
 
 **Acceptance Criteria:**
 - Given 6 months of transaction data, the agent returns 3-5 ranked savings recommendations
-- Each recommendation includes category, signal, severity, savings estimate, and reasoning
-- Response time <3 seconds for typical dataset (1000 transactions)
+- Each recommendation includes deterministic data (signal, severity, savings estimate) AND LLM-generated reasoning and tips
+- Deterministic layer completes in <1 second; full response with LLM in <5 seconds
 - A2A endpoint returns valid response matching schema
-- When data is insufficient, agent returns `needs_input` with options instead of low-quality results
+- When data is insufficient, agent returns `needs_input` with LLM-generated explanation of trade-offs
+- LLM layer degrades gracefully: if LLM is unavailable, return deterministic results with template-based reasoning as fallback
 
 ### Phase 2: Budget Generation & State
 
@@ -732,13 +798,12 @@ A third party can implement the Budget Advisor agent card interface, deploy thei
 - When sub-agents are unreachable, Budget Advisor returns its own analysis with a note about unavailable enrichments
 - Monitor runs without impacting API performance (background task)
 
-### Phase 4: Intelligence Layer & Ecosystem
+### Phase 4: Advanced Reasoning & Ecosystem
 
 **Scope:**
-- LLM-enhanced reasoning: Use Claude to generate natural-language advice from structured data
-- Transaction-level drill-down: "Your dining spend is high because of 4 delivery orders from DoorDash averaging $45 each"
+- Multi-turn LLM reasoning: Agent remembers past conversations and builds on prior advice
+- Cross-category correlation: LLM identifies non-obvious patterns across spending categories and life events
 - Peer benchmarking: Anonymous cohort comparisons (requires opt-in data aggregation)
-- Full negotiation protocol: Multi-turn negotiation for complex trade-offs
 - Bill Negotiator and Tax Optimizer sub-agent integrations
 - Third-party agent deployment documentation and SDK
 - Integration with Scenario Planning for "what-if I follow this budget" projections
@@ -777,10 +842,11 @@ A third party can implement the Budget Advisor agent card interface, deploy thei
 1. **Category classification:** Should we add a `budget_category_type` field (fixed/variable/discretionary/periodic) to the Category model, or derive it heuristically from spending patterns?
 2. **Multi-person budgets:** Should the agent produce a household budget or per-person budgets? Both?
 3. **Budget persistence:** How long should budget history be retained? Should users be able to view past budgets and adherence trends?
-4. **LLM integration timing:** Should Phase 1 use an LLM for generating recommendation text, or use template-based text and add LLM enhancement in Phase 4?
+4. ~~**LLM integration timing:**~~ **RESOLVED** — Hybrid from Phase 1. Deterministic layer handles math/thresholds, LLM handles interpretation/advice. Template-based fallback when LLM is unavailable.
 5. **Notification channel:** When the agent pushes a proactive alert to Minty, how should Minty surface it? (Chat bubble, notification badge, email digest?)
 6. **Third-party trust model:** What vetting or sandboxing is needed for third-party Budget Advisor implementations that access user financial data?
 7. **Monitor scheduling:** Should the monitor run as a background thread in the API process, a separate worker process, or a scheduled job (cron/Celery)?
+8. **LLM cost management:** How to handle LLM API costs for proactive monitoring (Phase 3)? Per-user rate limits? Cache common patterns? Only use LLM for high-priority alerts?
 
 ---
 
