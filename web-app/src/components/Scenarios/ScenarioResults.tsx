@@ -7,8 +7,13 @@ type Props = {
 
 export default function ScenarioResults({ result }: Props) {
   const k = result.kpis;
-  const months = result.scenario_series.length;
-  const totalNet = result.scenario_series.reduce((acc, p) => acc + p.net_cf, 0);
+  const series = result.scenario_series ?? [];
+  const totalNet = series.reduce(
+    (acc, p) => acc + parseFloat(p.net_cf || "0"),
+    0
+  );
+  const minBalance = parseFloat(k.min_balance || "0");
+  const coverageByPerson = k.coverage_by_person ?? {};
 
   return (
     <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -28,7 +33,7 @@ export default function ScenarioResults({ result }: Props) {
             <Typography variant="subtitle2" color="text.secondary">
               Min Balance
             </Typography>
-            <Typography variant="h5">${k.min_balance.toFixed(2)}</Typography>
+            <Typography variant="h5">${minBalance.toFixed(2)}</Typography>
           </CardContent>
         </Card>
       </Grid>
@@ -50,15 +55,15 @@ export default function ScenarioResults({ result }: Props) {
               Coverage by Person
             </Typography>
             <Stack direction="row" spacing={3}>
-              {Object.entries(k.coverage_by_person).length === 0 && (
+              {Object.entries(coverageByPerson).length === 0 && (
                 <Typography color="text.secondary">No per-person data yet</Typography>
               )}
-              {Object.entries(k.coverage_by_person).map(([pid, cov]) => (
+              {Object.entries(coverageByPerson).map(([pid, cov]) => (
                 <Stack key={pid}>
                   <Typography variant="body2" color="text.secondary">
                     Person {pid}
                   </Typography>
-                  <Typography variant="h6">{cov.toFixed(2)}x</Typography>
+                  <Typography variant="h6">{Number(cov).toFixed(2)}x</Typography>
                 </Stack>
               ))}
             </Stack>
@@ -68,4 +73,3 @@ export default function ScenarioResults({ result }: Props) {
     </Grid>
   );
 }
-

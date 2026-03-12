@@ -1,5 +1,3 @@
-import { scenariosApi } from "./sdk";
-
 export type ScenarioAdjusterIn = {
   type: "job_loss" | "income_reduction" | "expense_change" | "one_time";
   target_person_id?: number | null;
@@ -17,28 +15,35 @@ export type ScenarioPreviewRequest = {
 
 export type SeriesPoint = {
   date: string;
-  income: number;
-  expenses: number;
-  net_cf: number;
+  income: string;
+  expenses: string;
+  net_cf: string;
+  by_person?: Record<string, Record<string, string>> | null;
 };
 
 export type ScenarioKPIs = {
   runway_months: number | null;
-  min_balance: number;
+  min_balance: string;
   coverage_by_person: Record<string, number>;
+  monthly_shortfall_by_person?: Record<string, string> | null;
 };
 
 export type ScenarioPreviewResponse = {
   baseline_series: SeriesPoint[];
   scenario_series: SeriesPoint[];
   kpis: ScenarioKPIs;
-  deltas: { income: number; expenses: number; net_cf: number };
+  deltas: Record<string, string>;
   generated_at: string;
 };
 
-export async function previewScenario(payload: ScenarioPreviewRequest) {
-  const response = await scenariosApi.previewScenarioApiScenariosPreviewPost(
-    payload as any // The generated SDK type might differ slightly in strictness
-  );
-  return response.data as unknown as ScenarioPreviewResponse;
+export async function previewScenario(payload: ScenarioPreviewRequest): Promise<ScenarioPreviewResponse> {
+  const resp = await fetch("/api/scenarios/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!resp.ok) {
+    throw new Error(`Scenario preview failed: ${resp.status}`);
+  }
+  return resp.json();
 }

@@ -43,6 +43,8 @@ export default function ScenarioBuilder() {
         shared_expense_strategy: "equal_split",
       });
       setResult(data);
+    } catch (err) {
+      console.error("Scenario preview failed:", err);
     } finally {
       setLoading(false);
     }

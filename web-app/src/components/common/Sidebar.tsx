@@ -33,7 +33,6 @@ const menuItems = [
   { text: "Accounts", icon: <AccountBalanceIcon />, path: "/accounts" },
   { text: "Transactions", icon: <ReceiptIcon />, path: "/transactions" },
   { text: "Analysis", icon: <BarChartIcon />, path: "/analysis" },
-  { text: "Scenarios", icon: <PsychologyIcon />, path: "/scenarios" },
   { text: "Projections", icon: <TrendingUpIcon />, path: "/projections" },
   { text: "Classifications", icon: <CategoryIcon />, path: "/classifications" },
   { text: "Import", icon: <UploadFileIcon />, path: "/import" },

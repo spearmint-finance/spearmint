@@ -3,7 +3,14 @@
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+
+
+class DecimalBaseModel(BaseModel):
+    """Base model with Decimal to string conversion for JSON serialization."""
+    model_config = ConfigDict(
+        json_encoders={Decimal: str}
+    )
 
 
 class ScenarioAdjusterIn(BaseModel):
@@ -25,7 +32,7 @@ class ScenarioPreviewRequest(BaseModel):
     adjusters: List[ScenarioAdjusterIn] = Field(default_factory=list)
 
 
-class SeriesPoint(BaseModel):
+class SeriesPoint(DecimalBaseModel):
     date: date
     income: Decimal
     expenses: Decimal
@@ -33,17 +40,16 @@ class SeriesPoint(BaseModel):
     by_person: Optional[Dict[int, Dict[str, Decimal]]] = None  # {personId: {income, expenses, net_cf}}
 
 
-class ScenarioKPIs(BaseModel):
+class ScenarioKPIs(DecimalBaseModel):
     runway_months: Optional[float]
     min_balance: Decimal
     coverage_by_person: Dict[int, float] = Field(default_factory=dict)
     monthly_shortfall_by_person: Optional[Dict[int, Decimal]] = None
 
 
-class ScenarioPreviewResponse(BaseModel):
+class ScenarioPreviewResponse(DecimalBaseModel):
     baseline_series: List[SeriesPoint]
     scenario_series: List[SeriesPoint]
     kpis: ScenarioKPIs
     deltas: Dict[str, Decimal]
     generated_at: datetime
-
