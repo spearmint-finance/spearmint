@@ -26,7 +26,8 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://get.docker.com | sh
 
 # Install Postman CLI (for API governance validation)
-RUN curl -o- 'https://dl-cli.pstmn.io/install/linux64.sh' | sh
+# Using || true to make this optional - container will still build if Postman CLI fails
+RUN curl -fsSL 'https://dl-cli.pstmn.io/install/linux64.sh' | sh || echo "Warning: Postman CLI installation failed, continuing without it"
 
 WORKDIR /workspace
 

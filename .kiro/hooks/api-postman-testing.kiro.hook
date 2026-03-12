@@ -1,0 +1,47 @@
+{
+  "enabled": true,
+  "name": "API Postman Testing",
+  "description": "Automatically runs Postman collection tests when source code files are modified (debounced to prevent excessive runs)",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.js",
+      "*.ts",
+      "*.py",
+      "*.java",
+      "*.cs",
+      "*.go",
+      "*.rs",
+      "*.php",
+      "*.rb",
+      "*.kt",
+      "*.swift",
+      "*.scala",
+      "package.json",
+      "package-lock.json",
+      "requirements.txt",
+      "Pipfile",
+      "pom.xml",
+      "build.gradle",
+      "*.csproj",
+      "go.mod",
+      "Cargo.toml",
+      "composer.json",
+      "Gemfile",
+      "build.sbt",
+      ".postman.json",
+      "openapi.yaml",
+      "openapi.yml",
+      "swagger.yaml",
+      "swagger.yml",
+      "api.yaml",
+      "api.yml",
+      "postman_collection.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The file {{filePath}} has been modified. Follow the Postman steering guide workflow:\n\n1. Read .postman.json to get collection and environment IDs\n2. If .postman.json doesn't exist, inform me that Postman is not configured yet\n3. If it exists, verify the collection and environment still exist\n4. Run the collection tests using runCollection with the environment\n5. Display comprehensive test results with pass/fail breakdown\n6. If any tests fail, analyze the failures and suggest specific fixes\n\nDo NOT create new collections automatically - only run tests if already configured."
+  }
+}
