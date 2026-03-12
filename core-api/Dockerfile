@@ -1,13 +1,11 @@
 # spearmint/core-api/Dockerfile
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# Install system dependencies (for pandas/numpy/scipy compilation if needed)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Skip build dependencies - use pre-compiled wheels for faster builds
+# If compilation is needed later, uncomment apt-get install build-essential
 
 # Install Python dependencies
 COPY requirements.txt .

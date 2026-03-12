@@ -1,0 +1,65 @@
+{
+  "version": "0.1",
+  "project": {
+    "name": "Financial Analysis API",
+    "baseUrl": "http://localhost:8000",
+    "createdAt": "2025-12-01T00:00:00Z"
+  },
+  "default": {
+    "workspace": "main-workspace",
+    "environment": "local"
+  },
+  "workspaces": {
+    "main-workspace": {
+      "id": "20c3490b-76d5-4d25-8d3d-5f8a22d3ad39",
+      "name": "Financial Analysis Workspace",
+      "type": "team",
+      "description": "Main workspace for Financial Analysis API testing"
+    }
+  },
+  "collections": {
+    "reports-tests": {
+      "id": "2417d355-5ae7-4c25-94f1-6039226f6c1b",
+      "uid": "43880489-2417d355-5ae7-4c25-94f1-6039226f6c1b",
+      "name": "Financial Reports API Tests",
+      "workspace": "main-workspace",
+      "description": "Comprehensive test suite for financial reports endpoints",
+      "requestCount": 11,
+      "createdAt": "2025-12-01T00:00:00Z"
+    }
+  },
+  "environments": {
+    "local": {
+      "id": "3b1cccbe-18b7-4ada-8e8e-4de40d0fef57",
+      "uid": "43880489-3b1cccbe-18b7-4ada-8e8e-4de40d0fef57",
+      "name": "Financial Reports - Local",
+      "workspace": "main-workspace",
+      "variables": {
+        "API_URL": "http://localhost:8000"
+      },
+      "createdAt": "2025-12-01T00:00:00Z"
+    },
+    "mock": {
+      "id": "4f349f3d-fbb9-4815-9b2b-d7bad2975e17",
+      "uid": "43880489-4f349f3d-fbb9-4815-9b2b-d7bad2975e17",
+      "name": "Financial Reports - Mock",
+      "workspace": "main-workspace",
+      "variables": {
+        "API_URL": "https://97f976a7-356f-49b3-b179-ccecb5e4b41e.mock.pstmn.io"
+      },
+      "createdAt": "2025-12-01T20:08:42Z"
+    }
+  },
+  "mocks": {
+    "reports-mock": {
+      "id": "97f976a7-356f-49b3-b179-ccecb5e4b41e",
+      "uid": "43880489-97f976a7-356f-49b3-b179-ccecb5e4b41e",
+      "name": "Financial Reports Mock Server",
+      "collection": "reports-tests",
+      "workspace": "main-workspace",
+      "mockUrl": "https://97f976a7-356f-49b3-b179-ccecb5e4b41e.mock.pstmn.io",
+      "private": false,
+      "createdAt": "2025-12-01T20:08:42Z"
+    }
+  }
+}

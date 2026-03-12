@@ -28,7 +28,12 @@ services:
   # CORE API (Backend Service)
   # ----------------------------------------------------------------
   core-api:
-    build: ./core-api
+    build:
+      context: ./core-api
+      network: host
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     volumes:
       - ./core-api/src:/app/src  # Hot reload for code
       - ./database/data:/app/data # Persist SQLite DB
