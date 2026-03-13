@@ -263,8 +263,12 @@ git apply --check demo/code/scenario-templates.patch
 # Apply the patch — changes appear instantly in the IDE
 git apply demo/code/scenario-templates.patch
 ```
+git diff --stat  
 
 Then walk through the changed files in the IDE to explain what was added.
+
+git add -A && git commit -m "feat(scenarios): add scenario templates endpoint" && git push origin main  
+
 
 ### After the demo — reset to clean state
 
