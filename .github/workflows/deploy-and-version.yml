@@ -21,7 +21,7 @@ permissions:
 env:
   POSTMAN_WORKSPACE_ID: d9ca9bbd-2779-4e25-bb0e-737d252a3122
   POSTMAN_SPEC_ID: d26cae51-7764-4ae5-a7a7-8a0736a94908
-  POSTMAN_COLLECTION_UID: 44359130-7ba080bd-21fe-43cf-a53f-08c7d2ef785d
+  POSTMAN_COLLECTION_UID: 44359130-ced2758d-1b5b-4137-9544-dcdf2c0fa002
 
 jobs:
   # STEP 1: Run integration tests (can run in parallel with spec generation)
@@ -196,15 +196,22 @@ jobs:
   deploy-gateway:
     needs: [integration-tests, generate-and-validate-spec]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image for API Gateway
-        run: |
-          set -e
-          cd api-gateway
-          docker build -t spearmint-api-gateway:latest .
+      - name: Set up Depot
+        uses: depot/setup-action@v1
+
+      - name: Build and push API Gateway image
+        uses: depot/build-push-action@v1
+        with:
+          project: 9p08v7gqzr
+          context: api-gateway
 
       - name: Verify gateway deployment
         run: echo "✓ Gateway deployed successfully"
