@@ -536,14 +536,16 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 5: Sync collection with updated spec (so new endpoints appear in the collection)
-      - name: Sync collection with spec
-        id: sync-collection
+      # Step 5: Re-import collection from updated spec (so new endpoints appear in the collection)
+      - name: Re-import collection from spec
+        id: reimport-collection
         if: steps.ensure-collection.outputs.collection_created != 'true'
         run: |
-          python dev-tools/postman/sync_collection.py \
-            --spec-id "${{ steps.ensure-spec.outputs.spec_id }}" \
-            --collection-uid "${{ steps.ensure-collection.outputs.collection_uid }}"
+          python dev-tools/postman/reimport_collection.py \
+            --collection-id "${{ steps.ensure-collection.outputs.collection_uid }}" \
+            --workspace-id "${{ env.POSTMAN_WORKSPACE_ID }}" \
+            --spec-file "sdk/openapi.json" \
+            --collection-name "Spearmint Core API"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
@@ -552,8 +554,10 @@ jobs:
         id: update-description
         if: steps.ensure-collection.outputs.collection_created != 'true'
         run: |
+          # Use the new collection UID from reimport if available, otherwise original
+          COLLECTION_ID="${{ steps.reimport-collection.outputs.collection_uid || steps.ensure-collection.outputs.collection_uid }}"
           python dev-tools/postman/update_collection_description.py \
-            --collection-id "${{ steps.ensure-collection.outputs.collection_uid }}" \
+            --collection-id "$COLLECTION_ID" \
             --version "${{ needs.bump-version.outputs.new_version }}"
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
@@ -617,7 +621,7 @@ jobs:
               echo "- ⚠️ **Fork failed**: Could not archive previous version (check POSTMAN_ARCHIVE_WORKSPACE_ID permissions)" >> $GITHUB_STEP_SUMMARY
             fi
             echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
-            echo "- ✅ **Collection synced**: Endpoints updated from spec" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Collection re-imported**: Fresh import from updated spec" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
           fi
 
