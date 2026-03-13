@@ -53,32 +53,3 @@ class ScenarioPreviewResponse(DecimalBaseModel):
     kpis: ScenarioKPIs
     deltas: Dict[str, Decimal]
     generated_at: datetime
-
-
-# --- Scenario Templates ---
-
-
-class TemplateAdjuster(BaseModel):
-    """A single adjuster within a scenario template."""
-    type: str = Field(..., description="Adjuster type: percentage | fixed | boolean")
-    key: str = Field(..., description="Unique key for this adjuster within the template")
-    label: str = Field(..., description="Human-readable label")
-    default: float = Field(..., description="Default value for this adjuster")
-    min: Optional[int] = Field(None, description="Minimum allowed value")
-    max: Optional[float] = Field(None, description="Maximum allowed value")
-
-
-class ScenarioTemplate(BaseModel):
-    """A scenario template with pre-configured adjusters."""
-    id: str = Field(..., description="Unique template identifier")
-    name: str = Field(..., description="Template name")
-    description: str = Field(..., description="What this template models")
-    adjusters: List[TemplateAdjuster] = Field(..., description="Pre-configured adjusters")
-
-
-class ScenarioTemplateListResponse(BaseModel):
-    """Paginated list of scenario templates."""
-    items: List[ScenarioTemplate]
-    page: int
-    pageSize: int
-    total: int
