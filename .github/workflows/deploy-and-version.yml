@@ -536,7 +536,18 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
 
-      # Step 5: Update collection description with version changelog (skip on first run)
+      # Step 5: Sync collection with updated spec (so new endpoints appear in the collection)
+      - name: Sync collection with spec
+        id: sync-collection
+        if: steps.ensure-collection.outputs.collection_created != 'true'
+        run: |
+          python dev-tools/postman/sync_collection.py \
+            --spec-id "${{ steps.ensure-spec.outputs.spec_id }}" \
+            --collection-uid "${{ steps.ensure-collection.outputs.collection_uid }}"
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+
+      # Step 6: Update collection description with version changelog (skip on first run)
       - name: Update collection description
         id: update-description
         if: steps.ensure-collection.outputs.collection_created != 'true'
@@ -606,8 +617,8 @@ jobs:
               echo "- ⚠️ **Fork failed**: Could not archive previous version (check POSTMAN_ARCHIVE_WORKSPACE_ID permissions)" >> $GITHUB_STEP_SUMMARY
             fi
             echo "- ✅ **Spec updated**: Content replaced in-place" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ **Collection synced**: Endpoints updated from spec" >> $GITHUB_STEP_SUMMARY
             echo "- ✅ **Description updated**: Version changelog added" >> $GITHUB_STEP_SUMMARY
-            echo "- ℹ️ **Collection sync**: Manual sync available in Postman" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
