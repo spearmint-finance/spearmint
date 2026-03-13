@@ -1,7 +1,7 @@
 {
   "name": "financial-analysis-frontend",
   "private": true,
-  "version": "0.0.76",
+  "version": "0.0.77",
   "type": "module",
   "scripts": {
     "dev": "vite",
