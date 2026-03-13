@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "memnexus": {
+      "type": "stdio",
+      "command": "mx",
+      "args": [
+        "mcp",
+        "serve"
+      ]
+    }
+  }
+}
