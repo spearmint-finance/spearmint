@@ -58,6 +58,9 @@ export function ValueProps() {
           className="mt-14 overflow-x-auto"
         >
           <table className="w-full min-w-[600px] text-left text-sm">
+            <caption className="sr-only">
+              Comparison of Spearmint vs traditional finance apps
+            </caption>
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="py-3 pr-4 font-semibold text-gray-900">
