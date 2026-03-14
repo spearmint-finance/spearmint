@@ -3,9 +3,16 @@ import { Features } from "@/components/Features";
 import { CTA } from "@/components/CTA";
 
 export const metadata: Metadata = {
-  title: "Features — Spearmint",
+  title: "Features",
   description:
     "Smart classification, relationship detection, statistical forecasting, and more. See what makes Spearmint different.",
+  alternates: { canonical: "/features" },
+  openGraph: {
+    title: "Features — Spearmint",
+    description:
+      "Smart classification, relationship detection, statistical forecasting, and more. See what makes Spearmint different.",
+    url: "/features",
+  },
 };
 
 export default function FeaturesPage() {

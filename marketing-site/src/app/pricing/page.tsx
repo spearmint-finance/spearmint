@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pricing — Spearmint",
+  title: "Pricing",
   description:
     "Spearmint is free and open-source. No subscriptions, no hidden costs, no data monetization.",
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    title: "Pricing — Spearmint",
+    description:
+      "Spearmint is free and open-source. No subscriptions, no hidden costs, no data monetization.",
+    url: "/pricing",
+  },
 };
 
 export default function PricingPage() {
