@@ -129,7 +129,7 @@ export function MeetTheAgents() {
                     >
                       {agent.name}
                     </span>
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-gray-500">
                       {agent.subtitle}
                     </span>
                   </div>
@@ -163,7 +163,7 @@ export function MeetTheAgents() {
 
                 <div className="mt-4 md:mt-0 md:w-80 md:shrink-0">
                   <div className="rounded-lg bg-gray-50 p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                       Example
                     </p>
                     <p className="mt-2 text-sm italic text-gray-600">

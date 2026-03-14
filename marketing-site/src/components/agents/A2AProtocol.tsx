@@ -75,7 +75,7 @@ export function A2AProtocol() {
                     <p className="mt-2 text-xs font-semibold text-gray-900">
                       {step.label}
                     </p>
-                    <p className="mt-0.5 text-xs text-gray-400">{step.sub}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{step.sub}</p>
                   </div>
                   {i < 4 && (
                     <svg

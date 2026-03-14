@@ -61,7 +61,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-10 border-t border-gray-200 pt-6 text-center text-xs text-gray-400">
+        <div className="mt-10 border-t border-gray-200 pt-6 text-center text-xs text-gray-500">
           &copy; {new Date().getFullYear()} Spearmint Finance. Open-source under
           MIT License.
         </div>
