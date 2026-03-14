@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { HybridDiagram } from "./HybridDiagram";
 
 const layers = [
   {
@@ -37,6 +38,10 @@ export function HybridArchitecture() {
             deterministic calculations with LLM reasoning &mdash; so you get
             both precision and personalization.
           </p>
+        </div>
+
+        <div className="mt-14 mb-14">
+          <HybridDiagram />
         </div>
 
         <div className="mt-14 space-y-6">
