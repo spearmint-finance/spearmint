@@ -59,14 +59,14 @@ export function HybridArchitecture() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {layer.label}
                   </h3>
-                  <p className="mt-1 text-sm font-medium text-gray-400">
+                  <p className="mt-1 text-sm font-medium text-gray-500">
                     {layer.tagline}
                   </p>
                   <p className="mt-3 text-gray-600">{layer.description}</p>
                 </div>
                 <div className="mt-4 md:mt-0 md:w-80 md:shrink-0">
                   <div className="rounded-lg bg-white/80 p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
                       Output
                     </p>
                     <p className="mt-2 text-sm text-gray-700">

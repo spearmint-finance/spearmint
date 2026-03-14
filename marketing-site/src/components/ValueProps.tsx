@@ -63,7 +63,7 @@ export function ValueProps() {
                 <th className="py-3 pr-4 font-semibold text-gray-900">
                   Challenge
                 </th>
-                <th className="py-3 pr-4 font-semibold text-gray-400">
+                <th className="py-3 pr-4 font-semibold text-gray-500">
                   Traditional Apps
                 </th>
                 <th className="py-3 font-semibold text-spearmint-dark">
@@ -80,7 +80,7 @@ export function ValueProps() {
                   <td className="py-4 pr-4 font-medium text-gray-900">
                     {row.challenge}
                   </td>
-                  <td className="py-4 pr-4 text-gray-400">
+                  <td className="py-4 pr-4 text-gray-500">
                     {row.traditional}
                   </td>
                   <td className="py-4 font-medium text-spearmint-dark">

@@ -46,6 +46,7 @@ export function Header() {
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
         >
           <svg
             className="h-6 w-6 text-gray-700"
@@ -72,7 +73,7 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="border-t border-gray-100 bg-white px-6 py-4 md:hidden">
+        <nav id="mobile-nav" className="border-t border-gray-100 bg-white px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
