@@ -15,7 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Spearmint — Business-Grade Personal Finance",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://memnexus-marketing-site.pages.dev"
+  ),
+  title: {
+    default: "Spearmint — Business-Grade Personal Finance",
+    template: "%s — Spearmint",
+  },
   description:
     "Your personal CFO. A free, self-hosted financial engine that transforms bank data into professional-grade accounting intelligence.",
   openGraph: {
@@ -23,6 +29,18 @@ export const metadata: Metadata = {
     description:
       "Your personal CFO. A free, self-hosted financial engine that transforms bank data into professional-grade accounting intelligence.",
     type: "website",
+    siteName: "Spearmint",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Spearmint — Business-Grade Personal Finance",
+    description:
+      "Your personal CFO. A free, self-hosted financial engine that transforms bank data into professional-grade accounting intelligence.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

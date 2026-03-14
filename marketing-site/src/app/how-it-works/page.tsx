@@ -2,9 +2,16 @@ import type { Metadata } from "next";
 import { CTA } from "@/components/CTA";
 
 export const metadata: Metadata = {
-  title: "How It Works — Spearmint",
+  title: "How It Works",
   description:
     "Import your bank data, let Spearmint classify and analyze it, and get professional-grade financial insights — all self-hosted.",
+  alternates: { canonical: "/how-it-works" },
+  openGraph: {
+    title: "How It Works — Spearmint",
+    description:
+      "Import your bank data, let Spearmint classify and analyze it, and get professional-grade financial insights — all self-hosted.",
+    url: "/how-it-works",
+  },
 };
 
 const steps = [
