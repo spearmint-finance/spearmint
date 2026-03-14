@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://memnexus-marketing-site.pages.dev/sitemap.xml
