@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+  --spearmint: #43A047;
+  --spearmint-light: #66BB6A;
+  --spearmint-dark: #2E7D32;
+  --teal: #26A69A;
+  --teal-light: #4DB6AC;
+  --mint-bg: #F1F8E9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-spearmint: var(--spearmint);
+  --color-spearmint-light: var(--spearmint-light);
+  --color-spearmint-dark: var(--spearmint-dark);
+  --color-teal: var(--teal);
+  --color-teal-light: var(--teal-light);
+  --color-mint-bg: var(--mint-bg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
