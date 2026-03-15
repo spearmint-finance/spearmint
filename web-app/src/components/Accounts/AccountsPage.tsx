@@ -65,6 +65,7 @@ const AccountsPage: React.FC = () => {
   const {
     data: accounts = [],
     isLoading: accountsLoading,
+    isFetching: accountsFetching,
     error: accountsError,
     refetch: refetchAccounts,
   } = useQuery({
@@ -76,11 +77,14 @@ const AccountsPage: React.FC = () => {
   const {
     data: netWorth,
     isLoading: netWorthLoading,
+    isFetching: netWorthFetching,
     refetch: refetchNetWorth,
   } = useQuery({
     queryKey: ['netWorth'],
     queryFn: () => getNetWorth(),
   });
+
+  const isRefreshing = (accountsFetching || netWorthFetching) && !accountsLoading && !netWorthLoading;
 
   // Filter accounts by type
   const assetAccounts = accounts.filter((acc) => isAssetAccount(acc.account_type));
@@ -239,7 +243,15 @@ const AccountsPage: React.FC = () => {
           Accounts
         </Typography>
         <Box>
-          <IconButton onClick={handleRefresh} sx={{ mr: 1 }}>
+          <IconButton
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            sx={{
+              mr: 1,
+              animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
+            }}
+          >
             <RefreshIcon />
           </IconButton>
           <Button

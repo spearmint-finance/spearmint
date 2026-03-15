@@ -184,7 +184,10 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
               label="Last 4 Digits"
               fullWidth
               value={formData.account_number_last4 || ''}
-              onChange={(e) => handleInputChange('account_number_last4', e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                handleInputChange('account_number_last4', val);
+              }}
               error={!!errors.account_number_last4}
               helperText={errors.account_number_last4 || 'Account number last 4 digits'}
               inputProps={{ maxLength: 4, pattern: '[0-9]*' }}
