@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AgentHero } from "@/components/agents/AgentHero";
 import { WhyAgents } from "@/components/agents/WhyAgents";
 import { MeetTheAgents } from "@/components/agents/MeetTheAgents";
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
 export default function AgentsPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "Agents", path: "/agents" }]} />
       <AgentHero />
       <WhyAgents />
       <MeetTheAgents />

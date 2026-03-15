@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CTA } from "@/components/CTA";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "How It Works",
@@ -44,6 +45,9 @@ const steps = [
 export default function HowItWorksPage() {
   return (
     <>
+      <BreadcrumbJsonLd
+        items={[{ name: "How It Works", path: "/how-it-works" }]}
+      />
       <section className="bg-mint-bg py-16 md:py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
