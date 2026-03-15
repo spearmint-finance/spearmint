@@ -52,7 +52,8 @@ def create_transaction(
             transfer_account_from=transaction.transfer_account_from,
             transfer_account_to=transaction.transfer_account_to,
             notes=transaction.notes,
-            tag_names=transaction.tag_names
+            tag_names=transaction.tag_names,
+            account_id=transaction.account_id
         )
         return created
     except ValidationError as e:

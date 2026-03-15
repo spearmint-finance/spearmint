@@ -82,7 +82,8 @@ class TransactionService:
         transfer_account_from: Optional[str] = None,
         transfer_account_to: Optional[str] = None,
         notes: Optional[str] = None,
-        tag_names: Optional[List[str]] = None
+        tag_names: Optional[List[str]] = None,
+        account_id: Optional[int] = None
     ) -> Transaction:
         """
         Create a new transaction.
@@ -141,7 +142,8 @@ class TransactionService:
             is_transfer=is_transfer,
             transfer_account_from=transfer_account_from,
             transfer_account_to=transfer_account_to,
-            notes=notes
+            notes=notes,
+            account_id=account_id
         )
 
         self.db.add(transaction)

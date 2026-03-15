@@ -24,6 +24,7 @@ class TransactionBase(DecimalBaseModel):
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
+    account_id: Optional[int] = Field(None, gt=0, description="Account ID this transaction belongs to")
 
 
 class TransactionCreate(TransactionBase):
@@ -48,6 +49,7 @@ class TransactionUpdate(DecimalBaseModel):
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
+    account_id: Optional[int] = Field(None, gt=0, description="Account ID this transaction belongs to")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
     # Force re-application of classification rules even if a manual classification exists
     reapply_rules: Optional[bool] = Field(None, description="If true, re-apply classification rules on this update")
