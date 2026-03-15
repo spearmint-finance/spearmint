@@ -88,6 +88,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const [newBalanceDate, setNewBalanceDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     account_name: account.account_name,
@@ -194,9 +195,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   };
 
   const handleDeleteAccount = () => {
-    if (window.confirm(`Are you sure you want to delete ${account.account_name}?`)) {
-      deleteAccountMutation.mutate();
-    }
+    setConfirmDeleteOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    deleteAccountMutation.mutate();
+    setConfirmDeleteOpen(false);
   };
 
   return (
@@ -536,6 +540,31 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        aria-labelledby="delete-account-dialog-title"
+      >
+        <DialogTitle id="delete-account-dialog-title">Delete Account</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete <strong>{account.account_name}</strong>? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteAccountMutation.isPending}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };
