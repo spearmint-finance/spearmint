@@ -66,7 +66,7 @@ async def health_check():
 # Import routers
 from .routes import (
     transactions, categories, import_routes, analysis, relationships, projections, reports, classifications,
-    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents
+    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator
 )
 
 # Register routers
@@ -85,6 +85,7 @@ app.include_router(accounts.router, prefix="/api", tags=["accounts"])
 app.include_router(maintenance.router, prefix="/api", tags=["maintenance"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(assistant.router, prefix="/api", tags=["assistant"])
+app.include_router(aggregator.router, prefix="/api", tags=["link"])
 app.include_router(agents.router, prefix="/a2a", tags=["a2a-agents"])
 
 
