@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 const features = [
   {
     title: "Smart Classification",
@@ -67,16 +63,6 @@ const features = [
   },
 ];
 
-const container = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
-
 export function Features() {
   return (
     <section className="bg-gray-50 py-20 md:py-28">
@@ -90,17 +76,10 @@ export function Features() {
           </p>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3"
-        >
+        <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <motion.div
+            <div
               key={feature.title}
-              variants={item}
               className="rounded-xl border border-gray-200 bg-white p-6"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-mint-bg text-spearmint-dark">
@@ -112,9 +91,9 @@ export function Features() {
               <p className="mt-2 text-sm leading-relaxed text-gray-500">
                 {feature.description}
               </p>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
