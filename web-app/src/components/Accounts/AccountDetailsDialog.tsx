@@ -19,9 +19,13 @@ import {
   IconButton,
   TextField,
   InputAdornment,
+  Alert,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Close as CloseIcon,
   TrendingUp as TrendingUpIcon,
   AccountBalance as AccountBalanceIcon,
   History as HistoryIcon,
@@ -30,6 +34,7 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Account,
+  AccountUpdate,
   getAccountTypeLabel,
   getAccountTypeIcon,
 } from '../../types/account';
@@ -38,6 +43,7 @@ import {
   getPortfolioSummary,
   getReconciliations,
   addBalanceSnapshot,
+  updateAccount,
   deleteAccount,
 } from '../../api/accounts';
 import BalanceHistoryChart from './BalanceHistoryChart';
@@ -82,6 +88,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const [newBalanceDate, setNewBalanceDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    account_name: account.account_name,
+    institution_name: account.institution_name || '',
+    account_number_last4: account.account_number_last4 || '',
+    notes: account.notes || '',
+  });
 
   // Fetch balance history
   const { data: balanceHistory } = useQuery({
@@ -119,6 +132,15 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     },
   });
 
+  // Update account mutation
+  const updateAccountMutation = useMutation({
+    mutationFn: (data: AccountUpdate) => updateAccount(account.account_id, data),
+    onSuccess: () => {
+      onAccountUpdated();
+      setIsEditing(false);
+    },
+  });
+
   // Delete account mutation
   const deleteAccountMutation = useMutation({
     mutationFn: () => deleteAccount(account.account_id),
@@ -128,7 +150,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     },
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -144,6 +166,31 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     if (!isNaN(balance)) {
       addBalanceMutation.mutate({ balance, date: newBalanceDate });
     }
+  };
+
+  const handleStartEditing = () => {
+    setEditForm({
+      account_name: account.account_name,
+      institution_name: account.institution_name || '',
+      account_number_last4: account.account_number_last4 || '',
+      notes: account.notes || '',
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveAccount = () => {
+    if (!editForm.account_name.trim()) return;
+    const update: AccountUpdate = {
+      account_name: editForm.account_name.trim(),
+      institution_name: editForm.institution_name.trim() || undefined,
+      account_number_last4: editForm.account_number_last4 || undefined,
+      notes: editForm.notes.trim() || undefined,
+    };
+    updateAccountMutation.mutate(update);
   };
 
   const handleDeleteAccount = () => {
@@ -168,9 +215,25 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
             />
           </Box>
           <Box>
-            <IconButton size="small" onClick={handleDeleteAccount}>
-              <DeleteIcon />
-            </IconButton>
+            {isEditing ? (
+              <>
+                <IconButton size="small" onClick={handleSaveAccount} disabled={updateAccountMutation.isPending} color="primary">
+                  <SaveIcon />
+                </IconButton>
+                <IconButton size="small" onClick={handleCancelEditing}>
+                  <CloseIcon />
+                </IconButton>
+              </>
+            ) : (
+              <>
+                <IconButton size="small" onClick={handleStartEditing} sx={{ mr: 0.5 }}>
+                  <EditIcon />
+                </IconButton>
+                <IconButton size="small" onClick={handleDeleteAccount}>
+                  <DeleteIcon />
+                </IconButton>
+              </>
+            )}
           </Box>
         </Box>
       </DialogTitle>
@@ -243,38 +306,88 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
 
         {/* Tab Panels */}
         <TabPanel value={tabValue} index={0}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" gutterBottom>
-                Account Information
-              </Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemText
-                    primary="Account Type"
-                    secondary={getAccountTypeLabel(account.account_type)}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Created"
-                    secondary={new Date(account.created_at).toLocaleDateString()}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemText
-                    primary="Opening Balance"
-                    secondary={formatCurrency(account.opening_balance)}
-                  />
-                </ListItem>
-                {account.notes && (
-                  <ListItem>
-                    <ListItemText primary="Notes" secondary={account.notes} />
-                  </ListItem>
-                )}
-              </List>
+          {isEditing ? (
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Account Name"
+                  fullWidth
+                  value={editForm.account_name}
+                  onChange={(e) => setEditForm({ ...editForm, account_name: e.target.value })}
+                  required
+                  error={!editForm.account_name.trim()}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Institution Name"
+                  fullWidth
+                  value={editForm.institution_name}
+                  onChange={(e) => setEditForm({ ...editForm, institution_name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Account Number (Last 4)"
+                  fullWidth
+                  value={editForm.account_number_last4}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setEditForm({ ...editForm, account_number_last4: val });
+                  }}
+                  inputProps={{ maxLength: 4, pattern: '[0-9]*' }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Notes"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                />
+              </Grid>
+              {updateAccountMutation.isError && (
+                <Grid item xs={12}>
+                  <Alert severity="error">Failed to update account. Please try again.</Alert>
+                </Grid>
+              )}
             </Grid>
-          </Grid>
+          ) : (
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Account Information
+                </Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemText
+                      primary="Account Type"
+                      secondary={getAccountTypeLabel(account.account_type)}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Created"
+                      secondary={new Date(account.created_at).toLocaleDateString()}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Opening Balance"
+                      secondary={formatCurrency(account.opening_balance)}
+                    />
+                  </ListItem>
+                  {account.notes && (
+                    <ListItem>
+                      <ListItemText primary="Notes" secondary={account.notes} />
+                    </ListItem>
+                  )}
+                </List>
+              </Grid>
+            </Grid>
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
