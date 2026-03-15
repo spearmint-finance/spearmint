@@ -30,9 +30,23 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
     }).format(amount);
   };
 
-  const assetPercentage = (netWorth.assets / (netWorth.assets + netWorth.liabilities)) * 100;
-  const liquidPercentage = (netWorth.liquid_assets / netWorth.assets) * 100;
-  const investmentPercentage = (netWorth.investments / netWorth.assets) * 100;
+  const assets = Number(netWorth.assets) || 0;
+  const liabilities = Number(netWorth.liabilities) || 0;
+  const liquidAssets = Number(netWorth.liquid_assets ?? netWorth.liquidAssets) || 0;
+  const investments = Number(netWorth.investments) || 0;
+  const netWorthValue = Number(netWorth.net_worth ?? netWorth.netWorth) || 0;
+  const asOfDate = netWorth.as_of_date ?? netWorth.asOfDate;
+
+  const totalAssetsAndLiabilities = assets + liabilities;
+  const assetPercentage = totalAssetsAndLiabilities > 0
+    ? (assets / totalAssetsAndLiabilities) * 100
+    : 0;
+  const liquidPercentage = assets > 0
+    ? (liquidAssets / assets) * 100
+    : 0;
+  const investmentPercentage = assets > 0
+    ? (investments / assets) * 100
+    : 0;
 
   return (
     <Card elevation={2}>
@@ -53,11 +67,13 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
                   Net Worth
                 </Typography>
                 <Typography variant="h5" color="primary">
-                  {formatCurrency(netWorth.net_worth)}
+                  {formatCurrency(netWorthValue)}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  As of {new Date(netWorth.as_of_date).toLocaleDateString()}
-                </Typography>
+                {asOfDate && (
+                  <Typography variant="caption" color="text.secondary">
+                    As of {new Date(asOfDate).toLocaleDateString()}
+                  </Typography>
+                )}
               </Box>
             </Box>
           </Grid>
@@ -73,7 +89,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
                   Total Assets
                 </Typography>
                 <Typography variant="h6" color="success.main">
-                  {formatCurrency(netWorth.assets)}
+                  {formatCurrency(assets)}
                 </Typography>
               </Box>
             </Box>
@@ -90,7 +106,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
                   Total Liabilities
                 </Typography>
                 <Typography variant="h6" color="error.main">
-                  {formatCurrency(netWorth.liabilities)}
+                  {formatCurrency(liabilities)}
                 </Typography>
               </Box>
             </Box>
@@ -105,13 +121,13 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
               <Box display="flex" alignItems="center" mb={1}>
                 <WalletIcon sx={{ mr: 1, fontSize: 16 }} />
                 <Typography variant="caption">
-                  Liquid: {formatCurrency(netWorth.liquid_assets)} ({liquidPercentage.toFixed(1)}%)
+                  Liquid: {formatCurrency(liquidAssets)} ({liquidPercentage.toFixed(1)}%)
                 </Typography>
               </Box>
               <Box display="flex" alignItems="center">
                 <ShowChartIcon sx={{ mr: 1, fontSize: 16 }} />
                 <Typography variant="caption">
-                  Invested: {formatCurrency(netWorth.investments)} ({investmentPercentage.toFixed(1)}%)
+                  Invested: {formatCurrency(investments)} ({investmentPercentage.toFixed(1)}%)
                 </Typography>
               </Box>
             </Box>
@@ -119,7 +135,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
         </Grid>
 
         {/* Progress Bar */}
-        {netWorth.liabilities > 0 && (
+        {liabilities > 0 && (
           <Box mt={3}>
             <Box display="flex" justifyContent="space-between" mb={1}>
               <Typography variant="caption" color="text.secondary">
@@ -145,25 +161,28 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
         )}
 
         {/* Account Breakdown */}
-        {netWorth.account_breakdown && Object.keys(netWorth.account_breakdown).length > 0 && (
+        {(() => {
+          const breakdown = netWorth.account_breakdown ?? netWorth.accountBreakdown;
+          return breakdown && Object.keys(breakdown).length > 0 && (
           <Box mt={3}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
               By Account Type
             </Typography>
             <Grid container spacing={2}>
-              {Object.entries(netWorth.account_breakdown).map(([type, amount]) => (
+              {Object.entries(breakdown).map(([type, amount]) => (
                 <Grid item xs={6} sm={4} md={3} key={type}>
                   <Typography variant="caption" color="text.secondary">
                     {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
                   </Typography>
                   <Typography variant="body2">
-                    {formatCurrency(amount)}
+                    {formatCurrency(Number(amount) || 0)}
                   </Typography>
                 </Grid>
               ))}
             </Grid>
           </Box>
-        )}
+          );
+        })()}
       </CardContent>
     </Card>
   );
