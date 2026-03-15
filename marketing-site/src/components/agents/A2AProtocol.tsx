@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 const capabilities = [
   {
     label: "Proactive",
@@ -50,13 +46,7 @@ export function A2AProtocol() {
           </p>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.5 }}
-          className="mt-14"
-        >
+        <div className="mt-14">
           {/* Flow diagram */}
           <div className="mb-12 overflow-x-auto">
             <div className="flex min-w-[600px] items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white p-6">
@@ -100,23 +90,19 @@ export function A2AProtocol() {
 
           {/* Capability grid */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {capabilities.map((cap, i) => (
-              <motion.div
+            {capabilities.map((cap) => (
+              <div
                 key={cap.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.35, delay: i * 0.06 }}
                 className="rounded-xl border border-gray-200 bg-white p-5"
               >
                 <p className="font-semibold text-gray-900">{cap.label}</p>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">
                   {cap.description}
                 </p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

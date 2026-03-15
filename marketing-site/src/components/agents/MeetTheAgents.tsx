@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 const agents = [
   {
     name: "Minty",
@@ -84,16 +80,6 @@ const agents = [
   },
 ];
 
-const container = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
-};
-
 export function MeetTheAgents() {
   return (
     <section className="bg-gray-50 py-20 md:py-28">
@@ -108,17 +94,10 @@ export function MeetTheAgents() {
           </p>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          className="mt-14 space-y-6"
-        >
+        <div className="mt-14 space-y-6">
           {agents.map((agent) => (
-            <motion.div
+            <div
               key={agent.name}
-              variants={item}
               className={`rounded-xl border ${agent.borderColor} bg-white p-6 md:p-8`}
             >
               <div className="md:flex md:items-start md:gap-8">
@@ -173,9 +152,9 @@ export function MeetTheAgents() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

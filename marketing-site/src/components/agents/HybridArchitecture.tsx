@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { HybridDiagram } from "./HybridDiagram";
 
 const layers = [
@@ -45,13 +42,9 @@ export function HybridArchitecture() {
         </div>
 
         <div className="mt-14 space-y-6">
-          {layers.map((layer, i) => (
-            <motion.div
+          {layers.map((layer) => (
+            <div
               key={layer.label}
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.4, delay: i * 0.15 }}
               className={`rounded-xl border-l-4 ${layer.color} ${layer.bg} p-6 md:p-8`}
             >
               <div className="md:flex md:items-start md:gap-8">
@@ -75,17 +68,11 @@ export function HybridArchitecture() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-          className="mt-10 rounded-xl border border-gray-200 bg-gray-50 p-6 md:p-8"
-        >
+        <div className="mt-10 rounded-xl border border-gray-200 bg-gray-50 p-6 md:p-8">
           <h3 className="text-lg font-semibold text-gray-900">
             Why does this matter?
           </h3>
@@ -112,7 +99,7 @@ export function HybridArchitecture() {
               They propose alternatives and explain confidence levels.
             </li>
           </ul>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
