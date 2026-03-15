@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 const problems = [
   {
     problem: "You only check your spending when it's too late",
@@ -58,14 +54,7 @@ export function WhyAgents() {
 
         <div className="mt-14 grid gap-10 md:grid-cols-2">
           {problems.map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="flex gap-5"
-            >
+            <div key={i} className="flex gap-5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-400">
                 {item.icon}
               </div>
@@ -75,7 +64,7 @@ export function WhyAgents() {
                   {item.solution}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
