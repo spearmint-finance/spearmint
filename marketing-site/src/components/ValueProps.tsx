@@ -1,7 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 const comparisons = [
   {
     challenge: "$15k kitchen renovation",
@@ -50,13 +46,7 @@ export function ValueProps() {
           </p>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-          className="mt-14 overflow-x-auto"
-        >
+        <div className="mt-14 overflow-x-auto">
           <table className="w-full min-w-[600px] text-left text-sm">
             <caption className="sr-only">
               Comparison of Spearmint vs traditional finance apps
@@ -93,7 +83,7 @@ export function ValueProps() {
               ))}
             </tbody>
           </table>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
