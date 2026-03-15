@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   build-and-deploy:
+    if: false # Disabled until CLOUDFLARE_API_TOKEN secret is configured
     runs-on: depot-ubuntu-24.04
     steps:
       - name: Checkout code
