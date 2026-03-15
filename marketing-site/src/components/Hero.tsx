@@ -1,49 +1,25 @@
-"use client";
-
-import { motion } from "framer-motion";
-
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-mint-bg">
       <div className="mx-auto max-w-6xl px-6 py-24 md:py-32">
         <div className="max-w-2xl">
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-sm font-semibold uppercase tracking-wide text-spearmint-dark"
-          >
+          <p className="text-sm font-semibold uppercase tracking-wide text-spearmint-dark">
             Free &amp; Open-Source
-          </motion.p>
+          </p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-4 text-4xl font-bold leading-tight tracking-tight text-gray-900 md:text-5xl lg:text-6xl"
-          >
+          <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
             Business-Grade
             <br />
             <span className="text-spearmint">Personal Finance</span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-6 max-w-lg text-lg leading-relaxed text-gray-600"
-          >
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-gray-600">
             Your personal CFO. A self-hosted financial engine that transforms
             bank data into professional-grade accounting intelligence &mdash; at
             zero cost.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 flex flex-col gap-4 sm:flex-row"
-          >
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <a
               href="https://github.com/spearmint-finance/spearmint"
               target="_blank"
@@ -58,7 +34,7 @@ export function Hero() {
             >
               See How It Works
             </a>
-          </motion.div>
+          </div>
         </div>
       </div>
 
