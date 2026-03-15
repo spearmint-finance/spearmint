@@ -86,7 +86,7 @@ const AccountsPage: React.FC = () => {
   const assetAccounts = accounts.filter((acc) => isAssetAccount(acc.account_type));
   const liabilityAccounts = accounts.filter((acc) => !isAssetAccount(acc.account_type));
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
@@ -265,29 +265,54 @@ const AccountsPage: React.FC = () => {
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          <Grid container spacing={3}>
-            {accounts.map(renderAccountCard)}
-          </Grid>
+          {accounts.length > 0 ? (
+            <Grid container spacing={3}>
+              {accounts.map(renderAccountCard)}
+            </Grid>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <AccountBalanceIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography color="text.secondary" gutterBottom>
+                No accounts yet
+              </Typography>
+              <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAccount}>
+                Add Your First Account
+              </Button>
+            </Box>
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Grid container spacing={3}>
-            {assetAccounts.map(renderAccountCard)}
-          </Grid>
+          {assetAccounts.length > 0 ? (
+            <Grid container spacing={3}>
+              {assetAccounts.map(renderAccountCard)}
+            </Grid>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <TrendingUpIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography color="text.secondary" gutterBottom>
+                No asset accounts
+              </Typography>
+              <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAccount}>
+                Add an Asset Account
+              </Button>
+            </Box>
+          )}
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Grid container spacing={3}>
-            {liabilityAccounts.length > 0 ? (
-              liabilityAccounts.map(renderAccountCard)
-            ) : (
-              <Grid item xs={12}>
-                <Typography color="text.secondary" align="center">
-                  No liability accounts
-                </Typography>
-              </Grid>
-            )}
-          </Grid>
+          {liabilityAccounts.length > 0 ? (
+            <Grid container spacing={3}>
+              {liabilityAccounts.map(renderAccountCard)}
+            </Grid>
+          ) : (
+            <Box textAlign="center" py={4}>
+              <AccountBalanceIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography color="text.secondary">
+                No liability accounts
+              </Typography>
+            </Box>
+          )}
         </TabPanel>
       </Paper>
 
