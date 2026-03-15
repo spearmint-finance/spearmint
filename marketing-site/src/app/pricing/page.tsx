@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "Pricing", path: "/pricing" }]} />
       <section className="bg-mint-bg py-16 md:py-20">
         <div className="mx-auto max-w-6xl px-6">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
