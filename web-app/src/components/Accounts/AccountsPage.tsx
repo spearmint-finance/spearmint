@@ -8,11 +8,11 @@ import {
   Button,
   IconButton,
   Chip,
-  LinearProgress,
   Alert,
   Tabs,
   Tab,
   Paper,
+  Skeleton,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -201,7 +201,27 @@ const AccountsPage: React.FC = () => {
   };
 
   if (accountsLoading || netWorthLoading) {
-    return <LinearProgress />;
+    return (
+      <Box>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">Accounts</Typography>
+        </Box>
+        <Skeleton variant="rounded" height={120} sx={{ mb: 3 }} />
+        <Grid container spacing={3}>
+          {[0, 1, 2].map((i) => (
+            <Grid item xs={12} sm={6} md={4} key={i}>
+              <Card>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={32} />
+                  <Skeleton variant="text" width="40%" height={20} sx={{ mb: 2 }} />
+                  <Skeleton variant="text" width="50%" height={40} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
   }
 
   if (accountsError) {
