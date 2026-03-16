@@ -17,8 +17,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
 import { useSnackbar } from "notistack";
+import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "../../types/transaction";
 import { useDeleteTransaction } from "../../hooks/useTransactions";
+import { getAccounts } from "../../api/accounts";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionForm from "./TransactionForm";
 
@@ -35,8 +37,16 @@ function TransactionDetail({
 }: TransactionDetailProps) {
   const { enqueueSnackbar } = useSnackbar();
   const deleteMutation = useDeleteTransaction();
+  const { data: accountsData } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => getAccounts(),
+  });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const linkedAccount = transaction?.account_id && accountsData
+    ? accountsData.find((a) => a.account_id === transaction.account_id)
+    : null;
 
   if (!transaction) {
     return null;
@@ -136,6 +146,21 @@ function TransactionDetail({
                 {transaction.category_name || "Uncategorized"}
               </Typography>
             </Grid>
+
+            {/* Account */}
+            {linkedAccount && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Account
+                </Typography>
+                <Typography variant="body1">
+                  {linkedAccount.account_name}
+                  {linkedAccount.institution_name
+                    ? ` (${linkedAccount.institution_name})`
+                    : ""}
+                </Typography>
+              </Grid>
+            )}
 
             {/* Balance */}
             {transaction.balance !== undefined &&
