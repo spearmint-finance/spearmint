@@ -5,7 +5,7 @@ export function AgentCTA() {
         <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
           Stop checking. Start knowing.
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
+        <p className="mx-auto mt-4 max-w-xl text-lg text-white/95">
           Let autonomous agents watch your finances so you don&apos;t have to.
           Deploy Spearmint and get a team of financial specialists working for
           you &mdash; 24/7, on your own hardware.
