@@ -1080,6 +1080,96 @@ function TransactionList() {
               />
             </Grid>
             <Grid item xs={12}>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {[
+                  {
+                    label: "Last 30 days",
+                    getRange: () => {
+                      const end = new Date();
+                      const start = new Date();
+                      start.setDate(start.getDate() - 30);
+                      return {
+                        start_date: start.toISOString().split("T")[0],
+                        end_date: end.toISOString().split("T")[0],
+                      };
+                    },
+                  },
+                  {
+                    label: "This month",
+                    getRange: () => {
+                      const now = new Date();
+                      const start = new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        1
+                      );
+                      return {
+                        start_date: start.toISOString().split("T")[0],
+                        end_date: now.toISOString().split("T")[0],
+                      };
+                    },
+                  },
+                  {
+                    label: "Last month",
+                    getRange: () => {
+                      const now = new Date();
+                      const start = new Date(
+                        now.getFullYear(),
+                        now.getMonth() - 1,
+                        1
+                      );
+                      const end = new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        0
+                      );
+                      return {
+                        start_date: start.toISOString().split("T")[0],
+                        end_date: end.toISOString().split("T")[0],
+                      };
+                    },
+                  },
+                  {
+                    label: "Year to date",
+                    getRange: () => {
+                      const now = new Date();
+                      const start = new Date(now.getFullYear(), 0, 1);
+                      return {
+                        start_date: start.toISOString().split("T")[0],
+                        end_date: now.toISOString().split("T")[0],
+                      };
+                    },
+                  },
+                ].map((preset) => (
+                  <Chip
+                    key={preset.label}
+                    label={preset.label}
+                    size="small"
+                    variant={
+                      filters.start_date ===
+                        preset.getRange().start_date &&
+                      filters.end_date === preset.getRange().end_date
+                        ? "filled"
+                        : "outlined"
+                    }
+                    color={
+                      filters.start_date ===
+                        preset.getRange().start_date &&
+                      filters.end_date === preset.getRange().end_date
+                        ? "primary"
+                        : "default"
+                    }
+                    onClick={() =>
+                      setFilters({
+                        ...filters,
+                        ...preset.getRange(),
+                      })
+                    }
+                  />
+                ))}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
               <FormControl fullWidth data-testid="filter-transaction-type">
                 <InputLabel>Transaction Type</InputLabel>
                 <Select
