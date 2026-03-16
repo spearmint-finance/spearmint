@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -9,6 +10,7 @@ import {
   Chip,
   Alert,
   Skeleton,
+  Button,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -332,9 +334,25 @@ function Dashboard() {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Account Balances
-              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 1,
+                }}
+              >
+                <Typography variant="h6" color="text.secondary">
+                  Account Balances
+                </Typography>
+                <Button
+                  component={RouterLink}
+                  to="/accounts"
+                  size="small"
+                >
+                  View All
+                </Button>
+              </Box>
               {accountsLoading ? (
                 <Box>
                   <Skeleton variant="text" width="100%" />
@@ -416,7 +434,7 @@ function Dashboard() {
                   height={350}
                   showIncome={true}
                   showExpense={true}
-                  showNetCashFlow={false}
+                  showNetCashFlow={true}
                 />
               </Paper>
             </Grid>
@@ -486,9 +504,23 @@ function Dashboard() {
         {/* Recent Transactions */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Recent Transactions
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1,
+              }}
+            >
+              <Typography variant="h6">Recent Transactions</Typography>
+              <Button
+                component={RouterLink}
+                to="/transactions"
+                size="small"
+              >
+                View All
+              </Button>
+            </Box>
             {summary.recent_transactions.length > 0 ? (
               <Box>
                 {summary.recent_transactions.map((transaction) => (
