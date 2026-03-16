@@ -24,6 +24,8 @@ import {
   AccountType,
   getAccountTypeLabel,
 } from '../../types/account';
+import { useEntityContext } from '../../contexts/EntityContext';
+import { ENTITY_TYPE_LABELS } from '../../types/entity';
 
 interface AddAccountDialogProps {
   open: boolean;
@@ -47,6 +49,10 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { entities, selectedEntityId } = useEntityContext();
+  const [entityId, setEntityId] = useState<string>(
+    selectedEntityId != null ? String(selectedEntityId) : ""
+  );
 
   const createMutation = useMutation({
     mutationFn: createAccount,
@@ -69,6 +75,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
       opening_balance_date: new Date().toISOString().split('T')[0],
       notes: '',
     });
+    setEntityId(selectedEntityId != null ? String(selectedEntityId) : "");
     setErrors({});
     onClose();
   };
@@ -90,7 +97,11 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
 
   const handleSubmit = () => {
     if (validateForm()) {
-      createMutation.mutate(formData);
+      const dataWithEntity = {
+        ...formData,
+        entity_id: entityId ? Number(entityId) : undefined,
+      };
+      createMutation.mutate(dataWithEntity);
     }
   };
 
@@ -246,6 +257,26 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
               placeholder="Optional notes about this account"
             />
           </Grid>
+
+          {entities.length > 0 && (
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Entity</InputLabel>
+                <Select
+                  value={entityId}
+                  label="Entity"
+                  onChange={(e) => setEntityId(e.target.value)}
+                >
+                  <MenuItem value="">No entity</MenuItem>
+                  {entities.map((entity) => (
+                    <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                      {entity.entity_name} ({ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
         </Grid>
       </DialogContent>
       <DialogActions>

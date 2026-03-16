@@ -125,6 +125,7 @@ export const createAccount = async (
     currency: account.currency || undefined,
     openingBalance: account.opening_balance,
     openingBalanceDate: account.opening_balance_date,
+    entityId: account.entity_id,
     notes: account.notes || undefined,
   };
   const response = await accountsApi.createAccountApiAccountsPost(sdkPayload as any);
