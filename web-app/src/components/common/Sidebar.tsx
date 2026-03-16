@@ -13,8 +13,10 @@ import {
   MenuItem,
   FormControl,
 } from "@mui/material";
+import { useState } from "react";
 import { useEntityContext } from "../../contexts/EntityContext";
 import { ENTITY_TYPE_LABELS } from "../../types/entity";
+import ManageEntitiesDialog from "../Entities/ManageEntitiesDialog";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import logo from "../../assets/logo.jpg";
 import ReceiptIcon from "@mui/icons-material/Receipt";
@@ -60,6 +62,7 @@ function Sidebar({
   const location = useLocation();
   const { entities, selectedEntityId, setSelectedEntityId } =
     useEntityContext();
+  const [manageEntitiesOpen, setManageEntitiesOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -106,34 +109,42 @@ function Sidebar({
           Spearmint Finance
         </Typography>
       </Box>
-      {entities.length > 1 && (
-        <Box sx={{ px: 2, py: 1.5 }}>
-          <FormControl fullWidth size="small">
-            <Select
-              value={selectedEntityId ?? "all"}
-              onChange={(e) => {
-                const val = e.target.value;
-                setSelectedEntityId(val === "all" ? null : Number(val));
-              }}
-              sx={{ fontSize: "0.85rem" }}
-            >
-              <MenuItem value="all">All Entities</MenuItem>
-              {entities.map((entity) => (
-                <MenuItem key={entity.entity_id} value={entity.entity_id}>
-                  {entity.entity_name}
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    sx={{ ml: 1, color: "text.secondary" }}
-                  >
-                    {ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type}
-                  </Typography>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <FormControl fullWidth size="small">
+          <Select
+            value={selectedEntityId ?? "all"}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "manage") {
+                setManageEntitiesOpen(true);
+                return;
+              }
+              setSelectedEntityId(val === "all" ? null : Number(val));
+            }}
+            sx={{ fontSize: "0.85rem" }}
+          >
+            <MenuItem value="all">
+              {entities.length > 0 ? "All Entities" : "Personal"}
+            </MenuItem>
+            {entities.map((entity) => (
+              <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                {entity.entity_name}
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ ml: 1, color: "text.secondary" }}
+                >
+                  {ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type}
+                </Typography>
+              </MenuItem>
+            ))}
+            <Divider />
+            <MenuItem value="manage" sx={{ color: "primary.main", fontWeight: 500 }}>
+              Manage Entities...
+            </MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
       <Divider />
       <List>
         {menuItems.map((item) => (
@@ -199,6 +210,10 @@ function Sidebar({
       >
         {drawer}
       </Drawer>
+      <ManageEntitiesDialog
+        open={manageEntitiesOpen}
+        onClose={() => setManageEntitiesOpen(false)}
+      />
     </>
   );
 }
