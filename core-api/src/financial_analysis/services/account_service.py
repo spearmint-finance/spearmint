@@ -35,6 +35,7 @@ class AccountService:
         currency: str = 'USD',
         opening_balance: Decimal = Decimal('0'),
         opening_balance_date: Optional[date] = None,
+        entity_id: Optional[int] = None,
         notes: Optional[str] = None
     ) -> Account:
         """
@@ -49,6 +50,7 @@ class AccountService:
             currency: Currency code (default USD)
             opening_balance: Initial balance
             opening_balance_date: Date of opening balance
+            entity_id: Entity this account belongs to
             notes: Optional notes
 
         Returns:
@@ -69,6 +71,7 @@ class AccountService:
             has_investment_component=has_investments,
             opening_balance=opening_balance,
             opening_balance_date=opening_balance_date or date.today(),
+            entity_id=entity_id,
             notes=notes
         )
 
@@ -96,7 +99,8 @@ class AccountService:
     def get_accounts(
         self,
         is_active: Optional[bool] = None,
-        account_type: Optional[str] = None
+        account_type: Optional[str] = None,
+        entity_id: Optional[int] = None
     ) -> List[Account]:
         """
         Get all accounts with optional filtering.
@@ -104,6 +108,7 @@ class AccountService:
         Args:
             is_active: Filter by active status
             account_type: Filter by account type
+            entity_id: Filter by entity ID
 
         Returns:
             List of Account objects
@@ -115,6 +120,9 @@ class AccountService:
 
         if account_type:
             query = query.filter(Account.account_type == account_type)
+
+        if entity_id is not None:
+            query = query.filter(Account.entity_id == entity_id)
 
         return query.order_by(Account.account_name).all()
 

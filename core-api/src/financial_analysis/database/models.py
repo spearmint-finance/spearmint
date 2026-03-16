@@ -506,6 +506,44 @@ class LinkedProvider(Base):
         return f"<LinkedProvider(id={self.id}, type='{self.provider_type}', institution='{self.institution_name}', status='{self.status}')>"
 
 
+class Entity(Base):
+    """
+    Entities table for separating financial books.
+
+    Each entity represents an independent financial context — personal finances,
+    a business, a rental property, or a side hustle. Accounts are assigned to
+    entities, and transactions are entity-scoped through their accounts.
+    """
+    __tablename__ = "entities"
+
+    entity_id = Column(Integer, primary_key=True, autoincrement=True)
+    entity_name = Column(String(100), nullable=False)
+    entity_type = Column(String(20), nullable=False)  # personal, business, rental_property, side_hustle
+    tax_id = Column(String(20))  # EIN for businesses
+    address = Column(Text)  # For rental properties
+    fiscal_year_start_month = Column(Integer, default=1)  # 1=January
+    is_default = Column(Boolean, default=False)
+    notes = Column(Text)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    accounts = relationship("Account", back_populates="entity")
+
+    # Constraints and Indexes
+    __table_args__ = (
+        CheckConstraint(
+            "entity_type IN ('personal', 'business', 'rental_property', 'side_hustle')",
+            name='check_entity_type'
+        ),
+        Index('idx_entity_type', 'entity_type'),
+        Index('idx_entity_default', 'is_default'),
+    )
+
+    def __repr__(self):
+        return f"<Entity(id={self.entity_id}, name='{self.entity_name}', type='{self.entity_type}')>"
+
+
 class Account(Base):
     """
     Accounts table for tracking financial accounts.
@@ -531,12 +569,16 @@ class Account(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
+    # Entity assignment (NULL = default/personal entity)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+
     # Linked provider fields (for Plaid/Akoya connected accounts)
     linked_provider_id = Column(Integer, ForeignKey('linked_providers.id'))
     external_account_id = Column(String(100))  # Provider's account ID
     link_type = Column(String(20), default='manual')  # manual, plaid, akoya
 
     # Relationships
+    entity = relationship("Entity", back_populates="accounts")
     linked_provider = relationship("LinkedProvider", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account")
     balances = relationship("AccountBalance", back_populates="account", cascade="all, delete-orphan")
@@ -551,6 +593,7 @@ class Account(Base):
         Index('idx_account_type', 'account_type'),
         Index('idx_account_active', 'is_active'),
         Index('idx_account_institution', 'institution_name'),
+        Index('idx_account_entity', 'entity_id'),
     )
 
     def __repr__(self):

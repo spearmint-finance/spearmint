@@ -31,6 +31,7 @@ class AccountCreate(AccountBase):
     """Schema for creating a new account."""
     opening_balance: Decimal = Field(default=Decimal('0'))
     opening_balance_date: Optional[date] = None
+    entity_id: Optional[int] = Field(None, gt=0, description="Entity this account belongs to")
 
 
 class AccountUpdate(BaseModel):
@@ -40,6 +41,7 @@ class AccountUpdate(BaseModel):
     institution_name: Optional[str] = Field(None, max_length=100)
     account_number_last4: Optional[str] = Field(None, pattern=r'^\d{4}$')
     is_active: Optional[bool] = None
+    entity_id: Optional[int] = Field(None, gt=0, description="Entity this account belongs to")
     notes: Optional[str] = None
 
 
@@ -61,6 +63,9 @@ class AccountResponse(AccountBase):
     current_balance_date: Optional[date] = None
     cash_balance: Optional[Decimal] = None
     investment_value: Optional[Decimal] = None
+
+    # Entity assignment
+    entity_id: Optional[int] = None
 
     # Linked provider info
     link_type: str = 'manual'
