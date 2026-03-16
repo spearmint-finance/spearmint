@@ -52,6 +52,7 @@ export interface AccountCreate {
   currency?: string;
   opening_balance?: number;
   opening_balance_date?: string;
+  entity_id?: number;
   notes?: string;
 }
 
@@ -61,6 +62,7 @@ export interface AccountUpdate {
   institution_name?: string;
   account_number_last4?: string;
   is_active?: boolean;
+  entity_id?: number;
   notes?: string;
 }
 
