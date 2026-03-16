@@ -237,6 +237,12 @@ class TransactionService:
                 )
             )
 
+        if filters.tag_ids:
+            query = query.join(
+                TransactionTag,
+                Transaction.transaction_id == TransactionTag.transaction_id
+            ).filter(TransactionTag.tag_id.in_(filters.tag_ids))
+
         if filters.exclude_classification_ids:
             conditions.append(
                 or_(
