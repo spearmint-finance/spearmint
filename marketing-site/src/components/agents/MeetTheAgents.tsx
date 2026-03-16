@@ -27,7 +27,7 @@ const agents = [
     ],
     example:
       '"Your dining spending is up 40% this week. You started ordering delivery after your move — meal prepping could save ~$80/month."',
-    color: "bg-teal/10 text-teal",
+    color: "bg-teal/10 text-teal-700",
     borderColor: "border-teal/20",
   },
   {
@@ -43,7 +43,7 @@ const agents = [
     ],
     example:
       '"You\'re paying for both Spotify Premium and YouTube Music — $11.99/month overlap."',
-    color: "bg-amber-500/10 text-amber-600",
+    color: "bg-amber-500/10 text-amber-700",
     borderColor: "border-amber-500/20",
   },
   {

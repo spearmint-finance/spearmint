@@ -52,7 +52,7 @@ export function HybridArchitecture() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {layer.label}
                   </h3>
-                  <p className="mt-1 text-sm font-medium text-gray-500">
+                  <p className="mt-1 text-sm font-medium text-gray-600">
                     {layer.tagline}
                   </p>
                   <p className="mt-3 text-gray-600">{layer.description}</p>

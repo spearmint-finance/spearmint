@@ -5,7 +5,7 @@ export function CTA() {
         <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
           Take control of your finances today
         </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-white/80">
+        <p className="mx-auto mt-4 max-w-xl text-lg text-white/95">
           Free, open-source, and self-hosted. Deploy in minutes with Docker.
           No credit card, no subscriptions, no data sharing.
         </p>

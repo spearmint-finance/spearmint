@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Marketing Site — Core Pages", () => {
   test("homepage loads with hero, value props, features, and CTA", async ({
@@ -212,4 +213,81 @@ test.describe("Navigation", () => {
     const agentsLink = page.getByRole("link", { name: "Agents" }).first();
     await expect(agentsLink).toBeVisible();
   });
+});
+
+test.describe("404 Page", () => {
+  test("displays branded 404 with back-to-home link", async ({ page }) => {
+    await page.goto("/nonexistent-page-xyz");
+
+    await expect(page.getByText("404")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Page not found" })
+    ).toBeVisible();
+    await expect(
+      page.getByText(/doesn't exist or has been moved/)
+    ).toBeVisible();
+
+    const homeLink = page.getByRole("link", { name: /Back to Home/i });
+    await expect(homeLink).toBeVisible();
+    await expect(homeLink).toHaveAttribute("href", "/");
+  });
+});
+
+test.describe("Footer", () => {
+  test("footer contains all product and resource links", async ({ page }) => {
+    await page.goto("/");
+    const footer = page.locator("footer");
+
+    // Brand
+    await expect(
+      footer.getByRole("link", { name: /pearmint/i })
+    ).toBeVisible();
+    await expect(
+      footer.getByText(/Business-grade personal finance/)
+    ).toBeVisible();
+
+    // Product links
+    await expect(
+      footer.getByRole("link", { name: "Features" })
+    ).toHaveAttribute("href", "/features");
+    await expect(
+      footer.getByRole("link", { name: "How It Works" })
+    ).toHaveAttribute("href", "/how-it-works");
+    await expect(
+      footer.getByRole("link", { name: "Pricing" })
+    ).toHaveAttribute("href", "/pricing");
+
+    // Resource links (external)
+    const githubLink = footer.getByRole("link", { name: "GitHub" });
+    await expect(githubLink).toHaveAttribute(
+      "href",
+      "https://github.com/spearmint-finance/spearmint"
+    );
+    await expect(githubLink).toHaveAttribute("target", "_blank");
+
+    const docsLink = footer.getByRole("link", { name: "Documentation" });
+    await expect(docsLink).toHaveAttribute("target", "_blank");
+
+    // Copyright
+    await expect(footer.getByText(/Spearmint Finance/)).toBeVisible();
+    await expect(footer.getByText(/MIT License/)).toBeVisible();
+  });
+});
+
+test.describe("Accessibility — axe-core", () => {
+  const pages = [
+    { path: "/", name: "Homepage" },
+    { path: "/features", name: "Features" },
+    { path: "/how-it-works", name: "How It Works" },
+    { path: "/pricing", name: "Pricing" },
+    { path: "/agents", name: "Agents" },
+  ];
+
+  for (const { path, name } of pages) {
+    test(`${name} has no accessibility violations`, async ({ page }) => {
+      await page.goto(path);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations).toEqual([]);
+    });
+  }
 });
