@@ -38,6 +38,9 @@ openai>=1.0.0
 cryptography>=41.0.0
 sse-starlette>=1.6.0
 
+# Aggregator / Bank Connections
+plaid-python>=22.0.0
+
 # API Validation & Linting
 openapi-spec-validator>=0.6.0
 requests>=2.31.0

@@ -158,7 +158,7 @@ export const getTransactions = async (
   if (params?.sort_order) queryParams.set("sort_order", params.sort_order);
 
   const url = `${baseUrl}/api/transactions?${queryParams.toString()}`;
-  const response = await fetch(url, { credentials: "include" });
+  const response = await fetch(url);
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null);
     throw new Error(
