@@ -62,6 +62,8 @@ const transformTransaction = (backendTransaction: any): Transaction => {
   const relatedTransactionId =
     backendTransaction.relatedTransactionId ??
     backendTransaction.related_transaction_id;
+  const accountId =
+    backendTransaction.accountId ?? backendTransaction.account_id;
   const createdAt =
     backendTransaction.createdAt ?? backendTransaction.created_at;
   const updatedAt =
@@ -92,6 +94,7 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     classification_id: classificationId,
     classification_name: classificationName,
     related_transaction_id: relatedTransactionId,
+    account_id: accountId,
     source: backendTransaction.source,
     payment_method: paymentMethod,
     transfer_account_from: transferAccountFrom,
@@ -194,9 +197,10 @@ export const createTransaction = async (
     amount: data.amount,
     transactionType: data.transaction_type,
     categoryId: data.category_id,
+    accountId: data.account_id,
     isTransfer: data.is_transfer || false,
     notes: data.notes,
-  });
+  } as any);
   return transformTransaction(response.data);
 };
 
@@ -214,9 +218,10 @@ export const updateTransaction = async (
       amount: data.amount,
       transactionType: data.transaction_type,
       categoryId: data.category_id,
+      accountId: data.account_id,
       isTransfer: data.is_transfer,
       notes: data.notes,
-    });
+    } as any);
   return transformTransaction(response.data);
 };
 

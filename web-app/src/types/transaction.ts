@@ -13,6 +13,7 @@ export interface Transaction {
   classification_id?: number;
   classification_name?: string;
   related_transaction_id?: number;
+  account_id?: number;
   source?: string;
   payment_method?: string;
   transfer_account_from?: string;
@@ -29,6 +30,7 @@ export interface TransactionCreate {
   amount: number;
   transaction_type: "Income" | "Expense";
   category_id: number; // Required field
+  account_id?: number;
   balance?: number;
   is_transfer?: boolean;
   notes?: string;
@@ -41,6 +43,7 @@ export interface TransactionUpdate {
   transaction_type?: "Income" | "Expense";
   balance?: number;
   category_id?: number;
+  account_id?: number;
   is_transfer?: boolean;
   notes?: string;
   // Force classification rules to re-apply even if a manual classification exists
