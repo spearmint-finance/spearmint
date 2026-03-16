@@ -50,6 +50,10 @@ export const searchTransactionsTool: Tool = {
         type: "string",
         description: "Search in description, source, notes"
       },
+      tag_ids: {
+        type: "array",
+        description: "Filter by tag IDs (transactions matching any of the given tags)"
+      },
       include_capital_expenses: {
         type: "boolean",
         description: "Include non-operating expenses (capital, refunds, reimbursements, etc.) in results"
@@ -76,6 +80,7 @@ export interface SearchTransactionsInput {
   min_amount?: number;
   max_amount?: number;
   search_text?: string;
+  tag_ids?: string;
   include_capital_expenses?: boolean;
   include_transfers?: boolean;
   limit?: number;
@@ -96,6 +101,7 @@ export async function executeSearchTransactions(
   if (input.min_amount !== undefined) params.append("min_amount", String(input.min_amount));
   if (input.max_amount !== undefined) params.append("max_amount", String(input.max_amount));
   if (input.search_text !== undefined) params.append("search_text", String(input.search_text));
+  if (input.tag_ids !== undefined) params.append("tag_ids", String(input.tag_ids));
   if (input.include_capital_expenses !== undefined) params.append("include_capital_expenses", String(input.include_capital_expenses));
   if (input.include_transfers !== undefined) params.append("include_transfers", String(input.include_transfers));
   if (input.limit !== undefined) params.append("limit", String(input.limit));
