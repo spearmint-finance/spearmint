@@ -216,15 +216,30 @@ function Dashboard() {
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Income/Expense Ratio
               </Typography>
-              <Typography variant="h4" component="div">
+              <Typography
+                variant="h4"
+                component="div"
+                color={
+                  summary.financial_health.income_to_expense_ratio === null
+                    ? "text.primary"
+                    : summary.financial_health.income_to_expense_ratio > 1
+                    ? "success.main"
+                    : summary.financial_health.income_to_expense_ratio < 1
+                    ? "error.main"
+                    : "text.primary"
+                }
+              >
                 {summary.financial_health.income_to_expense_ratio !== null
                   ? summary.financial_health.income_to_expense_ratio.toFixed(2)
                   : "N/A"}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {summary.financial_health.income_to_expense_ratio &&
-                summary.financial_health.income_to_expense_ratio > 1
+                {summary.financial_health.income_to_expense_ratio === null
+                  ? "No data available"
+                  : summary.financial_health.income_to_expense_ratio > 1
                   ? "Positive cash flow"
+                  : summary.financial_health.income_to_expense_ratio === 1
+                  ? "Income equals expenses"
                   : "Spending exceeds income"}
               </Typography>
             </CardContent>
@@ -237,7 +252,19 @@ function Dashboard() {
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Savings Rate
               </Typography>
-              <Typography variant="h4" component="div">
+              <Typography
+                variant="h4"
+                component="div"
+                color={
+                  summary.financial_health.savings_rate === null
+                    ? "text.primary"
+                    : summary.financial_health.savings_rate > 0
+                    ? "success.main"
+                    : summary.financial_health.savings_rate < 0
+                    ? "error.main"
+                    : "text.primary"
+                }
+              >
                 {summary.financial_health.savings_rate !== null
                   ? formatPercentage(summary.financial_health.savings_rate)
                   : "N/A"}
