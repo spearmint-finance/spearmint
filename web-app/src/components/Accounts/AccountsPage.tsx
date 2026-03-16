@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getAccounts, getNetWorth } from '../../api/accounts';
+import { formatCurrency } from '../../utils/formatters';
 import { getLinkedProviders } from '../../api/aggregator';
 import {
   Account,
@@ -119,13 +120,6 @@ const AccountsPage: React.FC = () => {
   const handleRefresh = () => {
     refetchAccounts();
     refetchNetWorth();
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   const renderAccountCard = (account: Account) => {
