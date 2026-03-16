@@ -31,6 +31,8 @@ import {
   useUpdateTransaction,
 } from "../../hooks/useTransactions";
 import { useCategories, useCreateCategory } from "../../hooks/useCategories";
+import { useQuery } from "@tanstack/react-query";
+import { getAccounts } from "../../api/accounts";
 
 interface TransactionFormProps {
   open: boolean;
@@ -45,6 +47,7 @@ interface FormData {
   amount: number;
   transaction_type: "Income" | "Expense";
   category_id: number; // Required field
+  account_id: string; // Empty string = no account selected
   is_transfer: boolean;
   notes?: string;
 }
@@ -61,6 +64,10 @@ function TransactionForm({
   const createCategoryMutation = useCreateCategory();
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } =
     useCategories();
+  const { data: accountsData } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => getAccounts(),
+  });
 
   // State for new category dialog
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
@@ -90,6 +97,7 @@ function TransactionForm({
       amount: 0,
       transaction_type: "Expense",
       category_id: "" as any, // Empty string for unselected state
+      account_id: "",
       is_transfer: false,
       notes: "",
     },
@@ -120,6 +128,7 @@ function TransactionForm({
         amount: Math.abs(transaction.amount),
         transaction_type: transaction.transaction_type,
         category_id: transaction.category_id,
+        account_id: transaction.account_id ? String(transaction.account_id) : "",
         is_transfer: transaction.is_transfer || false,
         notes: transaction.notes || "",
       });
@@ -130,6 +139,7 @@ function TransactionForm({
         amount: 0,
         transaction_type: "Expense",
         category_id: "" as any, // Empty string for unselected state
+        account_id: "",
         is_transfer: false,
         notes: "",
       });
@@ -152,6 +162,8 @@ function TransactionForm({
         return;
       }
 
+      const accountId = data.account_id ? parseInt(data.account_id, 10) : undefined;
+
       if (mode === "create") {
         const createData: TransactionCreate = {
           date: data.date,
@@ -159,6 +171,7 @@ function TransactionForm({
           amount: data.amount,
           transaction_type: data.transaction_type,
           category_id: categoryId,
+          account_id: accountId,
           is_transfer: data.is_transfer,
           notes: data.notes,
         };
@@ -173,6 +186,7 @@ function TransactionForm({
           amount: data.amount,
           transaction_type: data.transaction_type,
           category_id: categoryId,
+          account_id: accountId,
           is_transfer: data.is_transfer,
           notes: data.notes,
         };
@@ -384,6 +398,38 @@ function TransactionForm({
                         </MenuItem>
                       ]
                     )}
+                  </TextField>
+                )}
+              />
+            </Grid>
+
+            {/* Account (optional) */}
+            <Grid item xs={12}>
+              <Controller
+                name="account_id"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Account (optional)"
+                    select
+                    fullWidth
+                    value={field.value || ""}
+                  >
+                    <MenuItem value="">
+                      <em>No account</em>
+                    </MenuItem>
+                    {accountsData?.map((account) => (
+                      <MenuItem
+                        key={account.account_id}
+                        value={String(account.account_id)}
+                      >
+                        {account.account_name}
+                        {account.institution_name
+                          ? ` (${account.institution_name})`
+                          : ""}
+                      </MenuItem>
+                    ))}
                   </TextField>
                 )}
               />
