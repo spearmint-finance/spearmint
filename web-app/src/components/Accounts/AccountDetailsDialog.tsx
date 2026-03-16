@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTitle,
@@ -30,6 +31,7 @@ import {
   AccountBalance as AccountBalanceIcon,
   History as HistoryIcon,
   CheckCircle as CheckCircleIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -82,6 +84,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   onClose,
   onAccountUpdated,
 }) => {
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [showAddBalance, setShowAddBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
@@ -538,6 +541,16 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       </DialogContent>
 
       <DialogActions>
+        <Button
+          startIcon={<ReceiptIcon />}
+          onClick={() => {
+            onClose();
+            navigate(`/transactions?account_id=${account.account_id}`);
+          }}
+        >
+          View Transactions
+        </Button>
+        <Box sx={{ flex: 1 }} />
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
 
