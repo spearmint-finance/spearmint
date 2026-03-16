@@ -27,7 +27,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .base import SessionLocal
-from .models import Account, Category, Transaction, TransactionClassification
+from .models import Account, AccountBalance, Category, Transaction, TransactionClassification
 
 
 # Constants
@@ -389,6 +389,18 @@ def seed_demo_accounts(db: Session) -> dict[str, int]:
             db.add(account)
             db.flush()  # Get the ID
             account_map[acct_data["account_name"]] = account.account_id
+
+            # Create initial balance snapshot so current_balance is never null
+            opening_bal = acct_data.get("opening_balance", Decimal("0.00"))
+            if opening_bal != 0:
+                balance_snapshot = AccountBalance(
+                    account_id=account.account_id,
+                    balance_date=opening_date,
+                    total_balance=opening_bal,
+                    balance_type="statement",
+                )
+                db.add(balance_snapshot)
+
             added += 1
             print(f"  [ADDED] {acct_data['account_name']} ({acct_data['account_type']})")
 

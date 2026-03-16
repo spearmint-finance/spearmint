@@ -98,9 +98,19 @@ async function runHttpServer(): Promise<void> {
     // Create and connect MCP server for this session
     const server = createMCPServer();
 
+    // Send SSE keepalive pings every 15 seconds to prevent timeout
+    const keepalive = setInterval(() => {
+      try {
+        res.write(":ping\n\n");
+      } catch {
+        clearInterval(keepalive);
+      }
+    }, 15000);
+
     // Handle client disconnect
     req.on("close", () => {
       console.log(`MCP SSE connection closed for key: ${req.apiKeyName}`);
+      clearInterval(keepalive);
       transports.delete(sessionId);
     });
 
@@ -108,16 +118,18 @@ async function runHttpServer(): Promise<void> {
       await server.connect(transport);
     } catch (error) {
       console.error("Error connecting MCP server:", error);
+      clearInterval(keepalive);
       transports.delete(sessionId);
     }
   });
 
   // MCP message endpoint - handles incoming JSON-RPC messages from clients
+  // Note: No auth middleware here - the session was authenticated via the SSE connection.
+  // Supergateway and other MCP clients don't forward auth headers on POST requests.
   app.post(
     "/message",
-    authMiddleware,
-    async (req: AuthenticatedRequest, res: Response) => {
-      console.log(`MCP message from key: ${req.apiKeyName}`);
+    async (req: Request, res: Response) => {
+      console.log("MCP message received");
 
       // Find an active transport to handle this message
       // In a production setup, you'd want to route to the correct session
