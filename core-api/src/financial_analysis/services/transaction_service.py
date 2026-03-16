@@ -248,8 +248,13 @@ class TransactionService:
         if conditions:
             query = query.filter(and_(*conditions))
 
-        # Apply sorting
-        sort_column = getattr(Transaction, filters.sort_by, Transaction.transaction_date)
+        # Apply sorting (allowlist prevents arbitrary attribute access)
+        ALLOWED_SORT_COLUMNS = {
+            'transaction_date', 'amount', 'description', 'source',
+            'transaction_type', 'created_at', 'updated_at',
+        }
+        sort_field = filters.sort_by if filters.sort_by in ALLOWED_SORT_COLUMNS else 'transaction_date'
+        sort_column = getattr(Transaction, sort_field)
         if filters.sort_order == 'asc':
             query = query.order_by(asc(sort_column))
         else:
