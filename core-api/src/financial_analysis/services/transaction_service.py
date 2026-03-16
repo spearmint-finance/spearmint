@@ -31,6 +31,7 @@ class TransactionFilter:
         search_text: Optional[str] = None,
         tag_ids: Optional[List[int]] = None,
         exclude_classification_ids: Optional[List[int]] = None,
+        account_id: Optional[int] = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = 'transaction_date',
@@ -48,6 +49,7 @@ class TransactionFilter:
         self.search_text = search_text
         self.tag_ids = tag_ids or []
         self.exclude_classification_ids = exclude_classification_ids or []
+        self.account_id = account_id
         self.limit = limit
         self.offset = offset
         self.sort_by = sort_by
@@ -214,6 +216,9 @@ class TransactionService:
 
         if filters.is_transfer is not None:
             conditions.append(Transaction.is_transfer == filters.is_transfer)
+
+        if filters.account_id:
+            conditions.append(Transaction.account_id == filters.account_id)
 
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)

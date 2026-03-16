@@ -98,6 +98,7 @@ def list_transactions(
     min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
     max_amount: Optional[Decimal] = Query(None, gt=0, description="Maximum amount filter"),
     search_text: Optional[str] = Query(None, description="Search in description, source, notes"),
+    account_id: Optional[int] = Query(None, gt=0, description="Filter by account ID"),
     include_capital_expenses: bool = Query(True, description="Include non-operating expenses (capital, refunds, reimbursements, etc.) in results"),
     include_transfers: bool = Query(True, description="Include transfers in results"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
@@ -159,6 +160,7 @@ def list_transactions(
         max_amount=max_amount,
         search_text=search_text,
         exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
+        account_id=account_id,
         limit=limit,
         offset=offset,
         sort_by=sort_by,
@@ -180,6 +182,7 @@ def list_transactions(
         max_amount=max_amount,
         search_text=search_text,
         exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
+        account_id=account_id,
         limit=999999,
         offset=0
     )
