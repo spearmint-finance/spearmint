@@ -49,6 +49,7 @@ import {
   deleteAccount,
 } from '../../api/accounts';
 import BalanceHistoryChart from './BalanceHistoryChart';
+import { formatCurrency } from '../../utils/formatters';
 
 interface AccountDetailsDialogProps {
   open: boolean;
@@ -156,13 +157,6 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   const handleAddBalance = () => {
