@@ -19,6 +19,7 @@ import {
   MenuItem,
   Checkbox,
   FormControlLabel,
+  Badge,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
@@ -601,6 +602,20 @@ function TransactionList() {
     }
   );
 
+  // Count active advanced filters (excludes search and default-on checkboxes)
+  const activeFilterCount = [
+    filters.start_date,
+    filters.end_date,
+    filters.transaction_type,
+    filters.category_id,
+    filters.classification_id,
+    filters.account_id,
+    filters.include_in_analysis,
+    filters.is_transfer,
+    !filters.include_capital_expenses ? "on" : "",
+    !filters.include_transfers ? "on" : "",
+  ].filter(Boolean).length;
+
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
       <Box
@@ -664,13 +679,19 @@ function TransactionList() {
           </Grid>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-              <Button
-                variant="outlined"
-                startIcon={<FilterListIcon />}
-                onClick={() => setFiltersDialogOpen(true)}
+              <Badge
+                badgeContent={activeFilterCount}
+                color="primary"
+                invisible={activeFilterCount === 0}
               >
-                More Filters
-              </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<FilterListIcon />}
+                  onClick={() => setFiltersDialogOpen(true)}
+                >
+                  More Filters
+                </Button>
+              </Badge>
               {(searchInput ||
                 Object.values(filters).some((v) => v && v !== true)) && (
                 <Button
@@ -683,6 +704,7 @@ function TransactionList() {
                       transaction_type: "",
                       category_id: "",
                       classification_id: "",
+                      account_id: "",
                       include_in_analysis: "",
                       is_transfer: "",
                       include_capital_expenses: true,
