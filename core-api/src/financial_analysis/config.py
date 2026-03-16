@@ -41,7 +41,22 @@ class Settings:
     LOG_FILE: str = os.getenv("LOG_FILE", str(BASE_DIR / "logs" / "app.log"))
 
     # Database Settings
-    DB_ECHO: bool = DEBUG  # Echo SQL statements in debug mode
+    DB_ECHO: bool = DEBUG
+
+    # Plaid Configuration
+    PLAID_CLIENT_ID: str = os.getenv("PLAID_CLIENT_ID", "")
+    PLAID_SECRET: str = os.getenv("PLAID_SECRET", "")
+    PLAID_ENV: str = os.getenv("PLAID_ENV", "sandbox")  # sandbox, development, production
+    PLAID_WEBHOOK_URL: str = os.getenv("PLAID_WEBHOOK_URL", "")
+
+    # Akoya Configuration
+    AKOYA_CLIENT_ID: str = os.getenv("AKOYA_CLIENT_ID", "")
+    AKOYA_CLIENT_SECRET: str = os.getenv("AKOYA_CLIENT_SECRET", "")
+    AKOYA_ENV: str = os.getenv("AKOYA_ENV", "sandbox")  # sandbox, production
+    AKOYA_REDIRECT_URI: str = os.getenv("AKOYA_REDIRECT_URI", "")
+
+    # Encryption key for provider access tokens (Fernet key, base64-encoded 32 bytes)
+    PROVIDER_TOKEN_ENCRYPTION_KEY: str = os.getenv("PROVIDER_TOKEN_ENCRYPTION_KEY", "")  # Echo SQL statements in debug mode
 
 
 # Create settings instance

@@ -113,6 +113,9 @@ class Transaction(Base):
     is_cleared = Column(Boolean, default=False)
     cleared_date = Column(Date)
 
+    # External provider dedup field (Plaid transaction_id or Akoya transaction ID)
+    external_transaction_id = Column(String(100), unique=True)
+
     # Investment transaction fields
     affects_cash_balance = Column(Boolean, default=True)
     affects_investment_value = Column(Boolean, default=False)
@@ -463,6 +466,46 @@ class ScenarioAdjuster(Base):
         return f"<ScenarioAdjuster(id={self.adjuster_id}, type='{self.type}', scenario_id={self.scenario_id})>"
 
 
+class LinkedProvider(Base):
+    """
+    Linked data providers for bank account aggregation.
+
+    Tracks connections to external data providers (Plaid, Akoya) that
+    supply account, transaction, balance, and investment holdings data.
+    One LinkedProvider represents one institutional connection (e.g., one
+    bank login) which may contain multiple accounts.
+    """
+    __tablename__ = "linked_providers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    provider_type = Column(String(20), nullable=False)  # 'plaid' or 'akoya'
+    provider_item_id = Column(String(200), nullable=False, unique=True)  # Plaid item_id or Akoya grant ID
+    access_token_encrypted = Column(Text, nullable=False)
+    refresh_token_encrypted = Column(Text)  # Used by Akoya for token rotation
+    institution_id = Column(String(50))
+    institution_name = Column(String(200))
+    status = Column(String(50), default='active')  # active, login_required, error
+    error_code = Column(String(100))
+    error_message = Column(Text)
+    sync_cursor = Column(Text)  # Plaid transaction cursor for incremental sync
+    last_synced_at = Column(DateTime)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    accounts = relationship("Account", back_populates="linked_provider")
+
+    __table_args__ = (
+        CheckConstraint("provider_type IN ('plaid', 'akoya')", name='check_provider_type'),
+        CheckConstraint("status IN ('active', 'login_required', 'error', 'revoked')", name='check_provider_status'),
+        Index('idx_provider_item_id', 'provider_item_id'),
+        Index('idx_provider_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<LinkedProvider(id={self.id}, type='{self.provider_type}', institution='{self.institution_name}', status='{self.status}')>"
+
+
 class Account(Base):
     """
     Accounts table for tracking financial accounts.
@@ -488,7 +531,13 @@ class Account(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
+    # Linked provider fields (for Plaid/Akoya connected accounts)
+    linked_provider_id = Column(Integer, ForeignKey('linked_providers.id'))
+    external_account_id = Column(String(100))  # Provider's account ID
+    link_type = Column(String(20), default='manual')  # manual, plaid, akoya
+
     # Relationships
+    linked_provider = relationship("LinkedProvider", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account")
     balances = relationship("AccountBalance", back_populates="account", cascade="all, delete-orphan")
     holdings = relationship("InvestmentHolding", back_populates="account", cascade="all, delete-orphan")

@@ -62,6 +62,10 @@ class AccountResponse(AccountBase):
     cash_balance: Optional[Decimal] = None
     investment_value: Optional[Decimal] = None
 
+    # Linked provider info
+    link_type: str = 'manual'
+    linked_provider_id: Optional[int] = None
+
 
 class AccountSummary(BaseModel):
     """Schema for account summary with balance."""

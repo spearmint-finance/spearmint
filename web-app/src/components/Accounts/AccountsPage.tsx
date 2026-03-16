@@ -17,12 +17,14 @@ import {
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
+  Link as LinkIcon,
   AccountBalance as AccountBalanceIcon,
   TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as WalletIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getAccounts, getNetWorth } from '../../api/accounts';
+import { getLinkedProviders } from '../../api/aggregator';
 import {
   Account,
   getAccountTypeLabel,
@@ -31,7 +33,10 @@ import {
 } from '../../types/account';
 import AddAccountDialog from './AddAccountDialog';
 import AccountDetailsDialog from './AccountDetailsDialog';
+import LinkAccountDialog from './LinkAccountDialog';
 import NetWorthCard from './NetWorthCard';
+import SyncButton from './SyncButton';
+import ReconnectBanner from './ReconnectBanner';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,6 +63,7 @@ function TabPanel(props: TabPanelProps) {
 const AccountsPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
@@ -82,6 +88,13 @@ const AccountsPage: React.FC = () => {
   } = useQuery({
     queryKey: ['netWorth'],
     queryFn: () => getNetWorth(),
+  });
+
+  // Fetch linked providers for sync status and reconnect banners
+  const { data: linkedProviders = [] } = useQuery({
+    queryKey: ['linkedProviders'],
+    queryFn: getLinkedProviders,
+    retry: false,
   });
 
   const isRefreshing = (accountsFetching || netWorthFetching) && !accountsLoading && !netWorthLoading;
@@ -144,12 +157,17 @@ const AccountsPage: React.FC = () => {
                   {account.institution_name || 'No institution'}
                 </Typography>
               </Box>
-              <Chip
-                label={getAccountTypeLabel(account.account_type)}
-                size="small"
-                color={isLiability ? 'error' : 'success'}
-                variant="outlined"
-              />
+              <Box display="flex" alignItems="center" gap={0.5}>
+                {account.link_type && account.link_type !== 'manual' && account.linked_provider_id && (
+                  <SyncButton linkedProviderId={account.linked_provider_id} />
+                )}
+                <Chip
+                  label={getAccountTypeLabel(account.account_type)}
+                  size="small"
+                  color={isLiability ? 'error' : 'success'}
+                  variant="outlined"
+                />
+              </Box>
             </Box>
 
             <Box mt={2}>
@@ -255,14 +273,28 @@ const AccountsPage: React.FC = () => {
             <RefreshIcon />
           </IconButton>
           <Button
+            variant="outlined"
+            startIcon={<LinkIcon />}
+            onClick={() => setLinkDialogOpen(true)}
+            sx={{ mr: 1 }}
+          >
+            Link Account
+          </Button>
+          <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleAddAccount}
           >
-            Add Account
+            Add Manual
           </Button>
         </Box>
       </Box>
+
+      {/* Reconnect Banner */}
+      <ReconnectBanner
+        providers={linkedProviders}
+        onReconnect={() => setLinkDialogOpen(true)}
+      />
 
       {/* Net Worth Summary */}
       {netWorth && (
@@ -307,9 +339,14 @@ const AccountsPage: React.FC = () => {
               <Typography color="text.secondary" gutterBottom>
                 No accounts yet
               </Typography>
-              <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAccount}>
-                Add Your First Account
-              </Button>
+              <Box display="flex" gap={1} justifyContent="center">
+                <Button variant="contained" startIcon={<LinkIcon />} onClick={() => setLinkDialogOpen(true)}>
+                  Link Your Bank
+                </Button>
+                <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAccount}>
+                  Add Manually
+                </Button>
+              </Box>
             </Box>
           )}
         </TabPanel>
@@ -372,6 +409,15 @@ const AccountsPage: React.FC = () => {
           }}
         />
       )}
+
+      <LinkAccountDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        onAccountLinked={() => {
+          refetchAccounts();
+          refetchNetWorth();
+        }}
+      />
     </Box>
   );
 };
