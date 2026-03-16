@@ -533,17 +533,33 @@ function TransactionList() {
           : "expense-cell",
     },
     {
-      field: "source",
+      field: "account_id",
       headerName: "Account",
       width: 180,
-      valueGetter: (value) => value || "-",
+      valueGetter: (_value, row) => {
+        if (row.account_id && accountsData) {
+          const account = accountsData.find(
+            (a) => a.account_id === row.account_id
+          );
+          if (account) return account.account_name;
+        }
+        return row.source || "-";
+      },
       filterable: false,
     },
     {
       field: "payment_method",
       headerName: "Institution",
       width: 150,
-      valueGetter: (value) => value || "-",
+      valueGetter: (_value, row) => {
+        if (row.account_id && accountsData) {
+          const account = accountsData.find(
+            (a) => a.account_id === row.account_id
+          );
+          if (account?.institution_name) return account.institution_name;
+        }
+        return row.payment_method || "-";
+      },
       filterable: false,
     },
     {
