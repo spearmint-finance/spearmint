@@ -60,7 +60,7 @@ async def health_check():
     Returns basic health status and API version information.
     Used by monitoring systems and load balancers to verify API availability.
     """
-    return {"status": "healthy", "version": "0.0.88"}
+    return {"status": "healthy", "version": "0.0.89"}
 
 
 # Import routers
@@ -95,7 +95,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Financial Analysis API",
-        "version": "0.0.88",
+        "version": "0.0.89",
         "docs": "/api/docs"
     }
 
