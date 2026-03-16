@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -57,10 +57,14 @@ import { useSnackbar } from "notistack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { detectAllRelationships } from "../../api/relationships";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
 
 function TransactionList() {
+  const [searchParams] = useSearchParams();
+  const initialAccountId = searchParams.get("account_id") || "";
+
   // State for filters
   const [searchInput, setSearchInput] = useState(""); // Local input value
   const [searchText, setSearchText] = useState(""); // Debounced search value for API
@@ -124,7 +128,7 @@ function TransactionList() {
     transaction_type: "",
     category_id: "",
     classification_id: "",
-    account_id: "",
+    account_id: initialAccountId,
     include_in_analysis: "",
     is_transfer: "",
     include_capital_expenses: true,
