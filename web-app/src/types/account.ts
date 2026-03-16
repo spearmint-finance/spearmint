@@ -36,6 +36,8 @@ export interface Account {
   current_balance_date?: string;
   cash_balance?: number;
   investment_value?: number;
+  // Entity assignment
+  entity_id?: number;
   // Linked provider info
   link_type?: 'manual' | 'plaid' | 'akoya';
   linked_provider_id?: number;

@@ -60,10 +60,12 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
+import { useEntityContext } from "../../contexts/EntityContext";
 
 function TransactionList() {
   const [searchParams] = useSearchParams();
   const initialAccountId = searchParams.get("account_id") || "";
+  const { selectedEntityId } = useEntityContext();
 
   // State for filters
   const [searchInput, setSearchInput] = useState(""); // Local input value
@@ -156,6 +158,7 @@ function TransactionList() {
     is_transfer: filters.is_transfer
       ? filters.is_transfer === "true"
       : undefined,
+    entity_id: selectedEntityId ?? undefined,
     include_capital_expenses: filters.include_capital_expenses,
     include_transfers: filters.include_transfers,
     limit: paginationModel.pageSize,
@@ -639,6 +642,7 @@ function TransactionList() {
         account_id: filters.account_id
           ? Number(filters.account_id)
           : undefined,
+        entity_id: selectedEntityId ?? undefined,
         include_in_analysis: filters.include_in_analysis
           ? filters.include_in_analysis === "true"
           : undefined,
@@ -716,6 +720,7 @@ function TransactionList() {
     sortModel,
     fieldToApiFieldMap,
     accountsData,
+    selectedEntityId,
     enqueueSnackbar,
   ]);
 
