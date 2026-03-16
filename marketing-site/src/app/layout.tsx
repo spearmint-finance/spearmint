@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { OrganizationJsonLd } from "@/components/JsonLd";
+import { SITE_URL } from "../config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,9 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://memnexus-marketing-site.pages.dev"
-  ),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Spearmint — Business-Grade Personal Finance",
     template: "%s — Spearmint",

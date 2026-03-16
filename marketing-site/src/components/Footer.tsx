@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GITHUB_URL, GITHUB_DOCS_URL } from "../config";
 
 const footerLinks = {
   Product: [
@@ -8,12 +9,12 @@ const footerLinks = {
   ],
   Resources: [
     {
-      href: "https://github.com/spearmint-finance/spearmint",
+      href: GITHUB_URL,
       label: "GitHub",
       external: true,
     },
     {
-      href: "https://github.com/spearmint-finance/spearmint/blob/main/README.md",
+      href: GITHUB_DOCS_URL,
       label: "Documentation",
       external: true,
     },

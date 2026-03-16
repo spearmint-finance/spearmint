@@ -1,3 +1,5 @@
+import { GITHUB_URL } from "../../config";
+
 export function AgentCTA() {
   return (
     <section className="bg-spearmint-dark py-20 md:py-28">
@@ -12,7 +14,7 @@ export function AgentCTA() {
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <a
-            href="https://github.com/spearmint-finance/spearmint"
+            href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-base font-semibold text-spearmint-dark transition-colors hover:bg-mint-bg"

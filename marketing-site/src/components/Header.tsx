@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { GITHUB_URL } from "../config";
 
 const navLinks = [
   { href: "/features", label: "Features" },
@@ -32,7 +33,7 @@ export function Header() {
             </Link>
           ))}
           <a
-            href="https://github.com/spearmint-finance/spearmint"
+            href={GITHUB_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-full bg-spearmint px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-spearmint-dark"
@@ -87,7 +88,7 @@ export function Header() {
               </Link>
             ))}
             <a
-              href="https://github.com/spearmint-finance/spearmint"
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full bg-spearmint px-5 py-2 text-center text-sm font-semibold text-white"
