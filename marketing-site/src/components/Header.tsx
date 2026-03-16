@@ -17,9 +17,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <span className="text-spearmint">$</span>
-          <span>pearmint</span>
+        <Link href="/" className="text-xl font-bold">
+          <span className="text-spearmint">$</span>pearmint
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
