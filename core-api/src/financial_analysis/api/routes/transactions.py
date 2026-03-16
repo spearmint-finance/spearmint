@@ -171,37 +171,14 @@ def list_transactions(
 
     transactions = service.list_transactions(filters)
 
-    # Get total count and summary (without pagination)
-    filters_no_limit = TransactionFilter(
-        start_date=start_date,
-        end_date=end_date,
-        transaction_type=transaction_type,
-        category_id=category_id,
-        classification_id=classification_id,
-        include_in_analysis=include_in_analysis,
-        is_transfer=resolved_is_transfer,
-        min_amount=min_amount,
-        max_amount=max_amount,
-        search_text=search_text,
-        exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
-        account_id=account_id,
-        tag_ids=tag_ids,
-        limit=999999,
-        offset=0
-    )
-    all_transactions = service.list_transactions(filters_no_limit)
-
-    total = len(all_transactions)
-
-    # Calculate summary statistics
-    total_income = sum(float(t.amount) for t in all_transactions if t.transaction_type == "Income")
-    total_expenses = sum(abs(float(t.amount)) for t in all_transactions if t.transaction_type == "Expense")
-    net_income = total_income - total_expenses
+    # Get total count and summary via SQL aggregation (single query, no row fetching)
+    stats = service.count_and_summarize(filters)
+    total = stats['total']
 
     summary = {
-        "total_income": total_income,
-        "total_expenses": total_expenses,
-        "net_income": net_income,
+        "total_income": stats['total_income'],
+        "total_expenses": stats['total_expenses'],
+        "net_income": stats['net_income'],
         "transaction_count": total
     }
 
