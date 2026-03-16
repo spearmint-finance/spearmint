@@ -1,7 +1,8 @@
 """Pydantic schemas for entity-related API endpoints."""
 
-from datetime import datetime
-from typing import Optional, Literal
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -41,3 +42,41 @@ class EntityResponse(BaseModel):
     account_count: int = 0
     created_at: datetime
     updated_at: datetime
+
+
+# ==================== Financial Statement Schemas ====================
+
+class CategoryBreakdown(BaseModel):
+    """A single category's contribution to a financial statement."""
+    category_name: str
+    category_id: int
+    amount: float
+    tax_line_item: Optional[str] = None
+
+
+class PnlResponse(BaseModel):
+    """Profit & Loss statement response."""
+    entity_id: int
+    entity_name: str
+    period: dict  # { start: str, end: str }
+    revenue: dict  # { total: float, by_category: List[CategoryBreakdown] }
+    expenses: dict  # { total: float, by_category: List[CategoryBreakdown] }
+    net_income: float
+
+
+class CashFlowItem(BaseModel):
+    """A single line item in a cash flow section."""
+    description: str
+    amount: float
+    category_name: Optional[str] = None
+
+
+class CashFlowResponse(BaseModel):
+    """Cash flow statement response."""
+    entity_id: int
+    entity_name: str
+    period: dict  # { start: str, end: str }
+    operating: dict  # { net_income: float, items: List[CashFlowItem], total: float }
+    investing: dict  # { items: List[CashFlowItem], total: float }
+    financing: dict  # { items: List[CashFlowItem], total: float }
+    net_change: float

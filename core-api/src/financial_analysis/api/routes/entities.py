@@ -1,13 +1,17 @@
 """Entity API endpoints."""
 
-from typing import List
+from datetime import date
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
 from ...services.entity_service import EntityService
-from ..schemas.entity import EntityCreate, EntityUpdate, EntityResponse
+from ..schemas.entity import (
+    EntityCreate, EntityUpdate, EntityResponse,
+    PnlResponse, CashFlowResponse,
+)
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
@@ -70,6 +74,36 @@ def delete_entity(entity_id: int, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
     return {"message": f"Entity {entity_id} deleted"}
+
+
+@router.get("/{entity_id}/pnl", response_model=PnlResponse)
+def get_entity_pnl(
+    entity_id: int,
+    start_date: date = Query(..., description="Period start date"),
+    end_date: date = Query(..., description="Period end date"),
+    db: Session = Depends(get_db),
+):
+    """Generate a Profit & Loss statement for an entity."""
+    service = EntityService(db)
+    try:
+        return service.get_pnl(entity_id, start_date, end_date)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{entity_id}/cashflow", response_model=CashFlowResponse)
+def get_entity_cashflow(
+    entity_id: int,
+    start_date: date = Query(..., description="Period start date"),
+    end_date: date = Query(..., description="Period end date"),
+    db: Session = Depends(get_db),
+):
+    """Generate a Cash Flow statement for an entity."""
+    service = EntityService(db)
+    try:
+        return service.get_cashflow(entity_id, start_date, end_date)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 def _to_response(entity, service: EntityService) -> EntityResponse:
