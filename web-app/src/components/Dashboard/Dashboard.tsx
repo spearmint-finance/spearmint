@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   useFinancialSummary,
   useCashFlowTrends,
+  useExpenseCategoryTrends,
 } from "../../hooks/useAnalysis";
 import { getNetWorth, getAccountSummary } from "../../api/accounts";
 import {
@@ -33,6 +34,7 @@ import ErrorDisplay from "../common/ErrorDisplay";
 import TrendLineChart from "../Charts/TrendLineChart";
 import CategoryPieChart from "../Charts/CategoryPieChart";
 import CategoryBarChart from "../Charts/CategoryBarChart";
+import ExpenseStackedBarChart from "../Charts/ExpenseStackedBarChart";
 import DateRangePicker, {
   DateRange,
 } from "../Analysis/DateRangePicker";
@@ -62,6 +64,15 @@ function Dashboard() {
   const { data: trendsData } = useCashFlowTrends({
     mode: "analysis",
     period: "monthly",
+    start_date: dateRange.start_date || undefined,
+    end_date: dateRange.end_date || undefined,
+  });
+
+  // Fetch expense category trends for stacked bar chart
+  const { data: categoryTrends } = useExpenseCategoryTrends({
+    period: "monthly",
+    mode: "analysis",
+    top_n: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
   });
@@ -472,6 +483,24 @@ function Dashboard() {
             </Grid>
           </>
         )}
+
+        {/* Expense Category Trends - Stacked Bar Chart */}
+        {categoryTrends &&
+          categoryTrends.categories.length > 0 &&
+          categoryTrends.data.length > 0 && (
+            <Grid item xs={12}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Expense Categories Over Time
+                </Typography>
+                <ExpenseStackedBarChart
+                  data={categoryTrends.data}
+                  categories={categoryTrends.categories}
+                  height={400}
+                />
+              </Paper>
+            </Grid>
+          )}
 
         {/* Category Charts */}
         {(summary.top_income_categories.length > 0 ||
