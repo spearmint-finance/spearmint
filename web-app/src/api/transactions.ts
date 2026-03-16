@@ -17,6 +17,7 @@ export interface TransactionListParams {
   max_amount?: number;
   search_text?: string;
   account_id?: number;
+  entity_id?: number;
   include_capital_expenses?: boolean;
   include_transfers?: boolean;
   limit?: number;
@@ -145,6 +146,8 @@ export const getTransactions = async (
   if (params?.search_text) queryParams.set("search_text", params.search_text);
   if (params?.account_id != null)
     queryParams.set("account_id", String(params.account_id));
+  if (params?.entity_id != null)
+    queryParams.set("entity_id", String(params.entity_id));
   if (params?.include_capital_expenses != null)
     queryParams.set(
       "include_capital_expenses",

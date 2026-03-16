@@ -38,6 +38,7 @@ import LinkAccountDialog from './LinkAccountDialog';
 import NetWorthCard from './NetWorthCard';
 import SyncButton from './SyncButton';
 import ReconnectBanner from './ReconnectBanner';
+import { useEntityContext } from '../../contexts/EntityContext';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,8 +68,9 @@ const AccountsPage: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const { selectedEntityId } = useEntityContext();
 
-  // Fetch accounts
+  // Fetch accounts (filtered by selected entity)
   const {
     data: accounts = [],
     isLoading: accountsLoading,
@@ -76,8 +78,11 @@ const AccountsPage: React.FC = () => {
     error: accountsError,
     refetch: refetchAccounts,
   } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => getAccounts(),
+    queryKey: ['accounts', { entity_id: selectedEntityId }],
+    queryFn: () =>
+      getAccounts(
+        selectedEntityId != null ? { entity_id: selectedEntityId } : undefined
+      ),
   });
 
   // Fetch net worth

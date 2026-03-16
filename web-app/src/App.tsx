@@ -13,10 +13,12 @@ import ClassificationsPage from "./components/Classifications/ClassificationsPag
 import ImportPage from "./components/Import/ImportPage";
 import SettingsPage from "./components/Settings/SettingsPage";
 import ScenarioBuilder from "./components/Scenarios/ScenarioBuilder";
+import { EntityProvider } from "./contexts/EntityContext";
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
+      <EntityProvider>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -34,6 +36,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
+      </EntityProvider>
     </ThemeProvider>
   );
 }

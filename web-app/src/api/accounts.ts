@@ -2,7 +2,7 @@
  * API client functions for account management
  */
 
-import { accountsApi } from "./sdk";
+import sdk, { accountsApi } from "./sdk";
 import {
   Account,
   AccountCreate,
@@ -72,6 +72,7 @@ const transformAccount = (backendAccount: any): Account => {
     has_investment_component: hasInvestmentComponent ?? false,
     opening_balance: parseFloat(openingBalance) || 0,
     opening_balance_date: openingBalanceDate,
+    entity_id: backendAccount.entityId ?? backendAccount.entity_id,
     notes: backendAccount.notes,
     created_at: createdAt,
     updated_at: updatedAt,
@@ -87,12 +88,27 @@ const transformAccount = (backendAccount: any): Account => {
 export const getAccounts = async (params?: {
   is_active?: boolean;
   account_type?: string;
+  entity_id?: number;
 }): Promise<Account[]> => {
-  const response = await accountsApi.listAccountsApiAccountsGet({
-    isActive: params?.is_active,
-    accountType: params?.account_type,
-  });
-  return (response.data as any[]).map(transformAccount);
+  // Use direct fetch to support entity_id (SDK predates this param)
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:8080");
+
+  const queryParams = new URLSearchParams();
+  if (params?.is_active != null) queryParams.set("is_active", String(params.is_active));
+  if (params?.account_type) queryParams.set("account_type", params.account_type);
+  if (params?.entity_id != null) queryParams.set("entity_id", String(params.entity_id));
+
+  const url = `${baseUrl}/api/accounts?${queryParams.toString()}`;
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail || `Failed to fetch accounts: ${response.statusText}`);
+  }
+  const data = await response.json();
+  return (data as any[]).map(transformAccount);
 };
 
 export const createAccount = async (
