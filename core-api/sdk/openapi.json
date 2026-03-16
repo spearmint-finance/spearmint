@@ -279,6 +279,25 @@
             "description": "Search in description, source, notes"
           },
           {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
+          },
+          {
             "name": "include_capital_expenses",
             "in": "query",
             "required": false,

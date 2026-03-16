@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.15"
+    "version": "0.0.3"
   },
   "servers": [
     {
@@ -277,6 +277,25 @@
               "title": "Search Text"
             },
             "description": "Search in description, source, notes"
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by account ID",
+              "title": "Account Id"
+            },
+            "description": "Filter by account ID"
           },
           {
             "name": "include_capital_expenses",
@@ -4492,14 +4511,14 @@
         }
       }
     },
-    "/api/persons": {
+    "/api/persons/": {
       "get": {
         "tags": [
           "persons",
           "persons"
         ],
         "summary": "List Persons",
-        "operationId": "list_persons_api_persons_get",
+        "operationId": "list_persons_api_persons__get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4510,7 +4529,7 @@
                     "$ref": "#/components/schemas/PersonRead"
                   },
                   "type": "array",
-                  "title": "Response List Persons Api Persons Get"
+                  "title": "Response List Persons Api Persons  Get"
                 }
               }
             }
@@ -4523,7 +4542,7 @@
           "persons"
         ],
         "summary": "Create Person",
-        "operationId": "create_person_api_persons_post",
+        "operationId": "create_person_api_persons__post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5269,7 +5288,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2025-11-24",
+              "default": "2025-11-21",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"

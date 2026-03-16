@@ -1,4 +1,4 @@
-import { transactionsApi } from "./sdk";
+import sdk, { transactionsApi } from "./sdk";
 import type {
   Transaction,
   TransactionCreate,
@@ -16,6 +16,7 @@ export interface TransactionListParams {
   min_amount?: number;
   max_amount?: number;
   search_text?: string;
+  account_id?: number;
   include_capital_expenses?: boolean;
   include_transfers?: boolean;
   limit?: number;
@@ -105,35 +106,70 @@ const transformTransaction = (backendTransaction: any): Transaction => {
 };
 
 /**
- * Get list of transactions with optional filters
+ * Get list of transactions with optional filters.
+ *
+ * Uses direct fetch instead of SDK to support account_id filtering
+ * (SDK v0.0.15 predates the account_id query param).
  */
 export const getTransactions = async (
   params?: TransactionListParams
 ): Promise<TransactionListResponse> => {
-  const response = await transactionsApi.listTransactionsApiTransactionsGet({
-    startDate: params?.start_date,
-    endDate: params?.end_date,
-    transactionType: params?.transaction_type,
-    categoryId: params?.category_id,
-    classificationId: params?.classification_id,
-    includeInAnalysis: params?.include_in_analysis,
-    isTransfer: params?.is_transfer,
-    minAmount: params?.min_amount,
-    maxAmount: params?.max_amount,
-    searchText: params?.search_text,
-    limit: params?.limit,
-    offset: params?.offset,
-    sortBy: params?.sort_by,
-    sortOrder: params?.sort_order,
-  });
+  // Reuse the same base URL the SDK uses (configured in sdk.ts)
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:8080");
 
-  const data = response.data ?? {};
+  const queryParams = new URLSearchParams();
+  if (params?.start_date) queryParams.set("start_date", params.start_date);
+  if (params?.end_date) queryParams.set("end_date", params.end_date);
+  if (params?.transaction_type)
+    queryParams.set("transaction_type", params.transaction_type);
+  if (params?.category_id != null)
+    queryParams.set("category_id", String(params.category_id));
+  if (params?.classification_id != null)
+    queryParams.set("classification_id", String(params.classification_id));
+  if (params?.include_in_analysis != null)
+    queryParams.set("include_in_analysis", String(params.include_in_analysis));
+  if (params?.is_transfer != null)
+    queryParams.set("is_transfer", String(params.is_transfer));
+  if (params?.min_amount != null)
+    queryParams.set("min_amount", String(params.min_amount));
+  if (params?.max_amount != null)
+    queryParams.set("max_amount", String(params.max_amount));
+  if (params?.search_text) queryParams.set("search_text", params.search_text);
+  if (params?.account_id != null)
+    queryParams.set("account_id", String(params.account_id));
+  if (params?.include_capital_expenses != null)
+    queryParams.set(
+      "include_capital_expenses",
+      String(params.include_capital_expenses)
+    );
+  if (params?.include_transfers != null)
+    queryParams.set("include_transfers", String(params.include_transfers));
+  if (params?.limit != null) queryParams.set("limit", String(params.limit));
+  if (params?.offset != null) queryParams.set("offset", String(params.offset));
+  if (params?.sort_by) queryParams.set("sort_by", params.sort_by);
+  if (params?.sort_order) queryParams.set("sort_order", params.sort_order);
+
+  const url = `${baseUrl}/api/transactions?${queryParams.toString()}`;
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(
+      errorBody?.detail || `Failed to fetch transactions: ${response.statusText}`
+    );
+  }
+  const data = await response.json();
+
   return {
     transactions: (data.transactions || []).map(transformTransaction),
     total: data.total ?? 0,
     limit: data.limit ?? params?.limit ?? 100,
     offset: data.offset ?? params?.offset ?? 0,
-    summary: (data as any).summary,
+    summary: data.summary,
   };
 };
 

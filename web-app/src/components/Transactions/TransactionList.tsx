@@ -52,9 +52,10 @@ import TransactionDetail from "./TransactionDetail";
 import TransactionForm from "./TransactionForm";
 import type { Transaction } from "../../types/transaction";
 import { useSnackbar } from "notistack";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { detectAllRelationships } from "../../api/relationships";
 import CircularProgress from "@mui/material/CircularProgress";
+import { getAccounts } from "../../api/accounts";
 
 function TransactionList() {
   // State for filters
@@ -89,6 +90,10 @@ function TransactionList() {
   const updateTransaction = useUpdateTransaction();
   const { data: categoriesData } = useCategories();
   const { data: classificationsData } = useClassifications();
+  const { data: accountsData } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => getAccounts(),
+  });
   const { enqueueSnackbar } = useSnackbar();
 
   // Debounce search input
@@ -116,6 +121,7 @@ function TransactionList() {
     transaction_type: "",
     category_id: "",
     classification_id: "",
+    account_id: "",
     include_in_analysis: "",
     is_transfer: "",
     include_capital_expenses: true,
@@ -136,6 +142,7 @@ function TransactionList() {
     classification_id: filters.classification_id
       ? Number(filters.classification_id)
       : undefined,
+    account_id: filters.account_id ? Number(filters.account_id) : undefined,
     include_in_analysis: filters.include_in_analysis
       ? filters.include_in_analysis === "true"
       : undefined,
@@ -979,6 +986,31 @@ function TransactionList() {
                       value={cls.classification_id}
                     >
                       {cls.classification_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth data-testid="filter-account">
+                <InputLabel>Account</InputLabel>
+                <Select
+                  value={filters.account_id}
+                  label="Account"
+                  onChange={(e) =>
+                    setFilters({ ...filters, account_id: e.target.value })
+                  }
+                >
+                  <MenuItem value="">All Accounts</MenuItem>
+                  {accountsData?.map((account) => (
+                    <MenuItem
+                      key={account.account_id}
+                      value={account.account_id}
+                    >
+                      {account.account_name}
+                      {account.institution_name
+                        ? ` (${account.institution_name})`
+                        : ""}
                     </MenuItem>
                   ))}
                 </Select>
