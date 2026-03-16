@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { GITHUB_URL } from "../../config";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -71,7 +72,7 @@ export default function PricingPage() {
             </ul>
 
             <a
-              href="https://github.com/spearmint-finance/spearmint"
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-spearmint px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-spearmint-dark"

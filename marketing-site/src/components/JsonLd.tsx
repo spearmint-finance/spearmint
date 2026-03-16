@@ -1,6 +1,4 @@
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  "https://memnexus-marketing-site.pages.dev";
+import { SITE_URL, GITHUB_URL } from "../config";
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -10,7 +8,7 @@ const organizationSchema = {
   logo: `${SITE_URL}/icon.svg`,
   description:
     "A free, self-hosted financial engine that transforms bank data into professional-grade accounting intelligence.",
-  sameAs: ["https://github.com/spearmint-finance/spearmint"],
+  sameAs: [GITHUB_URL],
 };
 
 const websiteSchema = {

@@ -1,3 +1,5 @@
+import { GITHUB_URL } from "../config";
+
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-mint-bg">
@@ -21,7 +23,7 @@ export function Hero() {
 
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <a
-              href="https://github.com/spearmint-finance/spearmint"
+              href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-full bg-spearmint px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-spearmint-dark"
