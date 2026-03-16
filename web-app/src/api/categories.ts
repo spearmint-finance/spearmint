@@ -30,7 +30,19 @@ export const categoriesApi = {
       includeTransferCategories: params?.include_transfer_categories,
       searchText: params?.search_text,
     });
-    return response.data as unknown as CategoriesResponse;
+    const raw = response.data as Record<string, unknown>;
+    const categories = ((raw.categories ?? raw) as Record<string, unknown>[]).map(
+      (c) => ({
+        category_id: c.category_id ?? c.categoryId,
+        category_name: c.category_name ?? c.categoryName,
+        category_type: c.category_type ?? c.categoryType,
+        parent_category_id: c.parent_category_id ?? c.parentCategoryId ?? null,
+        description: c.description ?? null,
+        is_transfer_category: c.is_transfer_category ?? c.isTransferCategory ?? false,
+        created_at: c.created_at ?? c.createdAt ?? "",
+      })
+    ) as Category[];
+    return { categories, total: categories.length };
   },
 
   /**

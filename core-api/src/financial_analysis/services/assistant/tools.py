@@ -232,6 +232,31 @@ ASSISTANT_TOOLS: List[Dict[str, Any]] = [
         }
     },
 
+    # ===== AGENT TOOLS (Delegate to A2A agents) =====
+    {
+        "type": "function",
+        "function": {
+            "name": "get_budget_advice",
+            "description": "Get personalized budget advice and savings recommendations from the Budget Advisor agent. This analyzes spending patterns, detects trends, and provides actionable tips. Use this when the user asks about overspending, budget advice, savings opportunities, or where to cut back.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "months": {
+                        "type": "integer",
+                        "default": 6,
+                        "description": "Number of months of spending history to analyze (1-12)"
+                    },
+                    "top_categories": {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "Number of top spending categories to analyze (1-10)"
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+
     # ===== ACTION TOOLS (Require Confirmation - Phase 2) =====
     {
         "type": "function",
@@ -355,4 +380,5 @@ READ_ONLY_TOOLS = {
     "get_cash_flow",
     "compare_periods",
     "create_navigation_link",
+    "get_budget_advice",
 }

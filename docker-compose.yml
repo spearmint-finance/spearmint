@@ -3,12 +3,16 @@ version: '3.8'
 # ================================================================
 # PORT CONFIGURATION
 # ================================================================
-# Override these in a .env file to avoid conflicts with other instances:
-#   GATEWAY_PORT=8090
-#   WEB_PORT=5183
-#   MCP_PORT=3011
-#   DB_PORT=5442
-#   MARKETING_PORT=3010
+# Defaults use the 7xxx range to avoid conflicts with local dev:
+#   Local dev:  API=8000, Frontend=5173, MCP=3001
+#   Docker:     Gateway=7080, Frontend=7173, MCP=7001, Marketing=7300, DB=7432
+#
+# Override in a .env file if needed:
+#   GATEWAY_PORT=7080
+#   WEB_PORT=7173
+#   MCP_PORT=7001
+#   MARKETING_PORT=7300
+#   DB_PORT=7432
 # ================================================================
 
 services:
@@ -18,7 +22,7 @@ services:
   gateway:
     build: ./api-gateway
     ports:
-      - "${GATEWAY_PORT:-8080}:8080"
+      - "${GATEWAY_PORT:-7080}:8080"
     depends_on:
       core-api:
         condition: service_healthy
@@ -42,6 +46,8 @@ services:
       - APP_ENV=local
       - DEBUG=true
       - DATABASE_URL=sqlite:////app/data/financial_data.db
+      - OPENAI_API_KEY=${OPENAI_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_KEY}
     # Pass --reload to entrypoint for hot reloading in dev
     command: ["--reload"]
     healthcheck:
@@ -63,17 +69,9 @@ services:
       - ./web-app/public:/app/public     # Mount public assets
       - /app/node_modules                # Prevent overwriting node_modules
     ports:
-      - "${WEB_PORT:-5173}:5173"
+      - "${WEB_PORT:-7173}:5173"
     environment:
-      - VITE_API_URL=http://localhost:${GATEWAY_PORT:-8080}
-
-  # ----------------------------------------------------------------
-  # MARKETING SITE (Static Next.js)
-  # ----------------------------------------------------------------
-  marketing-site:
-    build: ./marketing-site
-    ports:
-      - "${MARKETING_PORT:-3000}:3000"
+      - VITE_API_URL=http://localhost:${GATEWAY_PORT:-7080}
 
   # ----------------------------------------------------------------
   # MCP SERVER (AI Agent Integration)
@@ -81,7 +79,7 @@ services:
   mcp-server:
     build: ./mcp-server
     ports:
-      - "${MCP_PORT:-3001}:3001"
+      - "${MCP_PORT:-7001}:3001"
     environment:
       - SPEARMINT_API_URL=http://core-api:8000
       - MCP_PORT=3001
@@ -89,6 +87,14 @@ services:
     depends_on:
       core-api:
         condition: service_healthy
+
+  # ----------------------------------------------------------------
+  # MARKETING SITE (Static Next.js Site)
+  # ----------------------------------------------------------------
+  marketing-site:
+    build: ./marketing-site
+    ports:
+      - "${MARKETING_PORT:-7300}:3000"
 
   # ----------------------------------------------------------------
   # DATABASE (Postgres - Future Proofing)
@@ -104,7 +110,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-7432}:5432"
 
 volumes:
   postgres_data:

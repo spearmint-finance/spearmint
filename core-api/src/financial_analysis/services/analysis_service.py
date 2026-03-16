@@ -993,16 +993,13 @@ class AnalysisService:
         income_categories.sort(key=lambda x: x['total_amount'], reverse=True)
         expense_categories.sort(key=lambda x: x['total_amount'], reverse=True)
 
-        # Get period dates
-        period_start, period_end = self._get_period_dates(date_range)
-
         return {
             'income_categories': income_categories,
             'expense_categories': expense_categories,
             'total_income': total_income,
             'total_expenses': total_expenses,
-            'period_start': period_start,
-            'period_end': period_end,
+            'period_start': date_range.start_date.isoformat() if date_range and date_range.start_date else None,
+            'period_end': date_range.end_date.isoformat() if date_range and date_range.end_date else None,
             'mode': mode
         }
 

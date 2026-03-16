@@ -489,6 +489,31 @@ class ToolOrchestrator:
             "filters": filters
         }
 
+    # ===== Agent Tool Implementations =====
+
+    async def _execute_get_budget_advice(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Invoke the Budget Advisor A2A agent for spending analysis and advice."""
+        from ...agents.registry import AgentRegistry
+
+        months = min(args.get("months", 6), 12)
+        top_categories = min(args.get("top_categories", 5), 10)
+
+        agent = AgentRegistry.get("budget-advisor")
+        if not agent:
+            return {"error": "Budget Advisor agent is not registered"}
+
+        try:
+            result = await agent.invoke(
+                "analyze-spending",
+                {"months": months, "top_categories": top_categories},
+                None,
+                self.db,
+            )
+            return _convert_decimals(result)
+        except Exception as e:
+            logger.error(f"Budget Advisor error: {e}")
+            return {"error": f"Budget Advisor failed: {str(e)}"}
+
     # ===== Action Tool Implementations (Phase 2) =====
 
     async def _execute_propose_categorization(self, args: Dict[str, Any]) -> Dict[str, Any]:
