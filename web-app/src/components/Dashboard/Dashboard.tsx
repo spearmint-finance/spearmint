@@ -510,13 +510,31 @@ function Dashboard() {
             {summary.top_income_categories.length > 0 && (
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="h6">
+                      Top Income Categories
+                    </Typography>
+                    <Button
+                      component={RouterLink}
+                      to="/analysis/income"
+                      size="small"
+                    >
+                      Deep Dive
+                    </Button>
+                  </Box>
                   <CategoryPieChart
                     data={summary.top_income_categories.map((cat) => ({
                       name: cat.category,
                       value: Number(cat.amount),
                       percentage: cat.percentage,
                     }))}
-                    title="Top Income Categories"
                     height={350}
                     colorScheme="success"
                   />
@@ -528,13 +546,31 @@ function Dashboard() {
             {summary.top_expense_categories.length > 0 && (
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="h6">
+                      Top Expense Categories
+                    </Typography>
+                    <Button
+                      component={RouterLink}
+                      to="/analysis/expenses"
+                      size="small"
+                    >
+                      Deep Dive
+                    </Button>
+                  </Box>
                   <CategoryPieChart
                     data={summary.top_expense_categories.map((cat) => ({
                       name: cat.category,
                       value: Number(cat.amount),
                       percentage: cat.percentage,
                     }))}
-                    title="Top Expense Categories"
                     height={350}
                     colorScheme="error"
                   />
