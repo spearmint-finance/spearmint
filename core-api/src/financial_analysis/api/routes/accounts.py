@@ -89,11 +89,12 @@ def get_account_summary(db: Session = Depends(get_db)):
 def list_accounts(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     account_type: Optional[str] = Query(None, description="Filter by account type"),
+    entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID"),
     db: Session = Depends(get_db)
 ):
     """Get all accounts with optional filtering."""
     service = AccountService(db)
-    accounts = service.get_accounts(is_active=is_active, account_type=account_type)
+    accounts = service.get_accounts(is_active=is_active, account_type=account_type, entity_id=entity_id)
 
     # Add current balance to each account
     result = []
@@ -111,6 +112,7 @@ def list_accounts(
             "has_investment_component": account.has_investment_component,
             "opening_balance": account.opening_balance,
             "opening_balance_date": account.opening_balance_date,
+            "entity_id": account.entity_id,
             "notes": account.notes,
             "created_at": account.created_at,
             "updated_at": account.updated_at
@@ -147,6 +149,7 @@ def create_account(
             currency=account.currency,
             opening_balance=account.opening_balance,
             opening_balance_date=account.opening_balance_date,
+            entity_id=account.entity_id,
             notes=account.notes
         )
 

@@ -8,7 +8,7 @@ from sqlalchemy import and_, or_, desc, asc, func, case
 
 from ..database.models import (
     Transaction, Category, TransactionClassification,
-    Tag, TransactionTag
+    Tag, TransactionTag, Account
 )
 from ..utils.validators import DataValidator, ValidationError
 from .classification_service import ClassificationService
@@ -32,6 +32,7 @@ class TransactionFilter:
         tag_ids: Optional[List[int]] = None,
         exclude_classification_ids: Optional[List[int]] = None,
         account_id: Optional[int] = None,
+        entity_id: Optional[int] = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = 'transaction_date',
@@ -50,6 +51,7 @@ class TransactionFilter:
         self.tag_ids = tag_ids or []
         self.exclude_classification_ids = exclude_classification_ids or []
         self.account_id = account_id
+        self.entity_id = entity_id
         self.limit = limit
         self.offset = offset
         self.sort_by = sort_by
@@ -220,6 +222,13 @@ class TransactionService:
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
 
+        if filters.entity_id:
+            # Filter by entity through the account relationship
+            query = query.join(
+                Account,
+                Transaction.account_id == Account.account_id
+            ).filter(Account.entity_id == filters.entity_id)
+
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
 
@@ -334,6 +343,11 @@ class TransactionService:
             conditions.append(Transaction.is_transfer == filters.is_transfer)
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
+        if filters.entity_id:
+            query = query.join(
+                Account,
+                Transaction.account_id == Account.account_id
+            ).filter(Account.entity_id == filters.entity_id)
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
         if filters.max_amount:
