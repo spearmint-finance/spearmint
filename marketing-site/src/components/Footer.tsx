@@ -29,10 +29,9 @@ export function Footer() {
           <div className="col-span-2 md:col-span-2">
             <Link
               href="/"
-              className="flex items-center gap-2 text-xl font-bold"
+              className="text-xl font-bold"
             >
-              <span className="text-spearmint">$</span>
-              <span>pearmint</span>
+              <span className="text-spearmint">$</span>pearmint
             </Link>
             <p className="mt-3 max-w-xs text-sm text-gray-500">
               Business-grade personal finance. Free, open-source, self-hosted.
