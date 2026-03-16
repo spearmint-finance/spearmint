@@ -65,6 +65,7 @@ export const useFinancialSummary = (
     queryKey: ["financial-summary", params],
     queryFn: () => getFinancialSummary(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (previousData: any) => previousData,
   });
 };
 
@@ -80,5 +81,6 @@ export const useCashFlowTrends = (
     queryKey: ["cash-flow-trends", params],
     queryFn: () => getCashFlowTrends(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (previousData: any) => previousData,
   });
 };
