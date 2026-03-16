@@ -11,6 +11,7 @@ import {
   Alert,
   Skeleton,
   Button,
+  LinearProgress,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -46,6 +47,7 @@ function Dashboard() {
   const {
     data: summary,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useFinancialSummary({
@@ -114,6 +116,9 @@ function Dashboard() {
         <Typography variant="h4">Dashboard</Typography>
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </Box>
+      {isFetching && !isLoading && (
+        <LinearProgress sx={{ mb: 1, borderRadius: 1 }} />
+      )}
 
       {/* Overview Cards */}
       <Grid container spacing={3}>
