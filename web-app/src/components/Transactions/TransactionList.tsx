@@ -42,6 +42,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
+import DownloadIcon from "@mui/icons-material/Download";
 import {
   useTransactions,
   useUpdateTransaction,
@@ -57,6 +58,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { detectAllRelationships } from "../../api/relationships";
 import CircularProgress from "@mui/material/CircularProgress";
 import { getAccounts } from "../../api/accounts";
+import { getTransactions } from "../../api/transactions";
 
 function TransactionList() {
   // State for filters
@@ -616,6 +618,103 @@ function TransactionList() {
     !filters.include_transfers ? "on" : "",
   ].filter(Boolean).length;
 
+  const handleExportCsv = useCallback(async () => {
+    try {
+      // Fetch all matching transactions (no pagination)
+      const allData = await getTransactions({
+        search_text: searchText || undefined,
+        start_date: filters.start_date || undefined,
+        end_date: filters.end_date || undefined,
+        transaction_type: filters.transaction_type || undefined,
+        category_id: filters.category_id
+          ? Number(filters.category_id)
+          : undefined,
+        classification_id: filters.classification_id
+          ? Number(filters.classification_id)
+          : undefined,
+        account_id: filters.account_id
+          ? Number(filters.account_id)
+          : undefined,
+        include_in_analysis: filters.include_in_analysis
+          ? filters.include_in_analysis === "true"
+          : undefined,
+        is_transfer: filters.is_transfer
+          ? filters.is_transfer === "true"
+          : undefined,
+        include_capital_expenses: filters.include_capital_expenses,
+        include_transfers: filters.include_transfers,
+        limit: 10000,
+        offset: 0,
+        sort_by: sortModel[0]?.field
+          ? fieldToApiFieldMap[sortModel[0].field] || sortModel[0].field
+          : "transaction_date",
+        sort_order: sortModel[0]?.sort || "desc",
+      });
+
+      const rows = allData.transactions;
+      if (rows.length === 0) {
+        enqueueSnackbar("No transactions to export", { variant: "info" });
+        return;
+      }
+
+      // Resolve account names
+      const getAccountName = (accountId?: number) => {
+        if (!accountId || !accountsData) return "";
+        const account = accountsData.find((a) => a.account_id === accountId);
+        return account?.account_name || "";
+      };
+
+      const headers = [
+        "Date",
+        "Description",
+        "Amount",
+        "Type",
+        "Category",
+        "Account",
+        "Classification",
+        "Transfer",
+        "Notes",
+        "Tags",
+      ];
+      const csvRows = rows.map((tx) => [
+        tx.date,
+        `"${(tx.description || "").replace(/"/g, '""')}"`,
+        tx.amount,
+        tx.transaction_type,
+        tx.category_name || "",
+        getAccountName(tx.account_id),
+        tx.classification_name || "",
+        tx.is_transfer ? "Yes" : "No",
+        `"${(tx.notes || "").replace(/"/g, '""')}"`,
+        `"${(tx.tags || []).join(", ")}"`,
+      ]);
+
+      const csv = [headers.join(","), ...csvRows.map((r) => r.join(","))].join(
+        "\n"
+      );
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `transactions-${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      enqueueSnackbar(`Exported ${rows.length} transactions`, {
+        variant: "success",
+      });
+    } catch {
+      enqueueSnackbar("Failed to export transactions", { variant: "error" });
+    }
+  }, [
+    searchText,
+    filters,
+    sortModel,
+    fieldToApiFieldMap,
+    accountsData,
+    enqueueSnackbar,
+  ]);
+
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
       <Box
@@ -643,6 +742,13 @@ function TransactionList() {
             {detectRelationshipsMutation.isPending
               ? "Detecting..."
               : "Detect Relationships"}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportCsv}
+          >
+            Export CSV
           </Button>
           <Button
             variant="contained"
