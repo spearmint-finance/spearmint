@@ -298,6 +298,27 @@
             "description": "Filter by account ID"
           },
           {
+            "name": "tag_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tag IDs (transactions matching any of the given tags)",
+              "title": "Tag Ids"
+            },
+            "description": "Filter by tag IDs (transactions matching any of the given tags)"
+          },
+          {
             "name": "include_capital_expenses",
             "in": "query",
             "required": false,
