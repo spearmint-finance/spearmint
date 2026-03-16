@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, useTheme } from "@mui/material";
 import {
   BarChart,
   Bar,
@@ -7,6 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
   Cell,
 } from "recharts";
 
@@ -69,27 +69,7 @@ function CategoryPieChart({
   colors,
   colorScheme = "default",
 }: CategoryPieChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [chartWidth, setChartWidth] = useState(400);
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        // Get the actual width of the container and subtract padding
-        const containerWidth = containerRef.current.offsetWidth;
-        // Set chart width to be slightly less than container to prevent overflow
-        setChartWidth(Math.max(300, containerWidth - 20));
-      }
-    };
-
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-
-    // Update on next tick to ensure container is properly rendered
-    setTimeout(updateWidth, 0);
-
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
+  const theme = useTheme();
 
   // Choose color palette based on colorScheme
   const selectedColors =
@@ -140,43 +120,46 @@ function CategoryPieChart({
   };
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: height }}>
+    <Box>
       {title && (
         <Typography variant="h6" gutterBottom>
           {title}
         </Typography>
       )}
-      <BarChart
-        width={chartWidth}
-        height={height - (title ? 40 : 0)}
-        data={data}
-        layout="vertical"
-        margin={{ top: 5, right: 90, left: 10, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          type="number"
-          tickFormatter={formatXAxis}
-          domain={[0, (dataMax: number) => dataMax * 1.06]}
-        />
-        <YAxis
-          type="category"
-          dataKey="name"
-          width={120}
-          tick={{ fill: "#000000", fontSize: 11 }}
-          interval={0}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-          {data.map((_entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={selectedColors[index % selectedColors.length]}
-            />
-          ))}
-        </Bar>
-      </BarChart>
-    </div>
+      <ResponsiveContainer width="100%" height={height - (title ? 40 : 0)}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 5, right: 90, left: 10, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+          <XAxis
+            type="number"
+            stroke={theme.palette.text.secondary}
+            style={{ fontSize: "0.875rem" }}
+            tickFormatter={formatXAxis}
+            domain={[0, (dataMax: number) => dataMax * 1.06]}
+          />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={120}
+            stroke={theme.palette.text.secondary}
+            style={{ fontSize: "0.875rem" }}
+            interval={0}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+            {data.map((_entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={selectedColors[index % selectedColors.length]}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
   );
 }
 
