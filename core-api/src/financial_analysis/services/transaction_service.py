@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func, case
 
 from ..database.models import (
     Transaction, Category, TransactionClassification,
@@ -282,6 +282,93 @@ class TransactionService:
                     tx.include_in_analysis = False
 
         return results
+
+    def count_and_summarize(self, filters: Optional[TransactionFilter] = None) -> Dict[str, Any]:
+        """
+        Get total count and summary stats using SQL aggregation (no row fetching).
+
+        Returns dict with: total, total_income, total_expenses, net_income.
+        """
+        if filters is None:
+            filters = TransactionFilter()
+
+        query = self.db.query(
+            func.count(Transaction.transaction_id).label('total'),
+            func.coalesce(
+                func.sum(case(
+                    (Transaction.transaction_type == 'Income', Transaction.amount),
+                    else_=0
+                )), 0
+            ).label('total_income'),
+            func.coalesce(
+                func.sum(case(
+                    (Transaction.transaction_type == 'Expense', func.abs(Transaction.amount)),
+                    else_=0
+                )), 0
+            ).label('total_expenses'),
+        )
+
+        if filters.search_text:
+            query = query.join(Category, Transaction.category_id == Category.category_id)
+
+        if filters.tag_ids:
+            query = query.join(
+                TransactionTag,
+                Transaction.transaction_id == TransactionTag.transaction_id
+            ).filter(TransactionTag.tag_id.in_(filters.tag_ids))
+
+        conditions = []
+        if filters.start_date:
+            conditions.append(Transaction.transaction_date >= filters.start_date)
+        if filters.end_date:
+            conditions.append(Transaction.transaction_date <= filters.end_date)
+        if filters.transaction_type:
+            conditions.append(Transaction.transaction_type == filters.transaction_type)
+        if filters.category_id:
+            conditions.append(Transaction.category_id == filters.category_id)
+        if filters.classification_id:
+            conditions.append(Transaction.classification_id == filters.classification_id)
+        if filters.include_in_analysis is not None:
+            conditions.append(Transaction.include_in_analysis == filters.include_in_analysis)
+        if filters.is_transfer is not None:
+            conditions.append(Transaction.is_transfer == filters.is_transfer)
+        if filters.account_id:
+            conditions.append(Transaction.account_id == filters.account_id)
+        if filters.min_amount:
+            conditions.append(Transaction.amount >= filters.min_amount)
+        if filters.max_amount:
+            conditions.append(Transaction.amount <= filters.max_amount)
+        if filters.search_text:
+            search_pattern = f"%{filters.search_text}%"
+            conditions.append(
+                or_(
+                    Transaction.description.ilike(search_pattern),
+                    Transaction.source.ilike(search_pattern),
+                    Transaction.notes.ilike(search_pattern),
+                    Category.category_name.ilike(search_pattern)
+                )
+            )
+        if filters.exclude_classification_ids:
+            conditions.append(
+                or_(
+                    Transaction.classification_id.is_(None),
+                    Transaction.classification_id.notin_(filters.exclude_classification_ids)
+                )
+            )
+
+        if conditions:
+            query = query.filter(and_(*conditions))
+
+        result = query.one()
+        total_income = float(result.total_income)
+        total_expenses = float(result.total_expenses)
+
+        return {
+            'total': result.total,
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'net_income': total_income - total_expenses,
+        }
 
     def update_transaction(
         self,
