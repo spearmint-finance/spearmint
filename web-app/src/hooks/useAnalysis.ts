@@ -6,7 +6,9 @@ import {
   getFinancialHealth,
   getFinancialSummary,
   getCashFlowTrends,
+  getExpenseCategoryTrends,
   type AnalysisParams,
+  type CategoryTrendsParams,
 } from "../api/analysis";
 
 /**
@@ -80,6 +82,19 @@ export const useCashFlowTrends = (
   return useQuery({
     queryKey: ["cash-flow-trends", params],
     queryFn: () => getCashFlowTrends(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    placeholderData: (previousData: any) => previousData,
+  });
+};
+
+/**
+ * Hook to fetch expense category trends over time
+ */
+export const useExpenseCategoryTrends = (params?: CategoryTrendsParams) => {
+  return useQuery({
+    queryKey: ["expense-category-trends", params],
+    queryFn: () => getExpenseCategoryTrends(params!),
+    enabled: !!params,
     staleTime: 5 * 60 * 1000, // 5 minutes
     placeholderData: (previousData: any) => previousData,
   });
