@@ -406,7 +406,25 @@ function Dashboard() {
         {(summary.top_income_categories.length > 0 ||
           summary.top_expense_categories.length > 0) && (
           <>
-            {/* Top Expense Categories - Pie Chart */}
+            {/* Top Income Categories */}
+            {summary.top_income_categories.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3 }}>
+                  <CategoryPieChart
+                    data={summary.top_income_categories.map((cat) => ({
+                      name: cat.category,
+                      value: Number(cat.amount),
+                      percentage: cat.percentage,
+                    }))}
+                    title="Top Income Categories"
+                    height={350}
+                    colorScheme="success"
+                  />
+                </Paper>
+              </Grid>
+            )}
+
+            {/* Top Expense Categories */}
             {summary.top_expense_categories.length > 0 && (
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 3 }}>
@@ -418,12 +436,13 @@ function Dashboard() {
                     }))}
                     title="Top Expense Categories"
                     height={350}
+                    colorScheme="error"
                   />
                 </Paper>
               </Grid>
             )}
 
-            {/* Top Expense Categories - Bar Chart */}
+            {/* Expense Breakdown - Bar Chart */}
             {summary.top_expense_categories.length > 0 && (
               <Grid item xs={12} md={6}>
                 <Paper sx={{ p: 3 }}>
