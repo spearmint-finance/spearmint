@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Box,
   Typography,
@@ -29,8 +30,16 @@ import ErrorDisplay from "../common/ErrorDisplay";
 import TrendLineChart from "../Charts/TrendLineChart";
 import CategoryPieChart from "../Charts/CategoryPieChart";
 import CategoryBarChart from "../Charts/CategoryBarChart";
+import DateRangePicker, {
+  DateRange,
+} from "../Analysis/DateRangePicker";
 
 function Dashboard() {
+  const [dateRange, setDateRange] = useState<DateRange>({
+    start_date: "",
+    end_date: "",
+  });
+
   // Fetch comprehensive dashboard data using the summary endpoint
   const {
     data: summary,
@@ -41,12 +50,16 @@ function Dashboard() {
     mode: "analysis",
     top_n: 5,
     recent_count: 5,
+    start_date: dateRange.start_date || undefined,
+    end_date: dateRange.end_date || undefined,
   });
 
   // Fetch cash flow trends for charts
   const { data: trendsData } = useCashFlowTrends({
     mode: "analysis",
     period: "monthly",
+    start_date: dateRange.start_date || undefined,
+    end_date: dateRange.end_date || undefined,
   });
 
   // Fetch net worth data
@@ -88,9 +101,17 @@ function Dashboard() {
 
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", overflow: "hidden" }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4">Dashboard</Typography>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
+      </Box>
 
       {/* Overview Cards */}
       <Grid container spacing={3}>
