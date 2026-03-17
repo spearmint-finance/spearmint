@@ -39,7 +39,7 @@ async function fetchPnl(
       ? window.location.origin
       : "http://localhost:8080");
   const url = `${baseUrl}/api/entities/${entityId}/pnl?start_date=${startDate}&end_date=${endDate}`;
-  const res = await fetch(url, { credentials: "include" });
+  const res = await fetch(url, );
   if (!res.ok) throw new Error("Failed to fetch P&L");
   return res.json();
 }
@@ -58,7 +58,7 @@ async function fetchCashflow(
       ? window.location.origin
       : "http://localhost:8080");
   const url = `${baseUrl}/api/entities/${entityId}/cashflow?start_date=${startDate}&end_date=${endDate}`;
-  const res = await fetch(url, { credentials: "include" });
+  const res = await fetch(url, );
   if (!res.ok) throw new Error("Failed to fetch cash flow");
   return res.json();
 }
