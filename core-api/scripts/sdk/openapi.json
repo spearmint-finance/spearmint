@@ -2246,7 +2246,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__CashFlowResponse"
+                  "$ref": "#/components/schemas/CashFlowResponse"
                 }
               }
             }
@@ -6284,7 +6284,7 @@
         }
       }
     },
-    "/api/entities/": {
+    "/api/entities": {
       "get": {
         "tags": [
           "entities",
@@ -6292,7 +6292,7 @@
         ],
         "summary": "List Entities",
         "description": "List all entities.",
-        "operationId": "list_entities_api_entities__get",
+        "operationId": "list_entities_api_entities_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6303,7 +6303,7 @@
                     "$ref": "#/components/schemas/EntityResponse"
                   },
                   "type": "array",
-                  "title": "Response List Entities Api Entities  Get"
+                  "title": "Response List Entities Api Entities Get"
                 }
               }
             }
@@ -6317,7 +6317,7 @@
         ],
         "summary": "Create Entity",
         "description": "Create a new entity (business, rental property, etc.).",
-        "operationId": "create_entity_api_entities__post",
+        "operationId": "create_entity_api_entities_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -6606,7 +6606,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CashFlowResponse"
+                  "$ref": "#/components/schemas/src__financial_analysis__api__schemas__entity__CashFlowResponse"
                 }
               }
             }
@@ -9661,51 +9661,86 @@
       },
       "CashFlowResponse": {
         "properties": {
-          "entity_id": {
-            "type": "integer",
-            "title": "Entity Id"
-          },
-          "entity_name": {
+          "net_cash_flow": {
             "type": "string",
-            "title": "Entity Name"
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net Cash Flow",
+            "description": "Net cash flow (income - expenses)"
           },
-          "period": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Period"
+          "total_income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Income",
+            "description": "Total income"
           },
-          "operating": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Operating"
+          "total_expenses": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Expenses",
+            "description": "Total expenses"
           },
-          "investing": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Investing"
+          "income_count": {
+            "type": "integer",
+            "title": "Income Count",
+            "description": "Number of income transactions"
           },
-          "financing": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Financing"
+          "expense_count": {
+            "type": "integer",
+            "title": "Expense Count",
+            "description": "Number of expense transactions"
           },
-          "net_change": {
-            "type": "number",
-            "title": "Net Change"
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start",
+            "description": "Analysis period start date"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End",
+            "description": "Analysis period end date"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AnalysisModeEnum",
+            "description": "Analysis mode used"
           }
         },
         "type": "object",
         "required": [
-          "entity_id",
-          "entity_name",
-          "period",
-          "operating",
-          "investing",
-          "financing",
-          "net_change"
+          "net_cash_flow",
+          "total_income",
+          "total_expenses",
+          "income_count",
+          "expense_count",
+          "mode"
         ],
         "title": "CashFlowResponse",
-        "description": "Cash flow statement response."
+        "description": "Response for cash flow analysis.",
+        "example": {
+          "expense_count": 3,
+          "income_count": 2,
+          "mode": "analysis",
+          "net_cash_flow": "8150.00",
+          "period_end": "2025-01-31",
+          "period_start": "2025-01-01",
+          "total_expenses": "1850.00",
+          "total_income": "10000.00"
+        }
       },
       "CashFlowTrendPoint": {
         "properties": {
@@ -13902,7 +13937,7 @@
             "description": "Expense analysis"
           },
           "cash_flow": {
-            "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__CashFlowResponse",
+            "$ref": "#/components/schemas/CashFlowResponse",
             "description": "Cash flow summary"
           },
           "comparison_metrics": {
@@ -17718,88 +17753,53 @@
           ]
         }
       },
-      "src__financial_analysis__api__schemas__analysis__CashFlowResponse": {
+      "src__financial_analysis__api__schemas__entity__CashFlowResponse": {
         "properties": {
-          "net_cash_flow": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Net Cash Flow",
-            "description": "Net cash flow (income - expenses)"
-          },
-          "total_income": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Total Income",
-            "description": "Total income"
-          },
-          "total_expenses": {
-            "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
-            "title": "Total Expenses",
-            "description": "Total expenses"
-          },
-          "income_count": {
+          "entity_id": {
             "type": "integer",
-            "title": "Income Count",
-            "description": "Number of income transactions"
+            "title": "Entity Id"
           },
-          "expense_count": {
-            "type": "integer",
-            "title": "Expense Count",
-            "description": "Number of expense transactions"
+          "entity_name": {
+            "type": "string",
+            "title": "Entity Name"
           },
-          "period_start": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Period Start",
-            "description": "Analysis period start date"
+          "period": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Period"
           },
-          "period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Period End",
-            "description": "Analysis period end date"
+          "operating": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Operating"
           },
-          "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum",
-            "description": "Analysis mode used"
+          "investing": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Investing"
+          },
+          "financing": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Financing"
+          },
+          "net_change": {
+            "type": "number",
+            "title": "Net Change"
           }
         },
         "type": "object",
         "required": [
-          "net_cash_flow",
-          "total_income",
-          "total_expenses",
-          "income_count",
-          "expense_count",
-          "mode"
+          "entity_id",
+          "entity_name",
+          "period",
+          "operating",
+          "investing",
+          "financing",
+          "net_change"
         ],
         "title": "CashFlowResponse",
-        "description": "Response for cash flow analysis.",
-        "example": {
-          "expense_count": 3,
-          "income_count": 2,
-          "mode": "analysis",
-          "net_cash_flow": "8150.00",
-          "period_end": "2025-01-31",
-          "period_start": "2025-01-01",
-          "total_expenses": "1850.00",
-          "total_income": "10000.00"
-        }
+        "description": "Cash flow statement response."
       }
     },
     "securitySchemes": {
