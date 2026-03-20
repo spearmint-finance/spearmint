@@ -21,7 +21,18 @@ export const importApi = {
       mode,
       skipDuplicates,
     });
-    return response.data as unknown as ImportResponse;
+    const data = response.data as any;
+    return {
+      success: (data.successfulRows ?? data.successful_rows ?? 0) > 0,
+      message: "",
+      total_rows: data.totalRows ?? data.total_rows ?? 0,
+      successful_rows: data.successfulRows ?? data.successful_rows ?? 0,
+      failed_rows: data.failedRows ?? data.failed_rows ?? 0,
+      skipped_duplicates: data.skippedDuplicates ?? data.skipped_duplicates ?? 0,
+      classified_rows: data.classifiedRows ?? data.classified_rows ?? 0,
+      errors: data.errors ?? [],
+      warnings: data.warnings ?? [],
+    };
   },
 
   /**
@@ -35,7 +46,21 @@ export const importApi = {
       limit,
       offset,
     });
-    return response.data as unknown as ImportHistoryResponse;
+    const data = response.data as any;
+    return {
+      imports: (data.imports || []).map((item: any) => ({
+        import_id: item.importId ?? item.import_id,
+        import_date: item.importDate ?? item.import_date,
+        file_name: item.fileName ?? item.file_name,
+        total_rows: item.totalRows ?? item.total_rows,
+        successful_rows: item.successfulRows ?? item.successful_rows,
+        failed_rows: item.failedRows ?? item.failed_rows,
+        classified_rows: item.classifiedRows ?? item.classified_rows,
+        import_mode: item.importMode ?? item.import_mode,
+        success_rate: item.successRate ?? item.success_rate,
+      })),
+      total: data.total,
+    };
   },
 
   /**
@@ -44,7 +69,20 @@ export const importApi = {
   getImportDetail: async (importId: number): Promise<ImportHistoryDetail> => {
     const response =
       await importClient.getImportDetailApiImportHistoryImportIdGet(importId);
-    return response.data as unknown as ImportHistoryDetail;
+    const item = response.data as any;
+    return {
+      import_id: item.importId ?? item.import_id,
+      import_date: item.importDate ?? item.import_date,
+      file_name: item.fileName ?? item.file_name,
+      total_rows: item.totalRows ?? item.total_rows,
+      successful_rows: item.successfulRows ?? item.successful_rows,
+      failed_rows: item.failedRows ?? item.failed_rows,
+      classified_rows: item.classifiedRows ?? item.classified_rows,
+      import_mode: item.importMode ?? item.import_mode,
+      success_rate: item.successRate ?? item.success_rate,
+      error_log: item.errorLog ?? item.error_log ?? null,
+      warning_log: item.warningLog ?? item.warning_log ?? null,
+    };
   },
 
   /**
@@ -53,6 +91,14 @@ export const importApi = {
   getImportStatus: async (importId: number): Promise<ImportStatusResponse> => {
     const response =
       await importClient.getImportStatusApiImportStatusImportIdGet(importId);
-    return response.data as unknown as ImportStatusResponse;
+    const item = response.data as any;
+    return {
+      import_id: item.importId ?? item.import_id,
+      status: item.status,
+      progress_percentage: item.progressPercentage ?? item.progress_percentage ?? item.progress,
+      current_row: item.currentRow ?? item.current_row,
+      total_rows: item.totalRows ?? item.total_rows,
+      message: item.message,
+    };
   },
 };
