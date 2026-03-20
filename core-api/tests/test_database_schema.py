@@ -120,8 +120,7 @@ def test_transaction_creation(db_session):
         description="Weekly groceries",
         payment_method="Credit Card",
         classification_id=classification.classification_id,
-        include_in_analysis=True,
-        is_transfer=False
+        include_in_analysis=True
     )
     
     db_session.add(transaction)
@@ -138,7 +137,7 @@ def test_transaction_creation(db_session):
 def test_transaction_relationship(db_session):
     """Test linking two transactions with a relationship."""
     # Create category
-    category = Category(category_name="Transfer", category_type="Both")
+    category = Category(category_name="Transfer", category_type="Transfer")
     db_session.add(category)
     db_session.commit()
     
@@ -155,11 +154,10 @@ def test_transaction_relationship(db_session):
         category_id=category.category_id,
         description="Transfer from Checking",
         classification_id=classification.classification_id,
-        is_transfer=True,
         transfer_account_from="Checking",
         transfer_account_to="Savings"
     )
-    
+
     tx2 = Transaction(
         transaction_date=date(2025, 1, 15),
         amount=Decimal("1000.00"),
@@ -167,7 +165,6 @@ def test_transaction_relationship(db_session):
         category_id=category.category_id,
         description="Transfer to Savings",
         classification_id=classification.classification_id,
-        is_transfer=True,
         transfer_account_from="Checking",
         transfer_account_to="Savings"
     )
@@ -206,8 +203,7 @@ def test_classification_rule(db_session):
         classification_id=classification.classification_id,
         description_pattern="%credit card%",
         is_active=True,
-        set_include_in_analysis=False,
-        set_is_transfer=True
+        set_include_in_analysis=False
     )
     
     db_session.add(rule)

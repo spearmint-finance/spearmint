@@ -51,7 +51,7 @@ def db_session():
     salary_cat = Category(category_name="Salary", category_type="Income")
     groceries_cat = Category(category_name="Groceries", category_type="Expense")
     rent_cat = Category(category_name="Rent", category_type="Expense")
-    transfer_cat = Category(category_name="Transfer", category_type="Both", is_transfer_category=True)
+    transfer_cat = Category(category_name="Transfer", category_type="Transfer")
     
     session.add_all([salary_cat, groceries_cat, rent_cat, transfer_cat])
     session.commit()
@@ -136,8 +136,7 @@ def sample_transactions(db_session):
             category_id=transfer_cat.category_id,
             classification_id=transfer_class.classification_id,
             description="Transfer to savings",
-            include_in_analysis=False,
-            is_transfer=True
+            include_in_analysis=False
         ),
     ]
     
