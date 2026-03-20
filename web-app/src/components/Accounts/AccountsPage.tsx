@@ -107,9 +107,11 @@ const AccountsPage: React.FC = () => {
 
   const isRefreshing = (accountsFetching || netWorthFetching) && !accountsLoading && !netWorthLoading;
 
-  // Filter accounts by type
-  const assetAccounts = accounts.filter((acc) => isAssetAccount(acc.account_type));
-  const liabilityAccounts = accounts.filter((acc) => !isAssetAccount(acc.account_type));
+  // Filter and sort accounts by balance (highest first)
+  const sortByBalance = (a: Account, b: Account) =>
+    Math.abs(b.current_balance ?? b.opening_balance ?? 0) - Math.abs(a.current_balance ?? a.opening_balance ?? 0);
+  const assetAccounts = accounts.filter((acc) => isAssetAccount(acc.account_type)).sort(sortByBalance);
+  const liabilityAccounts = accounts.filter((acc) => !isAssetAccount(acc.account_type)).sort(sortByBalance);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
