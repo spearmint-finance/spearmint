@@ -237,7 +237,7 @@ class AccountFilterParams(BaseModel):
 
 class TransactionClearRequest(BaseModel):
     """Schema for clearing transactions."""
-    transaction_ids: List[int]
+    transaction_ids: List[int] = Field(..., min_length=1, max_length=1000)
     cleared_date: Optional[date] = None
 
 
