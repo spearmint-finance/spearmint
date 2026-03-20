@@ -71,14 +71,23 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     backendTransaction.updatedAt ?? backendTransaction.updated_at;
 
   // Handle nested category object (supports both camelCase and snake_case)
-  const categoryName =
+  // Normalize "nan" (from pandas NaN serialization during import) to undefined
+  const rawCategoryName =
     backendTransaction.category?.categoryName ??
     backendTransaction.category?.category_name;
+  const categoryName =
+    rawCategoryName && rawCategoryName !== "nan" && rawCategoryName.trim() !== ""
+      ? rawCategoryName
+      : undefined;
 
   // Handle nested classification object (supports both camelCase and snake_case)
-  const classificationName =
+  const rawClassificationName =
     backendTransaction.classification?.classificationName ??
     backendTransaction.classification?.classification_name;
+  const classificationName =
+    rawClassificationName && rawClassificationName !== "nan" && rawClassificationName.trim() !== ""
+      ? rawClassificationName
+      : undefined;
 
   return {
     id: transactionId,
