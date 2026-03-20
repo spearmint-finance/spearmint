@@ -36,7 +36,7 @@ export const searchTransactionsTool: Tool = {
       },
       is_transfer: {
         type: "boolean",
-        description: "Filter by transfer status: true for transfers only, false to exclude transfers"
+        description: "Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers"
       },
       min_amount: {
         type: "number",
@@ -53,6 +53,10 @@ export const searchTransactionsTool: Tool = {
       tag_ids: {
         type: "array",
         description: "Filter by tag IDs (transactions matching any of the given tags)"
+      },
+      entity_id: {
+        type: "number",
+        description: "Filter by entity ID (via account)"
       },
       include_capital_expenses: {
         type: "boolean",
@@ -81,6 +85,7 @@ export interface SearchTransactionsInput {
   max_amount?: number;
   search_text?: string;
   tag_ids?: string;
+  entity_id?: number;
   include_capital_expenses?: boolean;
   include_transfers?: boolean;
   limit?: number;
@@ -102,6 +107,7 @@ export async function executeSearchTransactions(
   if (input.max_amount !== undefined) params.append("max_amount", String(input.max_amount));
   if (input.search_text !== undefined) params.append("search_text", String(input.search_text));
   if (input.tag_ids !== undefined) params.append("tag_ids", String(input.tag_ids));
+  if (input.entity_id !== undefined) params.append("entity_id", String(input.entity_id));
   if (input.include_capital_expenses !== undefined) params.append("include_capital_expenses", String(input.include_capital_expenses));
   if (input.include_transfers !== undefined) params.append("include_transfers", String(input.include_transfers));
   if (input.limit !== undefined) params.append("limit", String(input.limit));
