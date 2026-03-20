@@ -103,6 +103,35 @@ const ReportsPage: React.FC = () => {
     enabled: !!entityId && tabValue === 1,
   });
 
+  const handleExportCashflowCsv = () => {
+    if (!cashflowData) return;
+    const rows: string[] = ["Section,Description,Amount"];
+    for (const item of cashflowData.operating?.items ?? []) {
+      rows.push(`Operating,"${item.description}",${item.amount}`);
+    }
+    rows.push(`Operating,TOTAL,${cashflowData.operating?.total ?? 0}`);
+    rows.push("");
+    for (const item of cashflowData.investing?.items ?? []) {
+      rows.push(`Investing,"${item.description}",${item.amount}`);
+    }
+    rows.push(`Investing,TOTAL,${cashflowData.investing?.total ?? 0}`);
+    rows.push("");
+    for (const item of cashflowData.financing?.items ?? []) {
+      rows.push(`Financing,"${item.description}",${item.amount}`);
+    }
+    rows.push(`Financing,TOTAL,${cashflowData.financing?.total ?? 0}`);
+    rows.push("");
+    rows.push(`Net Change in Cash,,${cashflowData.net_change ?? 0}`);
+
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cashflow-${entityName}-${startDate}-to-${endDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportPnlCsv = () => {
     if (!pnlData) return;
     const rows: string[] = ["Section,Category,Amount"];
@@ -366,9 +395,24 @@ const ReportsPage: React.FC = () => {
               <Alert severity="error">Failed to load cash flow data</Alert>
             ) : cashflowData ? (
               <>
-                <Typography variant="subtitle1" color="text.secondary" mb={2}>
-                  {cashflowData.period?.start} to {cashflowData.period?.end}
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="subtitle1" color="text.secondary">
+                    {cashflowData.period?.start} to {cashflowData.period?.end}
+                  </Typography>
+                  <Button
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={handleExportCashflowCsv}
+                  >
+                    Export CSV
+                  </Button>
+                </Box>
 
                 {/* Operating */}
                 <Typography variant="h6" sx={{ mb: 1 }}>
