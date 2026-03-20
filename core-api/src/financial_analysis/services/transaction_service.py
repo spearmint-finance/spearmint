@@ -28,7 +28,7 @@ class TransactionFilter:
         category_id: Optional[int] = None,
         classification_id: Optional[int] = None,
         include_in_analysis: Optional[bool] = None,
-        is_transfer: Optional[bool] = None,
+        is_transfer: Optional[bool] = None,  # deprecated: kept for API compat, uses category join
         min_amount: Optional[Decimal] = None,
         max_amount: Optional[Decimal] = None,
         search_text: Optional[str] = None,
@@ -85,7 +85,6 @@ class TransactionService:
         payment_method: Optional[str] = None,
         classification_id: Optional[int] = None,
         include_in_analysis: bool = True,
-        is_transfer: bool = False,
         transfer_account_from: Optional[str] = None,
         transfer_account_to: Optional[str] = None,
         notes: Optional[str] = None,
@@ -105,7 +104,6 @@ class TransactionService:
             payment_method: Payment method used
             classification_id: Classification ID
             include_in_analysis: Whether to include in analysis
-            is_transfer: Whether this is a transfer
             transfer_account_from: Source account for transfers
             transfer_account_to: Destination account for transfers
             notes: Additional notes
@@ -146,7 +144,6 @@ class TransactionService:
             payment_method=payment_method,
             classification_id=classification_id,
             include_in_analysis=include_in_analysis,
-            is_transfer=is_transfer,
             transfer_account_from=transfer_account_from,
             transfer_account_to=transfer_account_to,
             notes=notes,
@@ -220,7 +217,12 @@ class TransactionService:
             conditions.append(Transaction.include_in_analysis == filters.include_in_analysis)
 
         if filters.is_transfer is not None:
-            conditions.append(Transaction.is_transfer == filters.is_transfer)
+            # Join Category to filter by category_type instead of removed is_transfer column
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True)
+            if filters.is_transfer:
+                conditions.append(Category.category_type == 'Transfer')
+            else:
+                conditions.append(Category.category_type != 'Transfer')
 
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
@@ -283,16 +285,6 @@ class TransactionService:
 
         results = query.all()
 
-        # Heuristic: infer transfers for common reinvestment cases (e.g., dividend reinvestments)
-        # This improves UI labeling without requiring manual reclassification.
-        for tx in results:
-            if not getattr(tx, "is_transfer", False) and self._looks_like_reinvestment(tx):
-                # Mark as transfer for response purposes; do not persist here
-                tx.is_transfer = True
-                # Exclude from analysis for transfers by convention
-                if getattr(tx, "include_in_analysis", True):
-                    tx.include_in_analysis = False
-
         return results
 
     def count_and_summarize(self, filters: Optional[TransactionFilter] = None) -> Dict[str, Any]:
@@ -343,7 +335,11 @@ class TransactionService:
         if filters.include_in_analysis is not None:
             conditions.append(Transaction.include_in_analysis == filters.include_in_analysis)
         if filters.is_transfer is not None:
-            conditions.append(Transaction.is_transfer == filters.is_transfer)
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True)
+            if filters.is_transfer:
+                conditions.append(Category.category_type == 'Transfer')
+            else:
+                conditions.append(Category.category_type != 'Transfer')
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
@@ -466,7 +462,7 @@ class TransactionService:
         self.db.refresh(transaction)
 
         # Auto re-apply classification rules if relevant fields changed
-        affecting_fields = {"description", "amount", "category_id", "source", "payment_method", "is_transfer"}
+        affecting_fields = {"description", "amount", "category_id", "source", "payment_method"}
         should_reapply = reapply_rules_flag or (bool(changed_fields & affecting_fields) and (transaction.classification_id is None))
         if should_reapply:
             try:

@@ -12,7 +12,7 @@ from ..utils.validators import DataValidator, ValidationError
 class CategoryService:
     """Service for category CRUD operations."""
     
-    VALID_CATEGORY_TYPES = {'Income', 'Expense', 'Both'}
+    VALID_CATEGORY_TYPES = {'Income', 'Expense', 'Transfer', 'Both'}
     
     def __init__(self, db: Session):
         """
@@ -30,18 +30,16 @@ class CategoryService:
         category_type: str,
         parent_category_id: Optional[int] = None,
         description: Optional[str] = None,
-        is_transfer_category: bool = False
     ) -> Category:
         """
         Create a new category.
-        
+
         Args:
             category_name: Name of the category
-            category_type: 'Income', 'Expense', or 'Both'
+            category_type: 'Income', 'Expense', 'Transfer', or 'Both'
             parent_category_id: Parent category ID for hierarchical categories
             description: Category description
-            is_transfer_category: Whether this is a transfer category
-            
+
         Returns:
             Category: Created category
             
@@ -85,7 +83,6 @@ class CategoryService:
             category_type=category_type,
             parent_category_id=parent_category_id,
             description=description,
-            is_transfer_category=is_transfer_category
         )
         
         self.db.add(category)
@@ -160,7 +157,7 @@ class CategoryService:
             query = query.filter(Category.parent_category_id == parent_category_id)
         
         if not include_transfer_categories:
-            query = query.filter(Category.is_transfer_category == False)
+            query = query.filter(Category.category_type != 'Transfer')
         
         if search_text:
             search_pattern = f"%{search_text}%"

@@ -135,7 +135,7 @@ function IncomeCategoryList({ incomeData, dateRange, viewMode, isLoading }: Inco
 
     // Check if it's a transfer category
     const category = categoriesData?.categories.find((c) => c.category_name === categoryName);
-    if (category?.is_transfer_category) {
+    if (category?.category_type === "Transfer") {
       return { hasWarning: true, warningType: "transfer" };
     }
 

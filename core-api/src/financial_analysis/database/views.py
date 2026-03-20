@@ -69,7 +69,7 @@ VIEWS = {
         LEFT JOIN transactions t2 
             ON (tr.transaction_id_1 = t2.transaction_id AND tr.transaction_id_2 = t.transaction_id)
             OR (tr.transaction_id_2 = t2.transaction_id AND tr.transaction_id_1 = t.transaction_id)
-        WHERE t.is_transfer = 1
+        WHERE c.category_type = 'Transfer'
     """
 }
 

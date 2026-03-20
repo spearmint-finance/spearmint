@@ -6,28 +6,25 @@
 export interface Category {
   category_id: number;
   category_name: string;
-  category_type: "Income" | "Expense" | "Both";
+  category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id: number | null;
   description: string | null;
-  is_transfer_category: boolean;
   created_at: string;
   updated_at?: string;
 }
 
 export interface CategoryCreate {
   category_name: string;
-  category_type: "Income" | "Expense" | "Both";
+  category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
   description?: string | null;
-  is_transfer_category?: boolean;
 }
 
 export interface CategoryUpdate {
   category_name?: string;
-  category_type?: "Income" | "Expense" | "Both";
+  category_type?: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
   description?: string | null;
-  is_transfer_category?: boolean;
 }
 
 export interface CategoriesResponse {
