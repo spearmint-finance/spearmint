@@ -121,6 +121,7 @@ function TransactionList() {
     useState<Transaction | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
   // State for advanced filters
@@ -626,6 +627,7 @@ function TransactionList() {
   ].filter(Boolean).length;
 
   const handleExportCsv = useCallback(async () => {
+    setIsExporting(true);
     try {
       // Fetch all matching transactions (no pagination)
       const allData = await getTransactions({
@@ -713,6 +715,8 @@ function TransactionList() {
       });
     } catch {
       enqueueSnackbar("Failed to export transactions", { variant: "error" });
+    } finally {
+      setIsExporting(false);
     }
   }, [
     searchText,
@@ -754,10 +758,17 @@ function TransactionList() {
           </Button>
           <Button
             variant="outlined"
-            startIcon={<DownloadIcon />}
+            startIcon={
+              isExporting ? (
+                <CircularProgress size={20} />
+              ) : (
+                <DownloadIcon />
+              )
+            }
             onClick={handleExportCsv}
+            disabled={isExporting}
           >
-            Export CSV
+            {isExporting ? "Exporting..." : "Export CSV"}
           </Button>
           <Button
             variant="contained"
