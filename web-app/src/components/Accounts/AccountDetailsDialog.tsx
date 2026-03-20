@@ -228,19 +228,19 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           <Box>
             {isEditing ? (
               <>
-                <IconButton size="small" onClick={handleSaveAccount} disabled={updateAccountMutation.isPending} color="primary">
+                <IconButton size="small" onClick={handleSaveAccount} disabled={updateAccountMutation.isPending} color="primary" aria-label="Save account changes">
                   <SaveIcon />
                 </IconButton>
-                <IconButton size="small" onClick={handleCancelEditing}>
+                <IconButton size="small" onClick={handleCancelEditing} aria-label="Cancel editing">
                   <CloseIcon />
                 </IconButton>
               </>
             ) : (
               <>
-                <IconButton size="small" onClick={handleStartEditing} sx={{ mr: 0.5 }}>
+                <IconButton size="small" onClick={handleStartEditing} sx={{ mr: 0.5 }} aria-label="Edit account details">
                   <EditIcon />
                 </IconButton>
-                <IconButton size="small" onClick={handleDeleteAccount}>
+                <IconButton size="small" onClick={handleDeleteAccount} aria-label="Delete account">
                   <DeleteIcon />
                 </IconButton>
               </>

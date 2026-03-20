@@ -263,6 +263,7 @@ const AccountsPage: React.FC = () => {
           <IconButton
             onClick={handleRefresh}
             disabled={isRefreshing}
+            aria-label="Refresh accounts"
             sx={{
               mr: 1,
               animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
