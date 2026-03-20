@@ -209,7 +209,6 @@ def sample_transactions(test_db_session, sample_categories):
             transaction_type="Expense",
             category_id=2,  # Need a category
             classification_id=2,
-            is_transfer=True,
             include_in_analysis=False
         ),
         Transaction(
@@ -220,7 +219,6 @@ def sample_transactions(test_db_session, sample_categories):
             transaction_type="Income",
             category_id=1,  # Need a category
             classification_id=2,
-            is_transfer=True,
             include_in_analysis=False
         ),
     ]
