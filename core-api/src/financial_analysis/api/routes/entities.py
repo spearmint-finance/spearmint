@@ -84,6 +84,8 @@ def get_entity_pnl(
     db: Session = Depends(get_db),
 ):
     """Generate a Profit & Loss statement for an entity."""
+    if start_date > end_date:
+        raise HTTPException(status_code=422, detail="start_date must be before or equal to end_date")
     service = EntityService(db)
     try:
         return service.get_pnl(entity_id, start_date, end_date)
@@ -99,6 +101,8 @@ def get_entity_cashflow(
     db: Session = Depends(get_db),
 ):
     """Generate a Cash Flow statement for an entity."""
+    if start_date > end_date:
+        raise HTTPException(status_code=422, detail="start_date must be before or equal to end_date")
     service = EntityService(db)
     try:
         return service.get_cashflow(entity_id, start_date, end_date)

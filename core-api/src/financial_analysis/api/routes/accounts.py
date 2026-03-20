@@ -296,6 +296,12 @@ def get_balance_history(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
 
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=422,
+            detail="start_date must be before or equal to end_date"
+        )
+
     balances = service.get_balance_history(
         account_id=account_id,
         start_date=start_date,
