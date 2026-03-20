@@ -162,6 +162,33 @@ function TransactionDetail({
               </Grid>
             )}
 
+            {/* Source */}
+            {transaction.source && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Source
+                </Typography>
+                <Typography variant="body1">{transaction.source}</Typography>
+              </Grid>
+            )}
+
+            {/* Payment Method */}
+            {transaction.payment_method && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Payment Method
+                </Typography>
+                <Typography variant="body1">{transaction.payment_method}</Typography>
+              </Grid>
+            )}
+
+            {/* Transfer Flag */}
+            {transaction.is_transfer && (
+              <Grid item xs={12} sm={6}>
+                <Chip label="Transfer" size="small" color="info" variant="outlined" />
+              </Grid>
+            )}
+
             {/* Balance */}
             {transaction.balance !== undefined &&
               transaction.balance !== null && (
@@ -317,8 +344,9 @@ function TransactionDetail({
       <Dialog
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
+        aria-labelledby="delete-transaction-dialog-title"
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle id="delete-transaction-dialog-title">Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
             Are you sure you want to delete this transaction? This action cannot
