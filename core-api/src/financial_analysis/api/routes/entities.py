@@ -16,7 +16,7 @@ from ..schemas.entity import (
 router = APIRouter(prefix="/entities", tags=["entities"])
 
 
-@router.post("/", response_model=EntityResponse, status_code=201)
+@router.post("", response_model=EntityResponse, status_code=201)
 def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     """Create a new entity (business, rental property, etc.)."""
     service = EntityService(db)
@@ -32,7 +32,7 @@ def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
     return _to_response(created, service)
 
 
-@router.get("/", response_model=List[EntityResponse])
+@router.get("", response_model=List[EntityResponse])
 def list_entities(db: Session = Depends(get_db)):
     """List all entities."""
     service = EntityService(db)
