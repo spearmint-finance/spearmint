@@ -68,7 +68,7 @@ const AccountsPage: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const { selectedEntityId } = useEntityContext();
+  const { selectedEntityId, entities } = useEntityContext();
 
   // Fetch accounts (filtered by selected entity)
   const {
@@ -215,6 +215,15 @@ const AccountsPage: React.FC = () => {
                 </Typography>
               </Box>
             )}
+
+            {selectedEntityId == null && entities.length > 1 && account.entity_id && (() => {
+              const entity = entities.find(e => e.entity_id === account.entity_id);
+              return entity ? (
+                <Box mt={1}>
+                  <Chip label={entity.entity_name} size="small" variant="outlined" color="info" />
+                </Box>
+              ) : null;
+            })()}
           </CardContent>
         </Card>
       </Grid>
