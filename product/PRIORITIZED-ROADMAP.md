@@ -76,7 +76,8 @@ These are the items that should be worked on NOW, in priority order:
 | 3 | ~~**README & setup documentation**~~ | ~~Marketing team~~ | **Done** (PR #146). Complete README rewrite with competitive positioning, Docker quick start, feature comparison table. |
 | 4 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
 | 5 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
-| 6 | **Scenario builder completion** | Dashboard team | Currently stubbed. Core Horizon 2 differentiator. |
+| 6 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
+| 7 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
