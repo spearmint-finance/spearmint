@@ -5,11 +5,10 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files and patches
+# Copy package files
 COPY web-app/package.json web-app/package-lock.json ./
-COPY web-app/patches ./patches
 
-# Install dependencies (postinstall runs patch-package)
+# Install dependencies
 RUN npm install
 
 # Copy source code (will be overridden by volume mount)
