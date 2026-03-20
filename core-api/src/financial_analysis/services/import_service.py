@@ -1,10 +1,13 @@
 """Data import service for Excel files."""
 
+import logging
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Optional, Dict, List, Any, Tuple
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.orm import Session
 
 from ..database.models import (
@@ -235,7 +238,7 @@ class ImportService:
         # Use context manager to ensure file is properly closed
         with pd.ExcelFile(file_path) as xl_file:
             sheet_names = xl_file.sheet_names
-            print(f"DEBUG: Available sheets: {sheet_names}")
+            logger.debug("Available sheets: %s", sheet_names)
 
             # Try to find 'transactions' or 'import' sheet first
             sheet_to_use = None
@@ -243,22 +246,22 @@ class ImportService:
                 sheet_lower = sheet.lower().strip()
                 if sheet_lower in ['transactions', 'import', 'transaction']:
                     sheet_to_use = sheet
-                    print(f"DEBUG: Found data sheet: '{sheet}'")
+                    logger.debug("Found data sheet: '%s'", sheet)
                     break
 
             # Default to first sheet if no recognized sheet found
             if sheet_to_use is None:
                 sheet_to_use = 0
-                print(f"DEBUG: No recognized sheet found, using first sheet")
+                logger.debug("No recognized sheet found, using first sheet")
 
-            print(f"DEBUG: Using sheet: '{sheet_to_use}'")
+            logger.debug("Using sheet: '%s'", sheet_to_use)
 
             # Read the selected sheet (with optional row skip)
             df = pd.read_excel(xl_file, sheet_name=sheet_to_use, skiprows=skip_rows if skip_rows > 0 else None)
 
         # Debug: Print column info (will appear in logs)
-        print(f"DEBUG: Read Excel with {len(df)} rows and {len(df.columns)} columns")
-        print(f"DEBUG: Columns found: {list(df.columns)}")
+        logger.debug("Read Excel with %d rows and %d columns", len(df), len(df.columns))
+        logger.debug("Columns found: %s", list(df.columns))
 
         return df
 
@@ -272,16 +275,16 @@ class ImportService:
         column_map = {}
         df_columns_lower = {col.lower().strip(): col for col in df.columns}
 
-        print(f"DEBUG: Lowercase columns: {list(df_columns_lower.keys())}")
+        logger.debug("Lowercase columns: %s", list(df_columns_lower.keys()))
 
         # If profile has custom mappings, apply them first
         if profile and profile.column_mappings:
-            print(f"DEBUG: Applying profile '{profile.name}' mappings")
+            logger.debug("Applying profile '%s' mappings", profile.name)
             for source_col, target_field in profile.column_mappings.items():
                 source_lower = source_col.lower().strip()
                 if source_lower in df_columns_lower:
                     column_map[df_columns_lower[source_lower]] = target_field
-                    print(f"DEBUG: Profile mapped '{df_columns_lower[source_lower]}' -> '{target_field}'")
+                    logger.debug("Profile mapped '%s' -> '%s'", df_columns_lower[source_lower], target_field)
 
         # Apply default mappings for any unmapped columns
         for standard_name, variations in self.COLUMN_MAPPINGS.items():
@@ -291,10 +294,10 @@ class ImportService:
             for variation in variations:
                 if variation in df_columns_lower and df_columns_lower[variation] not in column_map:
                     column_map[df_columns_lower[variation]] = standard_name
-                    print(f"DEBUG: Default mapped '{df_columns_lower[variation]}' -> '{standard_name}'")
+                    logger.debug("Default mapped '%s' -> '%s'", df_columns_lower[variation], standard_name)
                     break
 
-        print(f"DEBUG: Final column mapping: {column_map}")
+        logger.debug("Final column mapping: %s", column_map)
         return df.rename(columns=column_map)
     
     def _validate_row(
