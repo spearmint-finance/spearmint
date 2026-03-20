@@ -9,12 +9,16 @@ Provides endpoints for:
 - Net worth calculations
 """
 
+import logging
 from datetime import date
 from typing import List, Optional
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from ..dependencies import get_db
 from ...services.account_service import AccountService
@@ -179,8 +183,14 @@ def create_account(
 
         return response
 
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError as e:
+        logger.warning("Account creation conflict: %s", e)
+        raise HTTPException(status_code=409, detail="An account with these details already exists")
+    except Exception as e:
+        logger.error("Unexpected error creating account: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to create account")
 
 
 @router.get("/{account_id}", response_model=AccountResponse)
