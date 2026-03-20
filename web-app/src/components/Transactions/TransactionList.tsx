@@ -320,8 +320,7 @@ function TransactionList() {
       filterable: false,
       renderCell: (params) => {
         const categoryName = params.row.category_name;
-        const isUncategorized =
-          !categoryName || categoryName === "nan" || categoryName.trim() === "";
+        const isUncategorized = !categoryName;
 
         if (isUncategorized) {
           return (
@@ -986,10 +985,7 @@ function TransactionList() {
           }}
           getRowClassName={(params) => {
             const categoryName = params.row.category_name;
-            const isUncategorized =
-              !categoryName ||
-              categoryName === "nan" ||
-              categoryName.trim() === "";
+            const isUncategorized = !categoryName;
 
             const hasRelationship = params.row.related_transaction_id;
             const isDividendReinvestment =
