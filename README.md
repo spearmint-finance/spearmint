@@ -1,273 +1,130 @@
-# Spearmint Financial Analysis
+# Spearmint — Personal CFO for Your Household
 
 [![npm version](https://img.shields.io/npm/v/@spearmint-finance/sdk)](https://www.npmjs.com/package/@spearmint-finance/sdk)
 
-A comprehensive financial analysis application designed to provide deep insights into personal or business financial health through intelligent transaction classification, trend analysis, and predictive forecasting.
+**Business-class finance for the household.** Spearmint is a free, self-hosted financial engine that treats your household like a business — separating operating costs from capital investments, tracking multiple entities, and providing professional-grade reporting. No subscriptions, no cloud dependency, your data stays on your hardware.
 
-> **Note:** This project includes automated pre-commit testing to ensure code quality and API specification validation.
+> *"Most apps tell you what you spent. Spearmint tells you what you're building."*
 
-## Overview
+## Why Spearmint?
 
-This tool imports transaction data from Excel files, stores it in a relational database, and provides powerful analysis capabilities including:
-
-- **Smart Transaction Classification** - Automatically identifies and classifies transactions to prevent double-counting
-- **Income & Expense Analysis** - Detailed breakdowns with category-level insights
-- **Cash Flow Tracking** - Accurate net cash flow calculations with transfer exclusions
-- **Financial Projections** - Statistical forecasting with confidence intervals
-- **Trend Analysis** - Identify spending patterns and income stability
-- **Reconciliation Tools** - Validate data accuracy with dual-view modes
+| Feature | Spearmint | Monarch ($15/mo) | YNAB ($15/mo) | Firefly III | Actual Budget |
+|---------|-----------|-------------------|---------------|-------------|---------------|
+| Self-hosted & free | Yes | No | No | Yes | Yes |
+| CapEx/OpEx separation | **Yes** | No | No | No | No |
+| Multi-entity accounting | **Yes** | No | No | No | No |
+| 7 report types | **Yes** | Partial | No | Partial | No |
+| AI financial assistant | **Yes** | No | No | No | No |
+| Investment tracking | Yes | Yes | No | No | No |
+| Transaction rules engine | Yes | Yes | Partial | Yes | No |
+| Forecasting & projections | Yes | Partial | No | No | No |
 
 ## Key Features
 
-### Transaction Classification System
-- Prevents double-counting of credit card payments, transfers, and internal transactions
-- Automatic pattern-based classification with configurable rules
-- Transaction relationship linking (e.g., credit card payment ↔ receipt)
-- Dual view modes: Analysis View (accurate calculations) and Complete View (audit trail)
+### The "Renovation Moment" — CapEx/OpEx Separation
+A $15,000 kitchen remodel isn't the same as a grocery bill. Toggle "Capital Expenditure" on a transaction and it moves from Operating Expenses to Asset Investment. Your monthly burn rate drops from $18,000 to $3,000 — your actual living expenses.
 
-### Analysis Capabilities
-- Income analysis by source/category with trend tracking
-- Expense categorization with pattern detection
-- Time period flexibility (daily, weekly, monthly, quarterly, yearly)
-- Custom date range selection and period comparisons
+### Multi-Entity Accounting
+Manage personal, business, and rental property finances in one place. Each entity gets its own P&L, cash flow, and net worth — with a consolidated view across all entities.
 
-### Financial Projections
-- Multiple statistical methods (Linear Regression, Moving Average, ARIMA, etc.)
-- Short, medium, and long-term forecasting
-- Confidence intervals and scenario analysis
-- Classification-aware data preparation for accurate projections
+### Professional Reporting
+- **Balance Report** — Assets vs. liabilities over time
+- **Income & Expense Detail** — Category-level breakdown
+- **Cash Flow** — Waterfall analysis with transfer exclusions
+- **CapEx Report** — Capital investment tracking
+- **Receivables** — Outstanding reimbursements owed to you
+- **Reconciliation** — Statement vs. calculated balance verification
+- **Summary** — Key financial indicators at a glance
+
+### Smart Automation
+- **Categorization Rules** — Pattern matching on description, source, amount, payment method
+- **Classification Rules** — Auto-exclude transfers, reimbursements, and internal transactions
+- **Transaction Relationships** — Detect transfer pairs, credit card payments, reimbursements, dividend reinvestments
+
+### AI Financial Assistant
+Built-in chat assistant with action execution — ask questions about your finances, get insights, and let the AI help categorize and classify transactions.
+
+### Data Pipeline
+1. **Import** — CSV upload with saved import profiles (system remembers your bank's format)
+2. **Clean** — Automatic deduplication
+3. **Classify** — Rules engine assigns categories and classifications
+4. **Verify** — Review uncategorized items
+5. **Report** — Data flows into dashboards, analysis, and forecasts
+
+## Quick Start
+
+### Docker (Recommended)
+
+```bash
+git clone https://github.com/spearmint-finance/spearmint.git
+cd spearmint
+docker-compose up -d
+```
+
+Open http://localhost:5173 in your browser.
+
+### Local Development
+
+```bash
+# One-command setup
+./scripts/setup-local-dev.sh    # Linux/macOS
+.\scripts\setup-local-dev.ps1  # Windows
+
+# Start servers
+# Terminal 1 — Backend (http://localhost:8000)
+cd core-api && python run_api.py
+
+# Terminal 2 — Frontend (http://localhost:5173)
+cd web-app && npm run dev
+```
 
 ## Project Structure
 
 ```
-financial-analysis/
-├── .product/
-│   └── analyzer.prd                    # Product Requirements Document
-├── backend/
-│   ├── src/financial_analysis/         # Python backend application
-│   │   ├── api/                        # FastAPI routes and schemas
-│   │   ├── database/                   # SQLAlchemy models and migrations
-│   │   ├── services/                   # Business logic services
-│   │   └── utils/                      # Utility functions
-│   ├── tests/                          # Backend tests
-│   ├── requirements.txt                # Python dependencies
-│   └── run_api.py                      # API server entry point
-├── frontend/
-│   ├── src/                            # React application source
-│   │   ├── components/                 # React components
-│   │   ├── api/                        # API client configuration
-│   │   ├── types/                      # TypeScript type definitions
-│   │   └── theme.ts                    # Material-UI theme
-│   ├── package.json                    # Node dependencies
-│   └── vite.config.ts                  # Vite configuration
-├── data/
-│   └── transactions.xlsx               # Sample transaction data
-├── docs/                               # Documentation
-│   ├── ARCHITECTURE.md                 # System architecture
-│   ├── PHASE4_FRONTEND_FOUNDATION.md   # Frontend progress
-│   └── API.md                          # API documentation
-├── FULLSTACK_QUICKSTART.md             # Quick start guide
-└── README.md
+spearmint/
+├── core-api/           # FastAPI backend (Python)
+├── web-app/            # React frontend (TypeScript)
+├── sdk/                # Generated TypeScript SDK
+├── api-gateway/        # API gateway
+├── marketing-site/     # Next.js marketing site
+├── product/            # PRDs, roadmap, competitive analysis
+├── docker-compose.yml  # One-command deployment
+└── docs/               # Architecture & API docs
 ```
-
-## Documentation
-
-See [Product Requirements Document](.product/analyzer.prd) for comprehensive specifications including:
-- Database schema design
-- Feature specifications
-- Technical architecture
-- Implementation roadmap
-- Success criteria
 
 ## Technology Stack
 
-### Backend
-- **Framework:** FastAPI (Python 3.10+)
-- **Database:** SQLite (development) → PostgreSQL (production)
-- **ORM:** SQLAlchemy 2.0+
-- **Data Processing:** Pandas, NumPy, SciPy
-- **Statistical Analysis:** statsmodels, scikit-learn
-- **Excel Parsing:** openpyxl
-- **Validation:** Pydantic 2.0+
-
-### Frontend
-- **Framework:** React 18.3+ with TypeScript 5+
-- **Build Tool:** Vite 5.4+
-- **UI Library:** Material-UI (MUI) v5
-- **Routing:** React Router v6
-- **State Management:** TanStack Query (React Query)
-- **HTTP Client:** Axios
-- **Charts:** Recharts
-- **Forms:** React Hook Form
-- **Styling:** Emotion (CSS-in-JS)
-
-## Getting Started
-
-### ⚡ Quick Setup (Recommended)
-
-**One-command setup for local development:**
-
-```bash
-# Windows (PowerShell)
-.\scripts\setup-local-dev.ps1
-
-# Linux/macOS
-./scripts/setup-local-dev.sh
-```
-
-This automated script sets up:
-- ✅ Python virtual environment and backend dependencies
-- ✅ Database initialization
-- ✅ Frontend dependencies
-- ✅ SDK generation and linking for hot reload
-- ✅ Environment configuration
-
-**After setup, start development servers:**
-
-```bash
-# Terminal 1 - Backend
-.\scripts\start_api.ps1
-# Backend runs on http://localhost:8000
-
-# Terminal 2 - Frontend
-cd web-app
-.\start_frontend.bat
-# Frontend runs on http://localhost:5173
-```
-
-**See Also:**
-- Complete Guide: [dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md](dev-tools/docs/LOCAL_DEVELOPMENT_GUIDE.md)
-- Quick Start: [LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md)
-- SDK Development: [LOCAL_SDK_DEVELOPMENT.md](docs/LOCAL_SDK_DEVELOPMENT.md)
-
----
-
-### 📋 Manual Setup (Alternative)
-
-If you prefer manual setup, see [FULLSTACK_QUICKSTART.md](FULLSTACK_QUICKSTART.md) for detailed instructions.
-
-**Backend:**
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-cd core-api
-pip install -r requirements.txt
-python -m src.financial_analysis.database.init_db
-```
-
-**Frontend:**
-```bash
-cd web-app
-npm install
-npm run build
-```
-
-## Development Status
-
-### ✅ Phase 1: Backend Foundation (Complete)
-- Database schema with SQLAlchemy models
-- FastAPI application with 15+ REST endpoints
-- Excel import service with validation
-- Automatic classification engine
-- Comprehensive API documentation (Swagger/ReDoc)
-
-### ✅ Phase 2: Analysis Engine (Complete)
-- Income/expense analysis service
-- Trend analysis (daily, weekly, monthly, quarterly, yearly)
-- Cash flow calculations with classification awareness
-- Financial health indicators
-- Analysis API endpoints
-
-### 🚧 Phase 3: API Enhancements (85% Complete)
-- Relationship detection and linking
-- Projection service with statistical forecasting
-- Report generation service
-- Classification management API
-- Advanced filtering and search
-
-### 🚧 Phase 4: Frontend Foundation (54% Complete - In Progress)
-- ✅ React + Vite + TypeScript setup
-- ✅ Material-UI theme and styling
-- ✅ React Router navigation
-- ✅ React Query API integration
-- ✅ Application layout (header, sidebar)
-- ✅ Loading states and error handling
-- 🚧 Dashboard with overview cards
-- 🚧 Transaction list with filtering
-- 🚧 Transaction detail/edit forms
-- 🚧 Charts with Recharts
-- 🚧 Responsive design optimization
-
-### 📋 Phase 5: Frontend Features (Upcoming)
-- Import interface with drag-and-drop
-- Analysis & reports components
-- Classification management UI
-- Projections visualization
-- Settings & configuration
-
-### 📋 Phase 6: Integration & Polish (Upcoming)
-- End-to-end integration testing
-- Performance optimization
-- User experience refinement
-- Documentation completion
+| Layer | Technology |
+|-------|-----------|
+| Backend | FastAPI, SQLAlchemy 2.0, Python 3.10+ |
+| Frontend | React 18, TypeScript 5, Material-UI v5, Vite |
+| Charts | Recharts |
+| State | TanStack Query |
+| Database | SQLite (dev) / PostgreSQL (prod) |
+| AI | LLM-powered assistant with A2A agent protocol |
 
 ## API Documentation
 
-The backend provides comprehensive API documentation:
-
 - **Swagger UI:** http://localhost:8000/api/docs
 - **ReDoc:** http://localhost:8000/api/redoc
-- **OpenAPI JSON:** http://localhost:8000/api/openapi.json
 
-### Key Endpoints
+## Current Status
 
-- `/api/transactions` - Transaction CRUD operations
-- `/api/analysis/summary` - Financial analysis summary
-- `/api/analysis/trends` - Trend data by period
-- `/api/categories` - Category management
-- `/api/import/excel` - Excel file import
-- `/api/classifications` - Classification rules
-- `/api/projections/forecast` - Financial forecasting
-- `/api/reports/cash-flow` - Cash flow reports
-
-## Testing
-
-### Backend Tests
-```bash
-venv\Scripts\activate
-pytest tests/ -v
-pytest tests/ --cov=src
-```
-
-### Frontend Tests
-```bash
-cd frontend
-npm run lint
-npm run build  # Verify TypeScript compilation
-```
-
-## Documentation
-
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [API Documentation](docs/API.md)
-- [Phase 4 Progress](docs/PHASE4_FRONTEND_FOUNDATION.md)
-- [Full Stack Quick Start](FULLSTACK_QUICKSTART.md)
-- [Product Requirements](. product/analyzer.prd)
+Spearmint is in active development. Core financial tracking, analysis, and reporting are production-ready. See the [product roadmap](product/PRIORITIZED-ROADMAP.md) for what's next.
 
 ## Contributing
 
-This is a private project. For development:
+1. Fork the repository
+2. Create a feature branch
+3. Make changes with proper testing
+4. Submit a pull request
 
-1. Create a feature branch
-2. Make changes with proper testing
-3. Update documentation
-4. Submit pull request for review
+See [LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md) for development setup details.
 
 ## License
 
-Private project - All rights reserved
+MIT
 
 ## Author
 
 Harry Mower
-
