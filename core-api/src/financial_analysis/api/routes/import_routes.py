@@ -103,7 +103,8 @@ async def import_transactions(
                         time.sleep(0.1)  # Wait 100ms before retry
                     else:
                         # Log warning but don't fail the request
-                        print(f"WARNING: Could not delete temp file {temp_file_path}")
+                        import logging
+                        logging.getLogger(__name__).warning("Could not delete temp file %s", temp_file_path)
 
 
 @router.post("/import/file-path", response_model=ImportResponse)
