@@ -613,12 +613,13 @@ class AccountService:
 
     # ==================== Net Worth & Analytics ====================
 
-    def get_net_worth(self, as_of_date: Optional[date] = None) -> Dict[str, Any]:
+    def get_net_worth(self, as_of_date: Optional[date] = None, entity_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Calculate total net worth across all accounts.
 
         Args:
             as_of_date: Calculate as of this date (defaults to today)
+            entity_id: Filter to accounts belonging to this entity
 
         Returns:
             Dictionary with net worth breakdown
@@ -630,7 +631,7 @@ class AccountService:
         liquid_assets = Decimal('0')
         investments = Decimal('0')
 
-        accounts = self.get_accounts(is_active=True)
+        accounts = self.get_accounts(is_active=True, entity_id=entity_id)
 
         for account in accounts:
             balance = self.get_current_balance(account.account_id)

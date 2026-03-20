@@ -46,16 +46,17 @@ router = APIRouter(prefix="/accounts", tags=["accounts"])
 @router.get("/net-worth", response_model=NetWorthResponse)
 def get_net_worth(
     as_of_date: Optional[date] = Query(None, description="Calculate as of this date"),
+    entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID"),
     db: Session = Depends(get_db)
 ):
-    """Get total net worth across all accounts."""
+    """Get total net worth across all accounts, optionally filtered by entity."""
     service = AccountService(db)
     effective_date = as_of_date or date.today()
-    net_worth = service.get_net_worth(as_of_date)
+    net_worth = service.get_net_worth(as_of_date, entity_id=entity_id)
 
-    # Add account breakdown (respecting the same date filter as net worth calculation)
+    # Add account breakdown (respecting the same date and entity filter)
     account_breakdown = {}
-    accounts = service.get_accounts(is_active=True)
+    accounts = service.get_accounts(is_active=True, entity_id=entity_id)
 
     for account in accounts:
         balance = service.get_current_balance(account.account_id)
