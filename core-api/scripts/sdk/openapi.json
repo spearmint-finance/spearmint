@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.3"
+    "version": "0.0.94"
   },
   "servers": [
     {
@@ -22,7 +22,7 @@
           "system"
         ],
         "summary": "Health Check",
-        "description": "Health check endpoint.",
+        "description": "Health check endpoint.\n\nReturns basic health status and API version information.\nUsed by monitoring systems and load balancers to verify API availability.",
         "operationId": "health_check_api_health_get",
         "responses": {
           "200": {
@@ -137,10 +137,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Transaction type filter",
+              "description": "Filter by transaction type: 'Income' or 'Expense'",
               "title": "Transaction Type"
             },
-            "description": "Transaction type filter"
+            "description": "Filter by transaction type: 'Income' or 'Expense'"
           },
           {
             "name": "category_id",
@@ -156,10 +156,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Category ID filter",
+              "description": "Filter by category ID",
               "title": "Category Id"
             },
-            "description": "Category ID filter"
+            "description": "Filter by category ID"
           },
           {
             "name": "classification_id",
@@ -175,10 +175,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Classification ID filter",
+              "description": "Filter by classification ID",
               "title": "Classification Id"
             },
-            "description": "Classification ID filter"
+            "description": "Filter by classification ID"
           },
           {
             "name": "include_in_analysis",
@@ -193,10 +193,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Include in analysis filter",
+              "description": "Filter to include/exclude transactions marked for analysis",
               "title": "Include In Analysis"
             },
-            "description": "Include in analysis filter"
+            "description": "Filter to include/exclude transactions marked for analysis"
           },
           {
             "name": "is_transfer",
@@ -211,10 +211,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Is transfer filter",
+              "description": "Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers",
               "title": "Is Transfer"
             },
-            "description": "Is transfer filter"
+            "description": "Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers"
           },
           {
             "name": "min_amount",
@@ -227,7 +227,8 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 {
                   "type": "null"
@@ -249,7 +250,8 @@
                   "exclusiveMinimum": 0.0
                 },
                 {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 {
                   "type": "null"
@@ -317,6 +319,25 @@
               "title": "Tag Ids"
             },
             "description": "Filter by tag IDs (transactions matching any of the given tags)"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity ID (via account)",
+              "title": "Entity Id"
+            },
+            "description": "Filter by entity ID (via account)"
           },
           {
             "name": "include_capital_expenses",
@@ -629,7 +650,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^(Income|Expense|Both)$"
+                  "pattern": "^(Income|Expense|Transfer|Both)$"
                 },
                 {
                   "type": "null"
@@ -877,7 +898,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^(Income|Expense|Both)$"
+                  "pattern": "^(Income|Expense|Transfer|Both)$"
                 },
                 {
                   "type": "null"
@@ -1285,7 +1306,7 @@
           "import"
         ],
         "summary": "Import Transactions",
-        "description": "Import transactions from Excel file.\n\nArgs:\n    file: Uploaded Excel file\n    mode: Import mode (full, incremental, update)\n    skip_duplicates: Whether to skip duplicates\n    db: Database session\n    \nReturns:\n    ImportResponse: Import result",
+        "description": "Import transactions from Excel file.\n\nArgs:\n    file: Uploaded Excel file\n    mode: Import mode (full, incremental, update)\n    skip_duplicates: Whether to skip duplicates\n    profile_id: Optional import profile ID for column mappings\n    db: Database session\n\nReturns:\n    ImportResponse: Import result",
         "operationId": "import_transactions_api_import_post",
         "requestBody": {
           "content": {
@@ -1521,6 +1542,277 @@
         }
       }
     },
+    "/api/import/profiles": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "summary": "List Import Profiles",
+        "description": "List all import profiles.\n\nArgs:\n    is_active: Optional filter by active status\n    db: Database session\n\nReturns:\n    ImportProfileListResponse: List of import profiles",
+        "operationId": "list_import_profiles_api_import_profiles_get",
+        "parameters": [
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by active status",
+              "title": "Is Active"
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Create Import Profile",
+        "description": "Create a new import profile.\n\nArgs:\n    profile: Profile creation data\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Created profile",
+        "operationId": "create_import_profile_api_import_profiles_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProfileCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/profiles/{profile_id}": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Get Import Profile",
+        "description": "Get a single import profile by ID.\n\nArgs:\n    profile_id: Profile ID\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Profile details",
+        "operationId": "get_import_profile_api_import_profiles__profile_id__get",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Update Import Profile",
+        "description": "Update an import profile.\n\nArgs:\n    profile_id: Profile ID\n    profile: Profile update data\n    db: Database session\n\nReturns:\n    ImportProfileResponse: Updated profile",
+        "operationId": "update_import_profile_api_import_profiles__profile_id__put",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportProfileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Delete Import Profile",
+        "description": "Delete an import profile.\n\nArgs:\n    profile_id: Profile ID\n    db: Database session",
+        "operationId": "delete_import_profile_api_import_profiles__profile_id__delete",
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Profile ID",
+              "title": "Profile Id"
+            },
+            "description": "Profile ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import/profiles/suggest": {
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "summary": "Suggest Import Profiles",
+        "description": "Suggest matching import profiles based on file columns.\n\nAnalyzes the uploaded file's column headers and returns profiles\nthat match, sorted by match score.\n\nArgs:\n    file: Uploaded Excel file\n    db: Database session\n\nReturns:\n    List of profile suggestions with match scores",
+        "operationId": "suggest_import_profiles_api_import_profiles_suggest_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_suggest_import_profiles_api_import_profiles_suggest_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImportProfileSuggestion"
+                  },
+                  "type": "array",
+                  "title": "Response Suggest Import Profiles Api Import Profiles Suggest Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/analysis/income": {
       "get": {
         "tags": [
@@ -1573,7 +1865,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1667,7 +1959,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1750,7 +2042,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1858,7 +2150,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1941,7 +2233,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -1954,7 +2246,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CashFlowResponse"
+                  "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__CashFlowResponse"
                 }
               }
             }
@@ -2035,7 +2327,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2118,7 +2410,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2201,7 +2493,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2312,7 +2604,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2409,7 +2701,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -2503,7 +2795,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__analysis__AnalysisModeEnum",
+              "$ref": "#/components/schemas/AnalysisModeEnum",
               "description": "Analysis mode",
               "default": "analysis"
             },
@@ -3556,7 +3848,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/ReportModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3650,7 +3942,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/ReportModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3744,7 +4036,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/financial_analysis__api__schemas__report__AnalysisModeEnum",
+              "$ref": "#/components/schemas/ReportModeEnum",
               "description": "Analysis mode: 'analysis' excludes transfers, 'complete' includes all",
               "default": "analysis"
             },
@@ -3852,6 +4144,184 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReconciliationReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/capex": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Generate Capital Expense (CapEx) Report",
+        "description": "Generate a report of all capital expense transactions.\n\n    Capital expenses are large asset purchases (vehicles, property improvements, equipment)\n    that are tracked separately from regular operating expenses.\n\n    This report includes:\n    - Total CapEx for the period\n    - Breakdown by category (Vehicle, Equipment, Home Improvement, etc.)\n    - Full list of CapEx transactions\n\n    CapEx transactions are identified by their classification code (CAPEX, CAPITAL_EXPENSE, etc.)\n    or classification name containing 'Capital Expense'.",
+        "operationId": "get_capex_report_api_reports_capex_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (default: 1 year ago)",
+              "title": "Start Date"
+            },
+            "description": "Start date (default: 1 year ago)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (default: today)",
+              "title": "End Date"
+            },
+            "description": "End date (default: today)"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormatEnum",
+              "description": "Export format: 'json' or 'csv'",
+              "default": "json"
+            },
+            "description": "Export format: 'json' or 'csv'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapExReportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/receivables": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Generate Receivables (Reimbursement Tracking) Report",
+        "description": "Generate a report for tracking reimbursable expenses and their status.\n\n    This report helps you track:\n    - **Outstanding receivables**: Expenses paid that haven't been reimbursed yet\n    - **Recently reimbursed**: Expenses that have been successfully reimbursed\n    - **Aging information**: How long receivables have been outstanding\n\n    Receivables are identified by their classification:\n    - `REIMB_PAID`: Expense paid that will be reimbursed\n    - Linked via `REIMBURSEMENT_PAIR` relationship when reimbursement is received\n\n    Use this report to:\n    - Follow up on outstanding expense reports\n    - Track reimbursement turnaround time\n    - Identify stale receivables that need attention",
+        "operationId": "get_receivables_report_api_reports_receivables_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date (default: 90 days ago)",
+              "title": "Start Date"
+            },
+            "description": "Start date (default: 90 days ago)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date (default: today)",
+              "title": "End Date"
+            },
+            "description": "End date (default: today)"
+          },
+          {
+            "name": "include_reimbursed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include recently reimbursed transactions in the response",
+              "default": true,
+              "title": "Include Reimbursed"
+            },
+            "description": "Include recently reimbursed transactions in the response"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportFormatEnum",
+              "description": "Export format: 'json' or 'csv'",
+              "default": "json"
+            },
+            "description": "Export format: 'json' or 'csv'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivablesReportResponse"
                 }
               }
             }
@@ -4532,14 +5002,14 @@
         }
       }
     },
-    "/api/persons/": {
+    "/api/persons": {
       "get": {
         "tags": [
           "persons",
           "persons"
         ],
         "summary": "List Persons",
-        "operationId": "list_persons_api_persons__get",
+        "operationId": "list_persons_api_persons_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4550,7 +5020,7 @@
                     "$ref": "#/components/schemas/PersonRead"
                   },
                   "type": "array",
-                  "title": "Response List Persons Api Persons  Get"
+                  "title": "Response List Persons Api Persons Get"
                 }
               }
             }
@@ -4563,7 +5033,7 @@
           "persons"
         ],
         "summary": "Create Person",
-        "operationId": "create_person_api_persons__post",
+        "operationId": "create_person_api_persons_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4696,6 +5166,68 @@
         }
       }
     },
+    "/api/scenarios/templates": {
+      "get": {
+        "tags": [
+          "scenarios",
+          "scenarios"
+        ],
+        "summary": "List Scenario Templates",
+        "description": "List available scenario templates for the create-from-template workflow.\n\nReturns a paginated list of pre-configured scenario templates that users\ncan select, customize, and preview before saving.",
+        "operationId": "list_scenario_templates_api_scenarios_templates_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Pagesize"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioTemplateListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/scenarios/preview": {
       "post": {
         "tags": [
@@ -4746,7 +5278,7 @@
           "accounts"
         ],
         "summary": "Get Net Worth",
-        "description": "Get total net worth across all accounts.",
+        "description": "Get total net worth across all accounts, optionally filtered by entity.",
         "operationId": "get_net_worth_api_accounts_net_worth_get",
         "parameters": [
           {
@@ -4767,6 +5299,25 @@
               "title": "As Of Date"
             },
             "description": "Calculate as of this date"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity ID",
+              "title": "Entity Id"
+            },
+            "description": "Filter by entity ID"
           }
         ],
         "responses": {
@@ -4865,6 +5416,25 @@
               "title": "Account Type"
             },
             "description": "Filter by account type"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity ID",
+              "title": "Entity Id"
+            },
+            "description": "Filter by entity ID"
           }
         ],
         "responses": {
@@ -5309,7 +5879,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2025-11-21",
+              "default": "2026-03-20",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"
@@ -5714,6 +6284,346 @@
         }
       }
     },
+    "/api/entities/": {
+      "get": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "List Entities",
+        "description": "List all entities.",
+        "operationId": "list_entities_api_entities__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Entities Api Entities  Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Create Entity",
+        "description": "Create a new entity (business, rental property, etc.).",
+        "operationId": "create_entity_api_entities__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{entity_id}": {
+      "get": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Get Entity",
+        "description": "Get entity by ID.",
+        "operationId": "get_entity_api_entities__entity_id__get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Update Entity",
+        "description": "Update an entity.",
+        "operationId": "update_entity_api_entities__entity_id__put",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Delete Entity",
+        "description": "Delete an entity. Fails if accounts are still assigned.",
+        "operationId": "delete_entity_api_entities__entity_id__delete",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{entity_id}/pnl": {
+      "get": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Get Entity Pnl",
+        "description": "Generate a Profit & Loss statement for an entity.",
+        "operationId": "get_entity_pnl_api_entities__entity_id__pnl_get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Period start date",
+              "title": "Start Date"
+            },
+            "description": "Period start date"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Period end date",
+              "title": "End Date"
+            },
+            "description": "Period end date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PnlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/entities/{entity_id}/cashflow": {
+      "get": {
+        "tags": [
+          "entities",
+          "entities"
+        ],
+        "summary": "Get Entity Cashflow",
+        "description": "Generate a Cash Flow statement for an entity.",
+        "operationId": "get_entity_cashflow_api_entities__entity_id__cashflow_get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Period start date",
+              "title": "Start Date"
+            },
+            "description": "Period start date"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "Period end date",
+              "title": "End Date"
+            },
+            "description": "Period end date"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/maintenance/fix/classifications": {
       "post": {
         "tags": [
@@ -5783,6 +6693,1138 @@
         }
       }
     },
+    "/api/auth/api-keys": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Create Api Key",
+        "description": "Generate a new API key.\n\n**Important:** The full API key is only returned once at creation time.\nStore it securely as it cannot be retrieved again.\n\nThe key can be used to authenticate MCP server clients (Claude Desktop,\nGemini CLI, ChatGPT) against the Spearmint API.",
+        "operationId": "create_api_key_api_auth_api_keys_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/APIKeyCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKeyCreatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "List Api Keys",
+        "description": "List all API keys.\n\nReturns API keys with masked key values (only prefix is shown).",
+        "operationId": "list_api_keys_api_auth_api_keys_get",
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include revoked/inactive keys",
+              "default": false,
+              "title": "Include Inactive"
+            },
+            "description": "Include revoked/inactive keys"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKeyListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/api-keys/{key_id}": {
+      "get": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Get Api Key",
+        "description": "Get a specific API key by ID.\n\nReturns the API key metadata with masked key value.",
+        "operationId": "get_api_key_api_auth_api_keys__key_id__get",
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "API key ID",
+              "title": "Key Id"
+            },
+            "description": "API key ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKeyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Revoke Api Key",
+        "description": "Revoke or delete an API key.\n\nBy default, keys are soft-deleted (revoked but kept in the database).\nUse `permanent=true` to permanently delete the key.",
+        "operationId": "revoke_api_key_api_auth_api_keys__key_id__delete",
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "API key ID",
+              "title": "Key Id"
+            },
+            "description": "API key ID"
+          },
+          {
+            "name": "permanent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Permanently delete instead of just revoking",
+              "default": false,
+              "title": "Permanent"
+            },
+            "description": "Permanently delete instead of just revoking"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/api-keys/validate": {
+      "post": {
+        "tags": [
+          "auth",
+          "auth"
+        ],
+        "summary": "Validate Api Key",
+        "description": "Validate an API key.\n\nThis endpoint is used by the MCP server to validate incoming requests.\nIt also updates the last_used_at timestamp for the key.",
+        "operationId": "validate_api_key_api_auth_api_keys_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/APIKeyValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIKeyValidateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/chat": {
+      "post": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Chat",
+        "description": "Send a message to the AI assistant and receive a streamed response.\n\nReturns a Server-Sent Events (SSE) stream with the following event types:\n- conversation_id: The conversation ID being used\n- content_delta: Incremental content from the assistant\n- tool_call: When the assistant calls a tool\n- tool_result: Result of tool execution\n- action_proposal: When an action requires user confirmation\n- action_card: Navigation or action button for the UI\n- message_complete: Final event with token usage\n- error: If an error occurs",
+        "operationId": "chat_api_assistant_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/conversations": {
+      "get": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "List Conversations",
+        "description": "List conversation history.\n\nReturns recent conversations ordered by last update time.",
+        "operationId": "list_conversations_api_assistant_conversations_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationResponse"
+                  },
+                  "title": "Response List Conversations Api Assistant Conversations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/conversations/{conversation_id}/messages": {
+      "get": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Get Conversation Messages",
+        "description": "Get messages for a specific conversation.\n\nReturns messages in chronological order.",
+        "operationId": "get_conversation_messages_api_assistant_conversations__conversation_id__messages_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/conversations/{conversation_id}/archive": {
+      "post": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Archive Conversation",
+        "description": "Archive a conversation.\n\nArchived conversations are hidden from the default list but not deleted.",
+        "operationId": "archive_conversation_api_assistant_conversations__conversation_id__archive_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/conversations/{conversation_id}": {
+      "delete": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Delete Conversation",
+        "description": "Delete a conversation and all its messages.\n\nThis action cannot be undone.",
+        "operationId": "delete_conversation_api_assistant_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/actions": {
+      "post": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Execute Action",
+        "description": "Execute a confirmed action.\n\nActions like categorization or rule creation require user confirmation\nbefore execution. This endpoint executes the confirmed action.",
+        "operationId": "execute_action_api_assistant_actions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/actions/undo": {
+      "post": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Undo Action",
+        "description": "Undo a previous action.\n\nRestores the previous state before the action was executed.",
+        "operationId": "undo_action_api_assistant_actions_undo_post",
+        "parameters": [
+          {
+            "name": "action_log_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Action Log Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/insights": {
+      "get": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Get Insights",
+        "description": "Get pending proactive insights.\n\nReturns insights that haven't been dismissed or acted upon,\nordered by priority.",
+        "operationId": "get_insights_api_assistant_insights_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InsightResponse"
+                  },
+                  "title": "Response Get Insights Api Assistant Insights Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/insights/{insight_id}/dismiss": {
+      "post": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Dismiss Insight",
+        "description": "Dismiss an insight.\n\nThe insight will no longer appear in the pending list.",
+        "operationId": "dismiss_insight_api_assistant_insights__insight_id__dismiss_post",
+        "parameters": [
+          {
+            "name": "insight_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Insight Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assistant/health": {
+      "get": {
+        "tags": [
+          "assistant",
+          "AI Assistant"
+        ],
+        "summary": "Health Check",
+        "description": "Check if the assistant service is available.\n\nReturns status of LLM connectivity and configuration.",
+        "operationId": "health_check_api_assistant_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/plaid/token": {
+      "post": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Create Plaid Link Token",
+        "description": "Create a Plaid Link token for the frontend.",
+        "operationId": "create_plaid_link_token_api_link_plaid_token_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/plaid/exchange": {
+      "post": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Exchange Plaid Token",
+        "description": "Exchange a Plaid public token for an access token and create accounts.",
+        "operationId": "exchange_plaid_token_api_link_plaid_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicTokenExchange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedProviderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/akoya/authorize": {
+      "get": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Get Akoya Auth Url",
+        "description": "Get the Akoya OAuth authorization URL for user redirect.",
+        "operationId": "get_akoya_auth_url_api_link_akoya_authorize_get",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "fidelity",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AkoyaAuthUrlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/akoya/callback": {
+      "post": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Exchange Akoya Code",
+        "description": "Exchange an Akoya authorization code for tokens and create accounts.",
+        "operationId": "exchange_akoya_code_api_link_akoya_callback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AkoyaCallbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedProviderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/providers": {
+      "get": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "List Providers",
+        "description": "List all linked data providers.",
+        "operationId": "list_providers_api_link_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedProviderResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Providers Api Link Providers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/providers/{provider_id}": {
+      "get": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Get Provider",
+        "description": "Get details for a specific linked provider.",
+        "operationId": "get_provider_api_link_providers__provider_id__get",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedProviderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Unlink Provider",
+        "description": "Unlink a provider. Keeps accounts and transactions but revokes access.",
+        "operationId": "unlink_provider_api_link_providers__provider_id__delete",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/providers/{provider_id}/sync": {
+      "post": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Sync Provider",
+        "description": "Trigger a manual sync for a linked provider.",
+        "operationId": "sync_provider_api_link_providers__provider_id__sync_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncResultResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/link/webhook/plaid": {
+      "post": {
+        "tags": [
+          "link",
+          "link"
+        ],
+        "summary": "Plaid Webhook",
+        "description": "Receive Plaid webhooks for automatic transaction sync.",
+        "operationId": "plaid_webhook_api_link_webhook_plaid_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/a2a/agents": {
+      "get": {
+        "tags": [
+          "a2a-agents"
+        ],
+        "summary": "List Agents",
+        "description": "List all registered A2A agents (discovery endpoint).",
+        "operationId": "list_agents_a2a_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/a2a/agents/{agent_name}": {
+      "get": {
+        "tags": [
+          "a2a-agents"
+        ],
+        "summary": "Get Agent Card",
+        "description": "Get a specific agent's card.",
+        "operationId": "get_agent_card_a2a_agents__agent_name__get",
+        "parameters": [
+          {
+            "name": "agent_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/a2a/{agent_name}": {
+      "post": {
+        "tags": [
+          "a2a-agents"
+        ],
+        "summary": "Invoke Agent",
+        "description": "Invoke an A2A agent skill.",
+        "operationId": "invoke_agent_a2a__agent_name__post",
+        "parameters": [
+          {
+            "name": "agent_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/A2ARequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -5806,6 +7848,266 @@
   },
   "components": {
     "schemas": {
+      "A2ARequest": {
+        "properties": {
+          "skill": {
+            "type": "string",
+            "title": "Skill"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "negotiation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NegotiationChoice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "skill"
+        ],
+        "title": "A2ARequest",
+        "description": "Generic A2A invocation envelope."
+      },
+      "APIKeyCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Descriptive name for the key (e.g., 'Claude Desktop')"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At",
+            "description": "Optional expiration date for the key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "APIKeyCreate",
+        "description": "Schema for creating a new API key."
+      },
+      "APIKeyCreatedResponse": {
+        "properties": {
+          "key_id": {
+            "type": "integer",
+            "title": "Key Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Full API key - shown only once at creation time"
+          },
+          "key_prefix": {
+            "type": "string",
+            "title": "Key Prefix"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key_id",
+          "name",
+          "key",
+          "key_prefix",
+          "is_active",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "APIKeyCreatedResponse",
+        "description": "Schema for newly created API key (includes full key - shown only once)."
+      },
+      "APIKeyListResponse": {
+        "properties": {
+          "keys": {
+            "items": {
+              "$ref": "#/components/schemas/APIKeyResponse"
+            },
+            "type": "array",
+            "title": "Keys"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "keys",
+          "total"
+        ],
+        "title": "APIKeyListResponse",
+        "description": "Schema for list of API keys."
+      },
+      "APIKeyResponse": {
+        "properties": {
+          "key_id": {
+            "type": "integer",
+            "title": "Key Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "key_prefix": {
+            "type": "string",
+            "title": "Key Prefix",
+            "description": "Key prefix for identification (e.g., 'smint_live_xxxx')"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key_id",
+          "name",
+          "key_prefix",
+          "is_active",
+          "last_used_at",
+          "created_at",
+          "expires_at"
+        ],
+        "title": "APIKeyResponse",
+        "description": "Schema for API key responses (masked key)."
+      },
+      "APIKeyValidateRequest": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 40,
+            "title": "Key",
+            "description": "Full API key to validate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "APIKeyValidateRequest",
+        "description": "Schema for validating an API key."
+      },
+      "APIKeyValidateResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "key_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid"
+        ],
+        "title": "APIKeyValidateResponse",
+        "description": "Schema for API key validation response."
+      },
       "AccountBalanceDetail": {
         "properties": {
           "account_name": {
@@ -5927,7 +8229,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Opening Balance",
@@ -5944,6 +8247,19 @@
               }
             ],
             "title": "Opening Balance Date"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id",
+            "description": "Entity this account belongs to"
           }
         },
         "type": "object",
@@ -6048,6 +8364,7 @@
           },
           "opening_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Opening Balance"
           },
           "opening_balance_date": {
@@ -6075,7 +8392,8 @@
           "current_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6098,7 +8416,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6109,13 +8428,41 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Investment Value"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "link_type": {
+            "type": "string",
+            "title": "Link Type",
+            "default": "manual"
+          },
+          "linked_provider_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Provider Id"
           }
         },
         "type": "object",
@@ -6161,6 +8508,7 @@
           },
           "current_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Current Balance"
           },
           "balance_date": {
@@ -6186,7 +8534,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6197,7 +8546,8 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6282,6 +8632,19 @@
             ],
             "title": "Is Active"
           },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id",
+            "description": "Entity this account belongs to"
+          },
           "notes": {
             "anyOf": [
               {
@@ -6343,7 +8706,77 @@
         "title": "AccuracyMetrics",
         "description": "Projection accuracy metrics."
       },
-      "AnalysisModeEnum-Output": {
+      "ActionConfirmRequest": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "action_type": {
+            "type": "string",
+            "title": "Action Type"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "action_type",
+          "confirmed",
+          "payload"
+        ],
+        "title": "ActionConfirmRequest",
+        "description": "Request body for action confirmation."
+      },
+      "AkoyaAuthUrlResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "provider_id"
+        ],
+        "title": "AkoyaAuthUrlResponse",
+        "description": "Response with Akoya OAuth authorization URL."
+      },
+      "AkoyaCallbackRequest": {
+        "properties": {
+          "auth_code": {
+            "type": "string",
+            "title": "Auth Code",
+            "description": "Authorization code from Akoya OAuth redirect"
+          },
+          "provider_id": {
+            "type": "string",
+            "title": "Provider Id",
+            "description": "Akoya provider ID",
+            "default": "fidelity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "auth_code"
+        ],
+        "title": "AkoyaCallbackRequest",
+        "description": "Request to exchange an Akoya authorization code."
+      },
+      "AnalysisModeEnum": {
         "type": "string",
         "enum": [
           "analysis",
@@ -6586,7 +9019,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Total Balance"
@@ -6607,7 +9041,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6621,7 +9056,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6754,6 +9190,7 @@
           },
           "total_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Balance"
           },
           "balance_type": {
@@ -6763,7 +9200,8 @@
           "cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6774,7 +9212,8 @@
           "investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6864,6 +9303,18 @@
             "title": "Skip Duplicates",
             "description": "Skip duplicate transactions",
             "default": true
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id",
+            "description": "Import profile ID to apply saved column mappings"
           }
         },
         "type": "object",
@@ -6871,6 +9322,21 @@
           "file"
         ],
         "title": "Body_import_transactions_api_import_post"
+      },
+      "Body_suggest_import_profiles_api_import_profiles_suggest_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Excel file to analyze"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_suggest_import_profiles_api_import_profiles_suggest_post"
       },
       "BulkClassifyRequest": {
         "properties": {
@@ -6953,12 +9419,14 @@
           },
           "total": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total"
           },
           "cash": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6969,7 +9437,8 @@
           "investments": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -6992,85 +9461,251 @@
         "title": "CalculatedBalance",
         "description": "Schema for calculated balance response."
       },
-      "CashFlowResponse": {
+      "CapExCategorySummary": {
         "properties": {
-          "net_cash_flow": {
+          "category": {
             "type": "string",
-            "title": "Net Cash Flow",
-            "description": "Net cash flow (income - expenses)"
+            "title": "Category",
+            "description": "Category name"
           },
-          "total_income": {
-            "type": "string",
-            "title": "Total Income",
-            "description": "Total income"
+          "total": {
+            "type": "number",
+            "title": "Total",
+            "description": "Total CapEx amount for this category"
           },
-          "total_expenses": {
-            "type": "string",
-            "title": "Total Expenses",
-            "description": "Total expenses"
-          },
-          "income_count": {
+          "count": {
             "type": "integer",
-            "title": "Income Count",
-            "description": "Number of income transactions"
+            "title": "Count",
+            "description": "Number of transactions"
           },
-          "expense_count": {
-            "type": "integer",
-            "title": "Expense Count",
-            "description": "Number of expense transactions"
-          },
-          "period_start": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Period Start",
-            "description": "Analysis period start date"
-          },
-          "period_end": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Period End",
-            "description": "Analysis period end date"
-          },
-          "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
-            "description": "Analysis mode used"
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of total CapEx"
           }
         },
         "type": "object",
         "required": [
-          "net_cash_flow",
-          "total_income",
-          "total_expenses",
-          "income_count",
-          "expense_count",
-          "mode"
+          "category",
+          "total",
+          "count",
+          "percentage"
+        ],
+        "title": "CapExCategorySummary",
+        "description": "CapEx totals grouped by category."
+      },
+      "CapExReportResponse": {
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "title": "Report Type",
+            "description": "Type of report",
+            "default": "capex"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod",
+            "description": "Report period"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CapExSummary",
+            "description": "CapEx summary statistics"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CapExCategorySummary"
+            },
+            "type": "array",
+            "title": "By Category",
+            "description": "CapEx grouped by category"
+          },
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/CapExTransaction"
+            },
+            "type": "array",
+            "title": "Transactions",
+            "description": "List of CapEx transactions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "summary",
+          "by_category",
+          "transactions"
+        ],
+        "title": "CapExReportResponse",
+        "description": "Response for capital expense report.",
+        "example": {
+          "by_category": [
+            {
+              "category": "Vehicle Purchase",
+              "count": 1,
+              "percentage": 77.78,
+              "total": 35000.0
+            },
+            {
+              "category": "Home Improvement",
+              "count": 2,
+              "percentage": 22.22,
+              "total": 10000.0
+            }
+          ],
+          "period": {
+            "days": 365,
+            "end_date": "2025-12-31",
+            "start_date": "2025-01-01"
+          },
+          "report_type": "capex",
+          "summary": {
+            "average_transaction": 15000.0,
+            "total_capex": 45000.0,
+            "transaction_count": 3
+          },
+          "transactions": [
+            {
+              "amount": -35000.0,
+              "category": "Vehicle Purchase",
+              "classification": "Capital Expense",
+              "date": "2025-03-15",
+              "description": "2025 Toyota Camry",
+              "notes": "New car purchase",
+              "transaction_id": 1234
+            }
+          ]
+        }
+      },
+      "CapExSummary": {
+        "properties": {
+          "total_capex": {
+            "type": "number",
+            "title": "Total Capex",
+            "description": "Total capital expenditure amount"
+          },
+          "transaction_count": {
+            "type": "integer",
+            "title": "Transaction Count",
+            "description": "Number of CapEx transactions"
+          },
+          "average_transaction": {
+            "type": "number",
+            "title": "Average Transaction",
+            "description": "Average CapEx transaction amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_capex",
+          "transaction_count",
+          "average_transaction"
+        ],
+        "title": "CapExSummary",
+        "description": "Summary statistics for CapEx report."
+      },
+      "CapExTransaction": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Transaction date"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount (negative for expenses)"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "classification": {
+            "type": "string",
+            "title": "Classification",
+            "description": "Classification name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Transaction notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "description",
+          "amount",
+          "category",
+          "classification"
+        ],
+        "title": "CapExTransaction",
+        "description": "Individual capital expense transaction."
+      },
+      "CashFlowResponse": {
+        "properties": {
+          "entity_id": {
+            "type": "integer",
+            "title": "Entity Id"
+          },
+          "entity_name": {
+            "type": "string",
+            "title": "Entity Name"
+          },
+          "period": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Period"
+          },
+          "operating": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Operating"
+          },
+          "investing": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Investing"
+          },
+          "financing": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Financing"
+          },
+          "net_change": {
+            "type": "number",
+            "title": "Net Change"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_id",
+          "entity_name",
+          "period",
+          "operating",
+          "investing",
+          "financing",
+          "net_change"
         ],
         "title": "CashFlowResponse",
-        "description": "Response for cash flow analysis.",
-        "example": {
-          "expense_count": 3,
-          "income_count": 2,
-          "mode": "analysis",
-          "net_cash_flow": 8150.0,
-          "period_end": "2025-01-31",
-          "period_start": "2025-01-01",
-          "total_expenses": 1850.0,
-          "total_income": 10000.0
-        }
+        "description": "Cash flow statement response."
       },
       "CashFlowTrendPoint": {
         "properties": {
@@ -7081,16 +9716,19 @@
           },
           "income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income",
             "description": "Income for period"
           },
           "expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses",
             "description": "Expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow for period"
           },
@@ -7132,7 +9770,7 @@
             "description": "Period granularity"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -7351,6 +9989,7 @@
         "properties": {
           "total": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total",
             "description": "Total amount for category"
           },
@@ -7361,6 +10000,7 @@
           },
           "average": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average",
             "description": "Average transaction amount"
           },
@@ -7399,6 +10039,7 @@
           },
           "total_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Amount",
             "description": "Total amount for category"
           },
@@ -7409,6 +10050,7 @@
           },
           "average_amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Amount",
             "description": "Average transaction amount"
           },
@@ -7457,11 +10099,13 @@
           },
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income"
           },
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses"
           },
@@ -7492,7 +10136,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -7509,33 +10153,33 @@
         "example": {
           "expense_categories": [
             {
-              "average_amount": 1500.0,
+              "average_amount": "1500.00",
               "category_id": 2,
               "category_name": "Rent",
               "category_type": "Expense",
               "percentage_of_all": 12.7,
               "percentage_of_total": 81.08,
-              "total_amount": 1500.0,
+              "total_amount": "1500.00",
               "transaction_count": 1
             }
           ],
           "income_categories": [
             {
-              "average_amount": 5000.0,
+              "average_amount": "5000.00",
               "category_id": 1,
               "category_name": "Salary",
               "category_type": "Income",
               "percentage_of_all": 84.4,
               "percentage_of_total": 100.0,
-              "total_amount": 10000.0,
+              "total_amount": "10000.00",
               "transaction_count": 2
             }
           ],
           "mode": "analysis",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
-          "total_expenses": 1850.0,
-          "total_income": 10000.0
+          "total_expenses": "1850.00",
+          "total_income": "10000.00"
         }
       },
       "CategoryCreate": {
@@ -7549,7 +10193,7 @@
           },
           "category_type": {
             "type": "string",
-            "pattern": "^(Income|Expense|Both)$",
+            "pattern": "^(Income|Expense|Transfer|Both)$",
             "title": "Category Type",
             "description": "Category type"
           },
@@ -7577,12 +10221,6 @@
             ],
             "title": "Description",
             "description": "Category description"
-          },
-          "is_transfer_category": {
-            "type": "boolean",
-            "title": "Is Transfer Category",
-            "description": "Is transfer category",
-            "default": false
           }
         },
         "type": "object",
@@ -7691,7 +10329,7 @@
           },
           "category_type": {
             "type": "string",
-            "pattern": "^(Income|Expense|Both)$",
+            "pattern": "^(Income|Expense|Transfer|Both)$",
             "title": "Category Type",
             "description": "Category type"
           },
@@ -7719,12 +10357,6 @@
             ],
             "title": "Description",
             "description": "Category description"
-          },
-          "is_transfer_category": {
-            "type": "boolean",
-            "title": "Is Transfer Category",
-            "description": "Is transfer category",
-            "default": false
           },
           "category_id": {
             "type": "integer",
@@ -8200,7 +10832,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "pattern": "^(Income|Expense|Both)$"
+                "pattern": "^(Income|Expense|Transfer|Both)$"
               },
               {
                 "type": "null"
@@ -8233,23 +10865,89 @@
             ],
             "title": "Description",
             "description": "Category description"
-          },
-          "is_transfer_category": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Transfer Category",
-            "description": "Is transfer category"
           }
         },
         "type": "object",
         "title": "CategoryUpdate",
         "description": "Schema for updating a category."
+      },
+      "ChatContext": {
+        "properties": {
+          "current_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Page"
+          },
+          "selected_transaction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Transaction Id"
+          },
+          "active_filters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Filters"
+          }
+        },
+        "type": "object",
+        "title": "ChatContext",
+        "description": "Context for the chat message."
+      },
+      "ChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatRequest",
+        "description": "Request body for chat endpoint."
       },
       "ClassificationCreate": {
         "properties": {
@@ -8974,6 +11672,71 @@
         "title": "ConfidenceInterval",
         "description": "Confidence interval for projections."
       },
+      "ConversationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count"
+          },
+          "total_tokens": {
+            "type": "integer",
+            "title": "Total Tokens"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "message_count",
+          "total_tokens",
+          "created_at",
+          "updated_at",
+          "is_archived"
+        ],
+        "title": "ConversationResponse",
+        "description": "Response for conversation listing."
+      },
       "CreditCardPairDetection": {
         "properties": {
           "payment": {
@@ -9136,6 +11899,7 @@
           },
           "amount_difference": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -9192,10 +11956,252 @@
         "title": "DividendReinvestmentPairsResponse",
         "description": "Response with detected dividend reinvestment pairs."
       },
+      "EntityCreate": {
+        "properties": {
+          "entity_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Entity Name"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "personal",
+              "business",
+              "rental_property",
+              "side_hustle"
+            ],
+            "title": "Entity Type"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "fiscal_year_start_month": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Fiscal Year Start Month",
+            "default": 1
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default",
+            "default": false
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_name",
+          "entity_type"
+        ],
+        "title": "EntityCreate",
+        "description": "Schema for creating an entity."
+      },
+      "EntityResponse": {
+        "properties": {
+          "entity_id": {
+            "type": "integer",
+            "title": "Entity Id"
+          },
+          "entity_name": {
+            "type": "string",
+            "title": "Entity Name"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "fiscal_year_start_month": {
+            "type": "integer",
+            "title": "Fiscal Year Start Month"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "account_count": {
+            "type": "integer",
+            "title": "Account Count",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_id",
+          "entity_name",
+          "entity_type",
+          "fiscal_year_start_month",
+          "is_default",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EntityResponse",
+        "description": "Schema for entity responses."
+      },
+      "EntityUpdate": {
+        "properties": {
+          "entity_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Name"
+          },
+          "entity_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "personal",
+                  "business",
+                  "rental_property",
+                  "side_hustle"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Type"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "fiscal_year_start_month": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscal Year Start Month"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "EntityUpdate",
+        "description": "Schema for updating an entity."
+      },
       "ExpenseAnalysisResponse": {
         "properties": {
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expense amount"
           },
@@ -9206,6 +12212,7 @@
           },
           "average_transaction": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -9252,7 +12259,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -9268,19 +12275,19 @@
         "title": "ExpenseAnalysisResponse",
         "description": "Response for expense analysis.",
         "example": {
-          "average_transaction": 616.67,
+          "average_transaction": "616.67",
           "breakdown_by_category": {
             "Groceries": {
-              "average": 175.0,
+              "average": "175.00",
               "count": 2,
               "percentage": 18.92,
-              "total": 350.0
+              "total": "350.00"
             },
             "Rent": {
-              "average": 1500.0,
+              "average": "1500.00",
               "count": 1,
               "percentage": 81.08,
-              "total": 1500.0
+              "total": "1500.00"
             }
           },
           "mode": "analysis",
@@ -9288,13 +12295,13 @@
           "period_start": "2025-01-01",
           "top_categories": [
             {
-              "amount": 1500.0,
+              "amount": "1500.00",
               "category": "Rent",
               "count": 1,
               "percentage": 81.08
             }
           ],
-          "total_expenses": 1850.0,
+          "total_expenses": "1850.00",
           "transaction_count": 3
         }
       },
@@ -9477,16 +12484,19 @@
           },
           "average_daily_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Income",
             "description": "Average daily income"
           },
           "average_daily_expense": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Daily Expense",
             "description": "Average daily expense"
           },
           "net_daily_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Daily Cash Flow",
             "description": "Net daily cash flow"
           },
@@ -9526,10 +12536,10 @@
         "title": "FinancialHealthResponse",
         "description": "Response for financial health indicators.",
         "example": {
-          "average_daily_expense": 30.83,
-          "average_daily_income": 166.67,
+          "average_daily_expense": "30.83",
+          "average_daily_income": "166.67",
           "income_to_expense_ratio": 5.41,
-          "net_daily_cash_flow": 135.84,
+          "net_daily_cash_flow": "135.84",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
           "savings_rate": 0.815
@@ -9539,16 +12549,19 @@
         "properties": {
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income for period"
           },
           "total_expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Expenses",
             "description": "Total expenses for period"
           },
           "net_cash_flow": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cash Flow",
             "description": "Net cash flow (income - expenses)"
           },
@@ -9617,7 +12630,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -9639,22 +12652,22 @@
         "example": {
           "expense_count": 3,
           "financial_health": {
-            "average_daily_expense": 30.83,
-            "average_daily_income": 166.67,
+            "average_daily_expense": "30.83",
+            "average_daily_income": "166.67",
             "income_to_expense_ratio": 5.41,
-            "net_daily_cash_flow": 135.84,
+            "net_daily_cash_flow": "135.84",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
             "savings_rate": 0.815
           },
           "income_count": 2,
           "mode": "analysis",
-          "net_cash_flow": 8150.0,
+          "net_cash_flow": "8150.00",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
           "recent_transactions": [
             {
-              "amount": 5000.0,
+              "amount": "5000.00",
               "category": "Salary",
               "description": "Monthly salary",
               "transaction_date": "2025-01-15",
@@ -9664,7 +12677,7 @@
           ],
           "top_expense_categories": [
             {
-              "amount": 1500.0,
+              "amount": "1500.00",
               "category": "Rent",
               "count": 1,
               "percentage": 81.08
@@ -9672,14 +12685,14 @@
           ],
           "top_income_categories": [
             {
-              "amount": 10000.0,
+              "amount": "10000.00",
               "category": "Salary",
               "count": 2,
               "percentage": 100.0
             }
           ],
-          "total_expenses": 1850.0,
-          "total_income": 10000.0
+          "total_expenses": "1850.00",
+          "total_income": "10000.00"
         }
       },
       "FixResult": {
@@ -9847,7 +12860,8 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Quantity"
@@ -9875,7 +12889,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9889,7 +12904,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9958,12 +12974,14 @@
           },
           "quantity": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Quantity"
           },
           "cost_basis": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -9974,7 +12992,8 @@
           "current_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -10022,7 +13041,8 @@
           "gain_loss": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -10269,6 +13289,300 @@
         "title": "ImportHistoryResponse",
         "description": "Schema for import history list response."
       },
+      "ImportProfileCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "description": "Profile name (e.g., 'Chase Credit Card')"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Optional associated account ID"
+          },
+          "column_mappings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Column Mappings",
+            "description": "Mapping of source column names to standard field names. Example: {'Posting Date': 'date', 'Description': 'description'}"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string (e.g., '%m/%d/%Y')"
+          },
+          "skip_rows": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "column_mappings"
+        ],
+        "title": "ImportProfileCreate",
+        "description": "Schema for creating an import profile."
+      },
+      "ImportProfileListResponse": {
+        "properties": {
+          "profiles": {
+            "items": {
+              "$ref": "#/components/schemas/ImportProfileResponse"
+            },
+            "type": "array",
+            "title": "Profiles",
+            "description": "List of import profiles"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of profiles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profiles",
+          "total"
+        ],
+        "title": "ImportProfileListResponse",
+        "description": "Schema for list of import profiles."
+      },
+      "ImportProfileResponse": {
+        "properties": {
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id",
+            "description": "Profile ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Associated account ID"
+          },
+          "account_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Name",
+            "description": "Associated account name"
+          },
+          "column_mappings": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Column Mappings",
+            "description": "Column mappings"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string"
+          },
+          "skip_rows": {
+            "type": "integer",
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether the profile is active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "name",
+          "column_mappings",
+          "skip_rows",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ImportProfileResponse",
+        "description": "Schema for import profile response."
+      },
+      "ImportProfileSuggestion": {
+        "properties": {
+          "profile_id": {
+            "type": "integer",
+            "title": "Profile Id",
+            "description": "Profile ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "match_score": {
+            "type": "number",
+            "title": "Match Score",
+            "description": "Match score (0-100)"
+          },
+          "matched_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Columns",
+            "description": "Columns that matched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "profile_id",
+          "name",
+          "match_score",
+          "matched_columns"
+        ],
+        "title": "ImportProfileSuggestion",
+        "description": "Schema for suggested import profile match."
+      },
+      "ImportProfileUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Profile name"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Associated account ID"
+          },
+          "column_mappings": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Mappings",
+            "description": "Column mappings"
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format",
+            "description": "Date format string"
+          },
+          "skip_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Rows",
+            "description": "Number of header rows to skip"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Whether the profile is active"
+          }
+        },
+        "type": "object",
+        "title": "ImportProfileUpdate",
+        "description": "Schema for updating an import profile."
+      },
       "ImportRequest": {
         "properties": {
           "mode": {
@@ -10443,6 +13757,7 @@
         "properties": {
           "total_income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Income",
             "description": "Total income amount"
           },
@@ -10453,6 +13768,7 @@
           },
           "average_transaction": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Average Transaction",
             "description": "Average transaction amount"
           },
@@ -10491,7 +13807,7 @@
             "description": "Analysis period end date"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -10506,19 +13822,19 @@
         "title": "IncomeAnalysisResponse",
         "description": "Response for income analysis.",
         "example": {
-          "average_transaction": 5000.0,
+          "average_transaction": "5000.00",
           "breakdown_by_category": {
             "Salary": {
-              "average": 5000.0,
+              "average": "5000.00",
               "count": 2,
               "percentage": 100.0,
-              "total": 10000.0
+              "total": "10000.00"
             }
           },
           "mode": "analysis",
           "period_end": "2025-01-31",
           "period_start": "2025-01-01",
-          "total_income": 10000.0,
+          "total_income": "10000.00",
           "transaction_count": 2
         }
       },
@@ -10586,7 +13902,7 @@
             "description": "Expense analysis"
           },
           "cash_flow": {
-            "$ref": "#/components/schemas/CashFlowResponse",
+            "$ref": "#/components/schemas/src__financial_analysis__api__schemas__analysis__CashFlowResponse",
             "description": "Cash flow summary"
           },
           "comparison_metrics": {
@@ -10610,33 +13926,33 @@
             "expense_count": 3,
             "income_count": 2,
             "mode": "analysis",
-            "net_cash_flow": 8150.0,
+            "net_cash_flow": "8150.00",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
-            "total_expenses": 1850.0,
-            "total_income": 10000.0
+            "total_expenses": "1850.00",
+            "total_income": "10000.00"
           },
           "comparison_metrics": {
             "expense_to_income_percentage": 18.5,
             "income_to_expense_ratio": 5.41
           },
           "expense_analysis": {
-            "average_transaction": 616.67,
+            "average_transaction": "616.67",
             "breakdown_by_category": {},
             "mode": "analysis",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
             "top_categories": [],
-            "total_expenses": 1850.0,
+            "total_expenses": "1850.00",
             "transaction_count": 3
           },
           "income_analysis": {
-            "average_transaction": 5000.0,
+            "average_transaction": "5000.00",
             "breakdown_by_category": {},
             "mode": "analysis",
             "period_end": "2025-01-31",
             "period_start": "2025-01-01",
-            "total_income": 10000.0,
+            "total_income": "10000.00",
             "transaction_count": 2
           }
         }
@@ -10768,6 +14084,185 @@
         ],
         "title": "IncomeSummary",
         "description": "Income summary in a report."
+      },
+      "InsightResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "insight_type": {
+            "type": "string",
+            "title": "Insight Type"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "action_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Type"
+          },
+          "action_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Payload"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "insight_type",
+          "priority",
+          "title",
+          "content",
+          "action_type",
+          "action_payload",
+          "created_at"
+        ],
+        "title": "InsightResponse",
+        "description": "Response for insights."
+      },
+      "LinkTokenResponse": {
+        "properties": {
+          "link_token": {
+            "type": "string",
+            "title": "Link Token"
+          },
+          "expiration": {
+            "type": "string",
+            "title": "Expiration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "link_token",
+          "expiration"
+        ],
+        "title": "LinkTokenResponse",
+        "description": "Response from creating a Plaid Link token."
+      },
+      "LinkedProviderResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "provider_type": {
+            "type": "string",
+            "title": "Provider Type"
+          },
+          "institution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution Id"
+          },
+          "institution_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "last_synced_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Synced At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "account_count": {
+            "type": "integer",
+            "title": "Account Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "provider_type",
+          "institution_id",
+          "institution_name",
+          "status",
+          "error_code",
+          "error_message",
+          "last_synced_at",
+          "created_at"
+        ],
+        "title": "LinkedProviderResponse",
+        "description": "Response with linked provider details."
       },
       "ModelMetrics": {
         "properties": {
@@ -10920,26 +14415,44 @@
         "title": "ModelMetrics",
         "description": "Model performance metrics."
       },
+      "NegotiationChoice": {
+        "properties": {
+          "chosen_option": {
+            "type": "string",
+            "title": "Chosen Option"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chosen_option"
+        ],
+        "title": "NegotiationChoice"
+      },
       "NetWorthResponse": {
         "properties": {
           "assets": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Assets"
           },
           "liabilities": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liabilities"
           },
           "net_worth": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Worth"
           },
           "liquid_assets": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Liquid Assets"
           },
           "investments": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Investments"
           },
           "as_of_date": {
@@ -11022,6 +14535,48 @@
         "title": "PersonRead",
         "description": "Schema returned for a person."
       },
+      "PnlResponse": {
+        "properties": {
+          "entity_id": {
+            "type": "integer",
+            "title": "Entity Id"
+          },
+          "entity_name": {
+            "type": "string",
+            "title": "Entity Name"
+          },
+          "period": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Period"
+          },
+          "revenue": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Revenue"
+          },
+          "expenses": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Expenses"
+          },
+          "net_income": {
+            "type": "number",
+            "title": "Net Income"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_id",
+          "entity_name",
+          "period",
+          "revenue",
+          "expenses",
+          "net_income"
+        ],
+        "title": "PnlResponse",
+        "description": "Profit & Loss statement response."
+      },
       "PortfolioSummary": {
         "properties": {
           "account_id": {
@@ -11034,12 +14589,14 @@
           },
           "total_value": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Total Value"
           },
           "total_cost_basis": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11050,7 +14607,8 @@
           "total_gain_loss": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11122,6 +14680,300 @@
         "title": "ProjectionPeriod",
         "description": "Projection period information."
       },
+      "PublicTokenExchange": {
+        "properties": {
+          "public_token": {
+            "type": "string",
+            "title": "Public Token",
+            "description": "Plaid public token from Link"
+          },
+          "institution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution Id",
+            "description": "Plaid institution ID"
+          },
+          "institution_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution Name",
+            "description": "Institution display name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_token"
+        ],
+        "title": "PublicTokenExchange",
+        "description": "Request to exchange a Plaid public token."
+      },
+      "ReceivableTransaction": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "Transaction date"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Transaction description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Amount paid (expense)"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "classification": {
+            "type": "string",
+            "title": "Classification",
+            "description": "Classification name"
+          },
+          "days_outstanding": {
+            "type": "integer",
+            "title": "Days Outstanding",
+            "description": "Days since expense was paid"
+          },
+          "is_reimbursed": {
+            "type": "boolean",
+            "title": "Is Reimbursed",
+            "description": "Whether this has been reimbursed"
+          },
+          "reimbursement_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reimbursement Id",
+            "description": "Linked reimbursement transaction ID if received"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Transaction notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "date",
+          "description",
+          "amount",
+          "category",
+          "classification",
+          "days_outstanding",
+          "is_reimbursed"
+        ],
+        "title": "ReceivableTransaction",
+        "description": "Individual receivable transaction (expense awaiting reimbursement)."
+      },
+      "ReceivablesCategorySummary": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "description": "Category name"
+          },
+          "total": {
+            "type": "number",
+            "title": "Total",
+            "description": "Total outstanding amount for this category"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of transactions"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of total receivables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "total",
+          "count",
+          "percentage"
+        ],
+        "title": "ReceivablesCategorySummary",
+        "description": "Receivables totals grouped by category."
+      },
+      "ReceivablesReportResponse": {
+        "properties": {
+          "report_type": {
+            "type": "string",
+            "title": "Report Type",
+            "description": "Type of report",
+            "default": "receivables"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod",
+            "description": "Report period"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReceivablesSummary",
+            "description": "Receivables summary statistics"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivablesCategorySummary"
+            },
+            "type": "array",
+            "title": "By Category",
+            "description": "Outstanding grouped by category"
+          },
+          "outstanding": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableTransaction"
+            },
+            "type": "array",
+            "title": "Outstanding",
+            "description": "List of outstanding receivables"
+          },
+          "recently_reimbursed": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableTransaction"
+            },
+            "type": "array",
+            "title": "Recently Reimbursed",
+            "description": "Recently reimbursed transactions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "summary",
+          "by_category",
+          "outstanding",
+          "recently_reimbursed"
+        ],
+        "title": "ReceivablesReportResponse",
+        "description": "Response for receivables (reimbursement tracking) report.",
+        "example": {
+          "by_category": [
+            {
+              "category": "Business Travel",
+              "count": 2,
+              "percentage": 64.0,
+              "total": 800.0
+            },
+            {
+              "category": "Office Supplies",
+              "count": 1,
+              "percentage": 36.0,
+              "total": 450.0
+            }
+          ],
+          "outstanding": [
+            {
+              "amount": -150.0,
+              "category": "Business Travel",
+              "classification": "Reimbursement Paid",
+              "date": "2025-03-15",
+              "days_outstanding": 10,
+              "description": "Client dinner",
+              "is_reimbursed": false,
+              "notes": "Expense report submitted",
+              "transaction_id": 1234
+            }
+          ],
+          "period": {
+            "days": 365,
+            "end_date": "2025-12-31",
+            "start_date": "2025-01-01"
+          },
+          "recently_reimbursed": [],
+          "report_type": "receivables",
+          "summary": {
+            "average_days_outstanding": 15.5,
+            "oldest_outstanding_days": 45,
+            "outstanding_count": 3,
+            "reimbursed_count": 8,
+            "total_outstanding": 1250.0,
+            "total_reimbursed": 3500.0
+          }
+        }
+      },
+      "ReceivablesSummary": {
+        "properties": {
+          "total_outstanding": {
+            "type": "number",
+            "title": "Total Outstanding",
+            "description": "Total amount awaiting reimbursement"
+          },
+          "total_reimbursed": {
+            "type": "number",
+            "title": "Total Reimbursed",
+            "description": "Total amount already reimbursed in period"
+          },
+          "outstanding_count": {
+            "type": "integer",
+            "title": "Outstanding Count",
+            "description": "Number of outstanding receivables"
+          },
+          "reimbursed_count": {
+            "type": "integer",
+            "title": "Reimbursed Count",
+            "description": "Number of reimbursed transactions"
+          },
+          "average_days_outstanding": {
+            "type": "number",
+            "title": "Average Days Outstanding",
+            "description": "Average days for outstanding receivables"
+          },
+          "oldest_outstanding_days": {
+            "type": "integer",
+            "title": "Oldest Outstanding Days",
+            "description": "Days since oldest outstanding receivable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_outstanding",
+          "total_reimbursed",
+          "outstanding_count",
+          "reimbursed_count",
+          "average_days_outstanding",
+          "oldest_outstanding_days"
+        ],
+        "title": "ReceivablesSummary",
+        "description": "Summary statistics for Receivables report."
+      },
       "RecentTransaction": {
         "properties": {
           "transaction_id": {
@@ -11137,6 +14989,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -11220,7 +15073,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Statement Balance"
@@ -11231,7 +15085,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11245,7 +15100,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11356,16 +15212,19 @@
           },
           "statement_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Statement Balance"
           },
           "calculated_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Calculated Balance"
           },
           "statement_cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11376,7 +15235,8 @@
           "calculated_cash_balance": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11387,7 +15247,8 @@
           "statement_investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11398,7 +15259,8 @@
           "calculated_investment_value": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11409,7 +15271,8 @@
           "discrepancy_amount": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -11769,6 +15632,15 @@
         "title": "ReportFormatEnum",
         "description": "Report export formats."
       },
+      "ReportModeEnum": {
+        "type": "string",
+        "enum": [
+          "analysis",
+          "complete"
+        ],
+        "title": "ReportModeEnum",
+        "description": "Analysis mode for reports."
+      },
       "ReportPeriod": {
         "properties": {
           "start_date": {
@@ -11899,6 +15771,7 @@
           },
           "min_balance": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Min Balance"
           },
           "coverage_by_person": {
@@ -11912,7 +15785,8 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                 },
                 "type": "object"
               },
@@ -11968,7 +15842,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -12016,7 +15891,8 @@
           },
           "deltas": {
             "additionalProperties": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
             },
             "type": "object",
             "title": "Deltas"
@@ -12064,6 +15940,74 @@
         "title": "ScenarioRange",
         "description": "Range across scenarios."
       },
+      "ScenarioTemplate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique template identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Template name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What this template models"
+          },
+          "adjusters": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateAdjuster"
+            },
+            "type": "array",
+            "title": "Adjusters",
+            "description": "Pre-configured adjusters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "adjusters"
+        ],
+        "title": "ScenarioTemplate",
+        "description": "A scenario template with pre-configured adjusters."
+      },
+      "ScenarioTemplateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioTemplate"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "pageSize": {
+            "type": "integer",
+            "title": "Pagesize"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "title": "ScenarioTemplateListResponse",
+        "description": "Paginated list of scenario templates."
+      },
       "Scenarios": {
         "properties": {
           "expected": {
@@ -12102,14 +16046,17 @@
           },
           "income": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Income"
           },
           "expenses": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Expenses"
           },
           "net_cf": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Net Cf"
           },
           "by_person": {
@@ -12117,7 +16064,8 @@
               {
                 "additionalProperties": {
                   "additionalProperties": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
                   },
                   "type": "object"
                 },
@@ -12198,6 +16146,30 @@
           "health_indicators": {
             "$ref": "#/components/schemas/HealthIndicators",
             "description": "Financial health indicators"
+          },
+          "total_capex": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Capex",
+            "description": "Total capital expenditure for the period"
+          },
+          "total_receivables": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Receivables",
+            "description": "Total outstanding receivables (expenses awaiting reimbursement)"
           }
         },
         "type": "object",
@@ -12255,8 +16227,41 @@
             "end_date": "2025-01-31",
             "start_date": "2025-01-01"
           },
-          "report_type": "summary"
+          "report_type": "summary",
+          "total_capex": 0.0
         }
+      },
+      "SyncResultResponse": {
+        "properties": {
+          "transactions_added": {
+            "type": "integer",
+            "title": "Transactions Added",
+            "default": 0
+          },
+          "transactions_modified": {
+            "type": "integer",
+            "title": "Transactions Modified",
+            "default": 0
+          },
+          "transactions_removed": {
+            "type": "integer",
+            "title": "Transactions Removed",
+            "default": 0
+          },
+          "balances_updated": {
+            "type": "integer",
+            "title": "Balances Updated",
+            "default": 0
+          },
+          "holdings_updated": {
+            "type": "integer",
+            "title": "Holdings Updated",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "SyncResultResponse",
+        "description": "Response from a sync operation."
       },
       "TagInfo": {
         "properties": {
@@ -12276,6 +16281,63 @@
         ],
         "title": "TagInfo",
         "description": "Tag information for transaction response."
+      },
+      "TemplateAdjuster": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Adjuster type: percentage | fixed | boolean"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Unique key for this adjuster within the template"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human-readable label"
+          },
+          "default": {
+            "type": "number",
+            "title": "Default",
+            "description": "Default value for this adjuster"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Minimum allowed value"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Maximum allowed value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "key",
+          "label",
+          "default"
+        ],
+        "title": "TemplateAdjuster",
+        "description": "A single adjuster within a scenario template."
       },
       "TestCategoryRuleRequest": {
         "properties": {
@@ -12533,6 +16595,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Total amount"
           },
@@ -12564,6 +16627,8 @@
               "type": "integer"
             },
             "type": "array",
+            "maxItems": 1000,
+            "minItems": 1,
             "title": "Transaction Ids"
           },
           "cleared_date": {
@@ -12600,7 +16665,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Amount",
@@ -12675,12 +16741,6 @@
             "description": "Include in analysis",
             "default": true
           },
-          "is_transfer": {
-            "type": "boolean",
-            "title": "Is Transfer",
-            "description": "Is transfer transaction",
-            "default": false
-          },
           "transfer_account_from": {
             "anyOf": [
               {
@@ -12718,6 +16778,19 @@
             ],
             "title": "Notes",
             "description": "Additional notes"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Account ID this transaction belongs to"
           },
           "tag_names": {
             "anyOf": [
@@ -12861,6 +16934,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount (can be negative for expenses)"
           },
@@ -12933,12 +17007,6 @@
             "description": "Include in analysis",
             "default": true
           },
-          "is_transfer": {
-            "type": "boolean",
-            "title": "Is Transfer",
-            "description": "Is transfer transaction",
-            "default": false
-          },
           "transfer_account_from": {
             "anyOf": [
               {
@@ -12977,10 +17045,35 @@
             "title": "Notes",
             "description": "Additional notes"
           },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Account ID this transaction belongs to"
+          },
           "transaction_id": {
             "type": "integer",
             "title": "Transaction Id",
             "description": "Transaction ID"
+          },
+          "is_transfer": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Transfer",
+            "description": "Whether this is a transfer (computed from category type)"
           },
           "related_transaction_id": {
             "anyOf": [
@@ -13063,7 +17156,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               }
             ],
             "title": "Amount",
@@ -13094,6 +17188,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount"
           },
           "created_at": {
@@ -13128,6 +17223,7 @@
           },
           "amount": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount",
             "description": "Transaction amount"
           },
@@ -13216,7 +17312,8 @@
                 "type": "number"
               },
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
               },
               {
                 "type": "null"
@@ -13314,18 +17411,6 @@
             "title": "Include In Analysis",
             "description": "Include in analysis"
           },
-          "is_transfer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Transfer",
-            "description": "Is transfer transaction"
-          },
           "transfer_account_from": {
             "anyOf": [
               {
@@ -13363,6 +17448,19 @@
             ],
             "title": "Notes",
             "description": "Additional notes"
+          },
+          "account_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Id",
+            "description": "Account ID this transaction belongs to"
           },
           "tag_names": {
             "anyOf": [
@@ -13415,6 +17513,7 @@
           },
           "amount_difference": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Amount Difference",
             "description": "Difference in amounts"
           },
@@ -13480,6 +17579,7 @@
           },
           "value": {
             "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Value",
             "description": "Value for the period"
           },
@@ -13513,7 +17613,7 @@
             "description": "Period granularity"
           },
           "mode": {
-            "$ref": "#/components/schemas/AnalysisModeEnum-Output",
+            "$ref": "#/components/schemas/AnalysisModeEnum",
             "description": "Analysis mode used"
           }
         },
@@ -13532,12 +17632,12 @@
             {
               "count": 1,
               "period": "2025-01",
-              "value": 5000.0
+              "value": "5000.00"
             },
             {
               "count": 1,
               "period": "2025-02",
-              "value": 5000.0
+              "value": "5000.00"
             }
           ]
         }
@@ -13618,24 +17718,88 @@
           ]
         }
       },
-      "financial_analysis__api__schemas__analysis__AnalysisModeEnum": {
-        "type": "string",
-        "enum": [
-          "analysis",
-          "with_capital",
-          "complete"
+      "src__financial_analysis__api__schemas__analysis__CashFlowResponse": {
+        "properties": {
+          "net_cash_flow": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net Cash Flow",
+            "description": "Net cash flow (income - expenses)"
+          },
+          "total_income": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Income",
+            "description": "Total income"
+          },
+          "total_expenses": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Expenses",
+            "description": "Total expenses"
+          },
+          "income_count": {
+            "type": "integer",
+            "title": "Income Count",
+            "description": "Number of income transactions"
+          },
+          "expense_count": {
+            "type": "integer",
+            "title": "Expense Count",
+            "description": "Number of expense transactions"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start",
+            "description": "Analysis period start date"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End",
+            "description": "Analysis period end date"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AnalysisModeEnum",
+            "description": "Analysis mode used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "net_cash_flow",
+          "total_income",
+          "total_expenses",
+          "income_count",
+          "expense_count",
+          "mode"
         ],
-        "title": "AnalysisModeEnum",
-        "description": "Analysis mode."
-      },
-      "financial_analysis__api__schemas__report__AnalysisModeEnum": {
-        "type": "string",
-        "enum": [
-          "analysis",
-          "complete"
-        ],
-        "title": "AnalysisModeEnum",
-        "description": "Analysis mode for reports."
+        "title": "CashFlowResponse",
+        "description": "Response for cash flow analysis.",
+        "example": {
+          "expense_count": 3,
+          "income_count": 2,
+          "mode": "analysis",
+          "net_cash_flow": "8150.00",
+          "period_end": "2025-01-31",
+          "period_start": "2025-01-01",
+          "total_expenses": "1850.00",
+          "total_income": "10000.00"
+        }
       }
     },
     "securitySchemes": {
