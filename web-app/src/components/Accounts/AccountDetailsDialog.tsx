@@ -468,6 +468,11 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   </Button>
                   <Button onClick={() => setShowAddBalance(false)}>Cancel</Button>
                 </Grid>
+                {addBalanceMutation.isError && (
+                  <Grid item xs={12}>
+                    <Alert severity="error">Failed to add balance snapshot. Please try again.</Alert>
+                  </Grid>
+                )}
               </Grid>
             </Box>
           ) : (
@@ -599,6 +604,9 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           <Typography>
             Are you sure you want to delete <strong>{account.account_name}</strong>? This action cannot be undone.
           </Typography>
+          {deleteAccountMutation.isError && (
+            <Alert severity="error" sx={{ mt: 2 }}>Failed to delete account. Please try again.</Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDeleteOpen(false)}>Cancel</Button>
