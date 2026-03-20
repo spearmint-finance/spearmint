@@ -1,10 +1,13 @@
 """Transaction CRUD service."""
 
+import logging
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, asc, func, case
+
+logger = logging.getLogger(__name__)
 
 from ..database.models import (
     Transaction, Category, TransactionClassification,
@@ -473,9 +476,13 @@ class TransactionService:
                     # Ensure derived flags are persisted
                     self.db.commit()
                     self.db.refresh(transaction)
-            except Exception:
-                # Do not fail the update due to classification errors
-                pass
+            except Exception as exc:
+                logger.warning(
+                    "Auto-classification failed for transaction %s: %s",
+                    transaction.transaction_id,
+                    exc,
+                    exc_info=True,
+                )
 
         return transaction
 
