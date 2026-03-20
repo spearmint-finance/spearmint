@@ -71,11 +71,12 @@ These are the items that should be worked on NOW, in priority order:
 
 | Rank | Item | Target Team | Rationale |
 |------|------|-------------|-----------|
-| 1 | **Authentication & authorization** | Accounts / Platform | Without auth, the app cannot be exposed to a network. This is the single biggest blocker to real-world adoption and star growth. |
-| 2 | **Budget management UI** | Accounts team | Budgeting is the #1 reason people use personal finance apps (YNAB's entire value proposition). The DB model exists — this needs a frontend. |
-| 3 | **README & setup documentation** | Marketing team | First impression for GitHub visitors. Clear install instructions, screenshots, and feature overview directly drive stars. |
-| 4 | **Transaction relationships UI** | Accounts team | Transfer detection and reimbursement tracking are built on the backend but lack frontend polish. |
-| 5 | **Scenario builder completion** | Dashboard team | Currently stubbed. This is a core Horizon 2 differentiator. |
+| 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
+| 2 | **Budget management UI** | Accounts team | Directive: #144. PRD: [budget-management-ui.md](feature-planning/budget-management-ui.md). Budgeting is the #1 reason people use personal finance apps. |
+| 3 | ~~**README & setup documentation**~~ | ~~Marketing team~~ | **Done** (PR #146). Complete README rewrite with competitive positioning, Docker quick start, feature comparison table. |
+| 4 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
+| 5 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
+| 6 | **Scenario builder completion** | Dashboard team | Currently stubbed. Core Horizon 2 differentiator. |
 
 ---
 
