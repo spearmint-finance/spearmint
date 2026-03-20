@@ -77,7 +77,7 @@ function TransactionDetail({
             }}
           >
             <Typography variant="h6">Transaction Details</Typography>
-            <IconButton onClick={onClose} size="small">
+            <IconButton onClick={onClose} size="small" aria-label="Close transaction details">
               <CloseIcon />
             </IconButton>
           </Box>

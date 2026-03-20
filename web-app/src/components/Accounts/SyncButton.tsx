@@ -38,6 +38,7 @@ export default function SyncButton({ linkedProviderId }: SyncButtonProps) {
     <Tooltip title="Sync now">
       <IconButton
         size="small"
+        aria-label="Sync account data"
         onClick={(e) => {
           e.stopPropagation();
           syncMutation.mutate();
