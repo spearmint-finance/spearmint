@@ -5,7 +5,6 @@ import {
   Paper,
   Tabs,
   Tab,
-  Grid,
   TextField,
   Table,
   TableBody,
@@ -39,7 +38,7 @@ async function fetchPnl(
       ? window.location.origin
       : "http://localhost:8080");
   const url = `${baseUrl}/api/entities/${entityId}/pnl?start_date=${startDate}&end_date=${endDate}`;
-  const res = await fetch(url, );
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch P&L");
   return res.json();
 }
@@ -58,7 +57,7 @@ async function fetchCashflow(
       ? window.location.origin
       : "http://localhost:8080");
   const url = `${baseUrl}/api/entities/${entityId}/cashflow?start_date=${startDate}&end_date=${endDate}`;
-  const res = await fetch(url, );
+  const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch cash flow");
   return res.json();
 }
@@ -176,6 +175,7 @@ const ReportsPage: React.FC = () => {
         <Tabs
           value={tabValue}
           onChange={(_, v) => setTabValue(v)}
+          aria-label="Report type"
           sx={{ borderBottom: 1, borderColor: "divider" }}
         >
           <Tab label="Profit & Loss" />
@@ -224,8 +224,20 @@ const ReportsPage: React.FC = () => {
                 </Typography>
                 <TableContainer>
                   <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Category</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
-                      {(pnlData.revenue?.by_category ?? []).map(
+                      {(pnlData.revenue?.by_category ?? []).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={2} sx={{ color: "text.secondary" }}>
+                            No revenue for this period
+                          </TableCell>
+                        </TableRow>
+                      ) : (pnlData.revenue?.by_category ?? []).map(
                         (item: any) => (
                           <TableRow key={item.category_id}>
                             <TableCell>{item.category_name}</TableCell>
@@ -267,8 +279,20 @@ const ReportsPage: React.FC = () => {
                 </Typography>
                 <TableContainer>
                   <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Category</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
-                      {(pnlData.expenses?.by_category ?? []).map(
+                      {(pnlData.expenses?.by_category ?? []).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={2} sx={{ color: "text.secondary" }}>
+                            No expenses for this period
+                          </TableCell>
+                        </TableRow>
+                      ) : (pnlData.expenses?.by_category ?? []).map(
                         (item: any) => (
                           <TableRow key={item.category_id}>
                             <TableCell>{item.category_name}</TableCell>
@@ -352,6 +376,12 @@ const ReportsPage: React.FC = () => {
                 </Typography>
                 <TableContainer>
                   <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Description</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
                       {(cashflowData.operating?.items ?? []).map(
                         (item: any, i: number) => (
@@ -389,6 +419,12 @@ const ReportsPage: React.FC = () => {
                 </Typography>
                 <TableContainer>
                   <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Description</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
                       {(cashflowData.investing?.items ?? []).length === 0 ? (
                         <TableRow>
@@ -426,6 +462,12 @@ const ReportsPage: React.FC = () => {
                 </Typography>
                 <TableContainer>
                   <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Description</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                      </TableRow>
+                    </TableHead>
                     <TableBody>
                       {(cashflowData.financing?.items ?? []).length === 0 ? (
                         <TableRow>
