@@ -135,6 +135,7 @@ function Sidebar({
                   sx={{ ml: 1, color: "text.secondary" }}
                 >
                   {ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type}
+                  {entity.account_count > 0 && ` · ${entity.account_count}`}
                 </Typography>
               </MenuItem>
             ))}
