@@ -160,8 +160,9 @@ const ReportsPage: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="info">
-          Select an entity from the sidebar to view reports. If you haven't
-          created any entities yet, create one via the API first.
+          {entities.length > 0
+            ? "Select an entity from the sidebar to view reports."
+            : "Create an entity using \"Manage Entities\" in the sidebar to generate P&L and Cash Flow reports."}
         </Alert>
       </Box>
     );
