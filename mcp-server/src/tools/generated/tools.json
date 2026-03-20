@@ -59,7 +59,7 @@
         },
         "is_transfer": {
           "type": "boolean",
-          "description": "Filter by transfer status: true for transfers only, false to exclude transfers"
+          "description": "Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers"
         },
         "min_amount": {
           "type": "number",
@@ -76,6 +76,10 @@
         "tag_ids": {
           "type": "array",
           "description": "Filter by tag IDs (transactions matching any of the given tags)"
+        },
+        "entity_id": {
+          "type": "number",
+          "description": "Filter by entity ID (via account)"
         },
         "include_capital_expenses": {
           "type": "boolean",
