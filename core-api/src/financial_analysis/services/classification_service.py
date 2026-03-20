@@ -1,11 +1,14 @@
 """Transaction classification service."""
 
+import logging
 from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from datetime import datetime, timedelta
 from decimal import Decimal
 import re
+
+logger = logging.getLogger(__name__)
 
 from ..database.models import (
     Transaction, TransactionClassification, ClassificationRule,
@@ -229,8 +232,8 @@ class ClassificationService:
                 if not getattr(tx2, "related_transaction_id", None):
                     tx2.related_transaction_id = tx1.transaction_id
                 self.db.commit()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to backfill relationship links for transactions %s/%s: %s", tx1.transaction_id, tx2.transaction_id, exc)
             return existing
 
         # Create relationship
@@ -247,9 +250,8 @@ class ClassificationService:
         try:
             tx1.related_transaction_id = tx2.transaction_id
             tx2.related_transaction_id = tx1.transaction_id
-        except Exception:
-            # Non-fatal; keep relationship row even if convenience fields fail
-            pass
+        except Exception as exc:
+            logger.warning("Failed to set relationship links for transactions %s/%s: %s", tx1.transaction_id, tx2.transaction_id, exc)
 
         self.db.commit()
         self.db.refresh(relationship)
