@@ -8,11 +8,11 @@
 | [budget-advisor-agent.md](budget-advisor-agent.md) | Budget advisor agent (A2A) | Product team | Draft | G2 |
 | [business-entity-separation.md](business-entity-separation.md) | Multi-entity support | Accounts team | Draft (shipped) | G1 |
 | [budget-management-ui.md](budget-management-ui.md) | Budget management UI | Accounts team | Draft | G1/G2 |
+| [scenario-builder-completion.md](scenario-builder-completion.md) | Scenario builder completion | Dashboard team | Draft | G2 |
 
 ## PRDs Needed
 
 | Feature | Priority | Gate | Notes |
 |---------|----------|------|-------|
-| Authentication & authorization | P1 | G1 | No auth on any endpoint — critical blocker |
-| Scenario builder | P2 | G2 | Currently stubbed, needs full spec |
+| Authentication & authorization | P0 | G1 | No auth on any endpoint — critical blocker (#141) |
 | Confidence-based forecasting | P2 | G2 | Single deterministic forecast only |
