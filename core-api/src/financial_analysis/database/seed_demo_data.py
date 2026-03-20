@@ -63,8 +63,8 @@ DEMO_CATEGORIES = [
     {"category_name": "Personal Care", "category_type": "Expense", "description": "Haircuts, gym, wellness"},
 
     # Transfer categories
-    {"category_name": "Transfers", "category_type": "Both", "description": "Internal account transfers", "is_transfer_category": True},
-    {"category_name": "Credit Card Payment", "category_type": "Both", "description": "Credit card bill payments", "is_transfer_category": True},
+    {"category_name": "Transfers", "category_type": "Transfer", "description": "Internal account transfers"},
+    {"category_name": "Credit Card Payment", "category_type": "Transfer", "description": "Credit card bill payments"},
 
     # Capital/Investment
     {"category_name": "Investments", "category_type": "Expense", "description": "Stock and fund purchases"},
@@ -729,7 +729,7 @@ def generate_transfer_transactions(
             "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer to Savings Account",
             "source": PRIMARY_CHECKING,
-            "is_transfer": True,
+
             "include_in_analysis": False,
             "transfer_account_from": PRIMARY_CHECKING,
             "transfer_account_to": SAVINGS_ACCOUNT,
@@ -744,7 +744,7 @@ def generate_transfer_transactions(
             "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer from Checking Account",
             "source": SAVINGS_ACCOUNT,
-            "is_transfer": True,
+
             "include_in_analysis": False,
             "transfer_account_from": PRIMARY_CHECKING,
             "transfer_account_to": SAVINGS_ACCOUNT,
@@ -764,7 +764,6 @@ def generate_transfer_transactions(
         "classification_id": cc_payment_class,
         "description": f"{DEMO_MARKER} Payment to {cc_card}",
         "source": PRIMARY_CHECKING,
-        "is_transfer": True,
         "include_in_analysis": False,
         "payment_method": "ACH Transfer",
     })
@@ -778,7 +777,6 @@ def generate_transfer_transactions(
         "classification_id": cc_receipt_class,
         "description": f"{DEMO_MARKER} Payment Received - {cc_card}",
         "source": cc_card,
-        "is_transfer": True,
         "include_in_analysis": False,
     })
 

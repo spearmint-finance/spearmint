@@ -54,7 +54,6 @@ def create_category(
             category_type=category.category_type,
             parent_category_id=category.parent_category_id,
             description=category.description,
-            is_transfer_category=category.is_transfer_category
         )
         return created
     except ValidationError as e:
@@ -89,7 +88,7 @@ def get_category(
 
 @router.get("/categories", response_model=CategoryListResponse)
 def list_categories(
-    category_type: Optional[str] = Query(None, pattern="^(Income|Expense|Both)$", description="Category type filter"),
+    category_type: Optional[str] = Query(None, pattern="^(Income|Expense|Transfer|Both)$", description="Category type filter"),
     parent_category_id: Optional[int] = Query(None, description="Parent category ID filter (null for root categories)"),
     include_transfer_categories: bool = Query(True, description="Include transfer categories"),
     search_text: Optional[str] = Query(None, description="Search in category name or description"),
@@ -128,7 +127,7 @@ def list_categories(
 
 @router.get("/categories/root", response_model=CategoryListResponse)
 def get_root_categories(
-    category_type: Optional[str] = Query(None, pattern="^(Income|Expense|Both)$", description="Category type filter"),
+    category_type: Optional[str] = Query(None, pattern="^(Income|Expense|Transfer|Both)$", description="Category type filter"),
     db: Session = Depends(get_db)
 ):
     """

@@ -85,7 +85,7 @@ class ScenarioService:
         # Base filters: exclude transfers; include only include_in_analysis
         base_q = self.db.query(Transaction).filter(
             Transaction.include_in_analysis == True,
-            Transaction.is_transfer == False,
+            # Transfers excluded via include_in_analysis=False
             Transaction.transaction_date >= lookback_start,
         )
         # For income: exclude classifications marked exclude_from_income_calc
@@ -238,7 +238,7 @@ class ScenarioService:
         lookback_start = date(today.year - (1 if today.month <= 3 else 0), (today.month - 3) % 12 or 12, 1)
         q = self.db.query(Transaction).filter(
             Transaction.include_in_analysis == True,
-            Transaction.is_transfer == False,
+            # Transfers excluded via include_in_analysis=False
             Transaction.transaction_type == "Income",
             Transaction.transaction_date >= lookback_start,
         )
@@ -306,7 +306,7 @@ class ScenarioService:
             .filter(
                 Transaction.transaction_type == "Expense",
                 Transaction.include_in_analysis == True,
-                Transaction.is_transfer == False,
+                # Transfers excluded via include_in_analysis=False
                 Category.is_fixed_obligation == True,
                 Transaction.transaction_date >= lookback_start,
             )
@@ -330,7 +330,7 @@ class ScenarioService:
             .filter(
                 Transaction.transaction_type == "Income",
                 Transaction.include_in_analysis == True,
-                Transaction.is_transfer == False,
+                # Transfers excluded via include_in_analysis=False
                 Transaction.transaction_date >= lookback_start,
             )
         )

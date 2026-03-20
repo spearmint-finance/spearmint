@@ -15,7 +15,6 @@ import {
   FormControlLabel,
   Radio,
   CircularProgress,
-  Checkbox,
   Box,
   Divider,
 } from "@mui/material";
@@ -48,7 +47,6 @@ interface FormData {
   transaction_type: "Income" | "Expense";
   category_id: number; // Required field
   account_id: string; // Empty string = no account selected
-  is_transfer: boolean;
   notes?: string;
 }
 
@@ -72,7 +70,7 @@ function TransactionForm({
   // State for new category dialog
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<"Income" | "Expense" | "Both">("Expense");
+  const [newCategoryType, setNewCategoryType] = useState<"Income" | "Expense" | "Both" | "Transfer">("Expense");
 
   // Get today's date in local timezone (YYYY-MM-DD format)
   const getTodayDate = () => {
@@ -98,26 +96,12 @@ function TransactionForm({
       transaction_type: "Expense",
       category_id: "" as any, // Empty string for unselected state
       account_id: "",
-      is_transfer: false,
       notes: "",
     },
   });
 
   // Watch the transaction type to set default category type
   const transactionType = watch("transaction_type");
-
-  // Watch category changes to auto-check transfer
-  const categoryId = watch("category_id");
-  useEffect(() => {
-    if (categoryId && categoriesData?.categories) {
-      const selectedCategory = categoriesData.categories.find(
-        (cat) => cat.category_id === Number(categoryId)
-      );
-      if (selectedCategory?.category_name?.toLowerCase() === "transfer") {
-        setValue("is_transfer", true);
-      }
-    }
-  }, [categoryId, categoriesData, setValue]);
 
   // Reset form when transaction changes
   useEffect(() => {
@@ -129,7 +113,6 @@ function TransactionForm({
         transaction_type: transaction.transaction_type,
         category_id: transaction.category_id,
         account_id: transaction.account_id ? String(transaction.account_id) : "",
-        is_transfer: transaction.is_transfer || false,
         notes: transaction.notes || "",
       });
     } else if (mode === "create") {
@@ -140,7 +123,6 @@ function TransactionForm({
         transaction_type: "Expense",
         category_id: "" as any, // Empty string for unselected state
         account_id: "",
-        is_transfer: false,
         notes: "",
       });
     }
@@ -172,7 +154,6 @@ function TransactionForm({
           transaction_type: data.transaction_type,
           category_id: categoryId,
           account_id: accountId,
-          is_transfer: data.is_transfer,
           notes: data.notes,
         };
         await createMutation.mutateAsync(createData);
@@ -187,7 +168,6 @@ function TransactionForm({
           transaction_type: data.transaction_type,
           category_id: categoryId,
           account_id: accountId,
-          is_transfer: data.is_transfer,
           notes: data.notes,
         };
         await updateMutation.mutateAsync({
@@ -435,26 +415,6 @@ function TransactionForm({
               />
             </Grid>
 
-            {/* Transfer Checkbox */}
-            <Grid item xs={12}>
-              <Controller
-                name="is_transfer"
-                control={control}
-                render={({ field }) => (
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        {...field}
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                      />
-                    }
-                    label="Mark as Transfer (exclude from analysis)"
-                  />
-                )}
-              />
-            </Grid>
-
             {/* Notes */}
             <Grid item xs={12}>
               <Controller
@@ -505,7 +465,7 @@ function TransactionForm({
               <FormLabel>Category Type</FormLabel>
               <RadioGroup
                 value={newCategoryType}
-                onChange={(e) => setNewCategoryType(e.target.value as "Income" | "Expense" | "Both")}
+                onChange={(e) => setNewCategoryType(e.target.value as "Income" | "Expense" | "Both" | "Transfer")}
               >
                 <FormControlLabel
                   value="Income"
@@ -521,6 +481,11 @@ function TransactionForm({
                   value="Both"
                   control={<Radio />}
                   label="Both (can be used for either)"
+                />
+                <FormControlLabel
+                  value="Transfer"
+                  control={<Radio />}
+                  label="Transfer (excluded from analysis)"
                 />
               </RadioGroup>
             </FormControl>

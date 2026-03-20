@@ -17,8 +17,6 @@ import {
   DialogActions,
   TextField,
   MenuItem,
-  FormControlLabel,
-  Checkbox,
   IconButton,
   Tabs,
   Tab,
@@ -49,10 +47,9 @@ import CategoryRulesList from "./CategoryRulesList";
 
 interface CategoryFormData {
   category_name: string;
-  category_type: "Income" | "Expense" | "Both";
+  category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id: number | null;
   description: string;
-  is_transfer_category: boolean;
 }
 
 const emptyFormData: CategoryFormData = {
@@ -60,7 +57,6 @@ const emptyFormData: CategoryFormData = {
   category_type: "Expense",
   parent_category_id: null,
   description: "",
-  is_transfer_category: false,
 };
 
 export default function CategoryManagement() {
@@ -91,7 +87,6 @@ export default function CategoryManagement() {
         category_type: category.category_type,
         parent_category_id: category.parent_category_id,
         description: category.description || "",
-        is_transfer_category: category.is_transfer_category,
       });
     } else {
       setEditingCategory(null);
@@ -191,7 +186,7 @@ export default function CategoryManagement() {
       width: 120,
       editable: true,
       type: "singleSelect",
-      valueOptions: ["Income", "Expense", "Both"],
+      valueOptions: ["Income", "Expense", "Both", "Transfer"],
       renderCell: (params: GridRenderCellParams) => (
         <Chip
           label={params.value}
@@ -201,6 +196,8 @@ export default function CategoryManagement() {
               ? "success"
               : params.value === "Expense"
               ? "error"
+              : params.value === "Transfer"
+              ? "info"
               : "default"
           }
         />
@@ -238,17 +235,6 @@ export default function CategoryManagement() {
       ),
     },
     {
-      field: "is_transfer_category",
-      headerName: "Transfer",
-      width: 100,
-      editable: true,
-      type: "boolean",
-      renderCell: (params: GridRenderCellParams) =>
-        params.value ? (
-          <Chip label="Transfer" size="small" variant="outlined" />
-        ) : null,
-    },
-    {
       field: "actions",
       headerName: "Actions",
       width: 80,
@@ -277,7 +263,6 @@ export default function CategoryManagement() {
           category_type: newRow.category_type,
           parent_category_id: newRow.parent_category_id,
           description: newRow.description,
-          is_transfer_category: newRow.is_transfer_category,
         },
       });
       return newRow;
@@ -385,7 +370,8 @@ export default function CategoryManagement() {
                   category_type: e.target.value as
                     | "Income"
                     | "Expense"
-                    | "Both",
+                    | "Both"
+                    | "Transfer",
                 })
               }
               required
@@ -394,6 +380,7 @@ export default function CategoryManagement() {
               <MenuItem value="Income">Income</MenuItem>
               <MenuItem value="Expense">Expense</MenuItem>
               <MenuItem value="Both">Both</MenuItem>
+              <MenuItem value="Transfer">Transfer</MenuItem>
             </TextField>
 
             <TextField
@@ -429,20 +416,6 @@ export default function CategoryManagement() {
               fullWidth
             />
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.is_transfer_category}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      is_transfer_category: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label="Transfer Category (excluded from analysis)"
-            />
           </Box>
         </DialogContent>
         <DialogActions>

@@ -19,15 +19,13 @@ export const categoriesApi = {
    * Get all categories with optional filters
    */
   getAll: async (params?: {
-    category_type?: "Income" | "Expense" | "Both";
+    category_type?: "Income" | "Expense" | "Both" | "Transfer";
     parent_category_id?: number | null;
-    include_transfer_categories?: boolean;
     search_text?: string;
   }): Promise<CategoriesResponse> => {
     const response = await categoriesClient.listCategoriesApiCategoriesGet({
       categoryType: params?.category_type,
       parentCategoryId: params?.parent_category_id,
-      includeTransferCategories: params?.include_transfer_categories,
       searchText: params?.search_text,
     });
     const raw = response.data as Record<string, unknown>;
@@ -38,7 +36,6 @@ export const categoriesApi = {
         category_type: c.category_type ?? c.categoryType,
         parent_category_id: c.parent_category_id ?? c.parentCategoryId ?? null,
         description: c.description ?? null,
-        is_transfer_category: c.is_transfer_category ?? c.isTransferCategory ?? false,
         created_at: c.created_at ?? c.createdAt ?? "",
       })
     ) as Category[];
@@ -58,7 +55,7 @@ export const categoriesApi = {
    * Get root categories (no parent)
    */
   getRootCategories: async (
-    categoryType?: "Income" | "Expense" | "Both"
+    categoryType?: "Income" | "Expense" | "Both" | "Transfer"
   ): Promise<CategoriesResponse> => {
     const response =
       await categoriesClient.getRootCategoriesApiCategoriesRootGet({

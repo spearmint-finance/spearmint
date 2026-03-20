@@ -9,10 +9,9 @@ class CategoryBase(BaseModel):
     """Base category schema with common fields."""
     
     category_name: str = Field(..., min_length=1, max_length=100, description="Category name")
-    category_type: str = Field(..., pattern="^(Income|Expense|Both)$", description="Category type")
+    category_type: str = Field(..., pattern="^(Income|Expense|Transfer|Both)$", description="Category type")
     parent_category_id: Optional[int] = Field(None, gt=0, description="Parent category ID")
     description: Optional[str] = Field(None, description="Category description")
-    is_transfer_category: bool = Field(default=False, description="Is transfer category")
 
 
 class CategoryCreate(CategoryBase):
@@ -24,10 +23,9 @@ class CategoryUpdate(BaseModel):
     """Schema for updating a category."""
     
     category_name: Optional[str] = Field(None, min_length=1, max_length=100, description="Category name")
-    category_type: Optional[str] = Field(None, pattern="^(Income|Expense|Both)$", description="Category type")
+    category_type: Optional[str] = Field(None, pattern="^(Income|Expense|Transfer|Both)$", description="Category type")
     parent_category_id: Optional[int] = Field(None, gt=0, description="Parent category ID")
     description: Optional[str] = Field(None, description="Category description")
-    is_transfer_category: Optional[bool] = Field(None, description="Is transfer category")
 
 
 class CategoryResponse(CategoryBase):

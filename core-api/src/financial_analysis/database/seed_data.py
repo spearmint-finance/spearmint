@@ -130,7 +130,6 @@ DEFAULT_CLASSIFICATION_RULES = [
         "classification_code": "CC_PAYMENT",
         "description_pattern": "%credit card payment%",
         "set_include_in_analysis": False,
-        "set_is_transfer": True,
         "is_active": True
     },
     {
@@ -139,7 +138,6 @@ DEFAULT_CLASSIFICATION_RULES = [
         "classification_code": "TRANSFER",
         "description_pattern": "%transfer%",
         "set_include_in_analysis": False,
-        "set_is_transfer": True,
         "is_active": True
     },
     {
@@ -148,7 +146,6 @@ DEFAULT_CLASSIFICATION_RULES = [
         "classification_code": "REIMB_RECEIVED",
         "description_pattern": "%reimbursement%",
         "set_include_in_analysis": False,
-        "set_is_transfer": False,
         "is_active": True
     },
     {

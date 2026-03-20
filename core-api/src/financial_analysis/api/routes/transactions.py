@@ -48,7 +48,6 @@ def create_transaction(
             payment_method=transaction.payment_method,
             classification_id=transaction.classification_id,
             include_in_analysis=transaction.include_in_analysis,
-            is_transfer=transaction.is_transfer,
             transfer_account_from=transaction.transfer_account_from,
             transfer_account_to=transaction.transfer_account_to,
             notes=transaction.notes,
@@ -79,10 +78,16 @@ def get_transaction(
     """
     service = TransactionService(db)
     transaction = service.get_transaction(transaction_id)
-    
+
     if not transaction:
         raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
-    
+
+    # Compute is_transfer from category for backward-compat response field
+    if hasattr(transaction, 'category') and transaction.category:
+        transaction.is_transfer = transaction.category.category_type == 'Transfer'
+    else:
+        transaction.is_transfer = False
+
     return transaction
 
 
@@ -94,7 +99,7 @@ def list_transactions(
     category_id: Optional[int] = Query(None, gt=0, description="Filter by category ID"),
     classification_id: Optional[int] = Query(None, gt=0, description="Filter by classification ID"),
     include_in_analysis: Optional[bool] = Query(None, description="Filter to include/exclude transactions marked for analysis"),
-    is_transfer: Optional[bool] = Query(None, description="Filter by transfer status: true for transfers only, false to exclude transfers"),
+    is_transfer: Optional[bool] = Query(None, description="Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers"),
     min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
     max_amount: Optional[Decimal] = Query(None, gt=0, description="Maximum amount filter"),
     search_text: Optional[str] = Query(None, description="Search in description, source, notes"),
@@ -172,6 +177,13 @@ def list_transactions(
     )
 
     transactions = service.list_transactions(filters)
+
+    # Compute is_transfer from category for backward-compat response field
+    for tx in transactions:
+        if hasattr(tx, 'category') and tx.category:
+            tx.is_transfer = tx.category.category_type == 'Transfer'
+        else:
+            tx.is_transfer = False
 
     # Get total count and summary via SQL aggregation (single query, no row fetching)
     stats = service.count_and_summarize(filters)

@@ -34,7 +34,7 @@ class SpendingAnalyzer:
                 func.count(Transaction.transaction_id),
             )
             .filter(Transaction.include_in_analysis == True)  # noqa: E712
-            .filter(Transaction.is_transfer == False)  # noqa: E712
+            # Transfers excluded via include_in_analysis=False
             .first()
         )
         earliest, latest, total = row if row else (None, None, 0)
@@ -55,7 +55,7 @@ class SpendingAnalyzer:
             self.db.query(func.count(Transaction.transaction_id))
             .outerjoin(Category, Transaction.category_id == Category.category_id)
             .filter(Transaction.include_in_analysis == True)  # noqa: E712
-            .filter(Transaction.is_transfer == False)  # noqa: E712
+            # Transfers excluded via include_in_analysis=False
             .filter(Transaction.transaction_date >= effective_start)
             .filter(
                 or_(
@@ -69,7 +69,7 @@ class SpendingAnalyzer:
         total_in_window = (
             self.db.query(func.count(Transaction.transaction_id))
             .filter(Transaction.include_in_analysis == True)  # noqa: E712
-            .filter(Transaction.is_transfer == False)  # noqa: E712
+            # Transfers excluded via include_in_analysis=False
             .filter(Transaction.transaction_date >= effective_start)
             .scalar()
         ) or 0
@@ -163,7 +163,7 @@ class SpendingAnalyzer:
                 Transaction.classification_id == TransactionClassification.classification_id,
             )
             .filter(Transaction.include_in_analysis == True)  # noqa: E712
-            .filter(Transaction.is_transfer == False)  # noqa: E712
+            # Transfers excluded via include_in_analysis=False
             .filter(Transaction.transaction_date >= start_date)
             .filter(Transaction.transaction_date <= end_date)
             .filter(

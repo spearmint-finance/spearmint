@@ -65,7 +65,6 @@ class Category(Base):
     category_type = Column(String(10), nullable=False)
     parent_category_id = Column(Integer, ForeignKey('categories.category_id'))
     description = Column(Text)
-    is_transfer_category = Column(Boolean, default=False)
     is_fixed_obligation = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
 
@@ -75,7 +74,7 @@ class Category(Base):
 
     # Constraints
     __table_args__ = (
-        CheckConstraint("category_type IN ('Income', 'Expense', 'Both')", name='check_category_type'),
+        CheckConstraint("category_type IN ('Income', 'Expense', 'Transfer', 'Both')", name='check_category_type'),
     )
 
     def __repr__(self):
@@ -101,7 +100,6 @@ class Transaction(Base):
     classification_id = Column(Integer, ForeignKey('transaction_classifications.classification_id'))
     include_in_analysis = Column(Boolean, default=True)
     related_transaction_id = Column(Integer, ForeignKey('transactions.transaction_id'))
-    is_transfer = Column(Boolean, default=False)
     transfer_account_from = Column(String(100))
     transfer_account_to = Column(String(100))
     notes = Column(Text)
@@ -138,7 +136,6 @@ class Transaction(Base):
         Index('idx_category_id', 'category_id'),
         Index('idx_classification_id', 'classification_id'),
         Index('idx_include_in_analysis', 'include_in_analysis'),
-        Index('idx_is_transfer', 'is_transfer'),
         Index('idx_related_transaction', 'related_transaction_id'),
         Index('idx_account_id', 'account_id'),
         Index('idx_is_cleared', 'is_cleared'),
@@ -201,8 +198,6 @@ class ClassificationRule(Base):
 
     # Actions
     set_include_in_analysis = Column(Boolean)
-    set_is_transfer = Column(Boolean)
-
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

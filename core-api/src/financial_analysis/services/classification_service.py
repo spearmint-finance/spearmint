@@ -105,11 +105,7 @@ class ClassificationService:
         transaction.classification_id = classification_id
         
         # Update flags based on classification
-        if classification.classification_code == 'TRANSFER':
-            transaction.is_transfer = True
-            transaction.include_in_analysis = False
-        elif classification.classification_code in ['CC_PAYMENT', 'CC_RECEIPT']:
-            transaction.is_transfer = True
+        if classification.classification_code in ('TRANSFER', 'CC_PAYMENT', 'CC_RECEIPT'):
             transaction.include_in_analysis = False
         
         self.db.commit()
@@ -140,9 +136,6 @@ class ClassificationService:
                 # Apply actions
                 if rule.set_include_in_analysis is not None:
                     transaction.include_in_analysis = rule.set_include_in_analysis
-
-                if rule.set_is_transfer is not None:
-                    transaction.is_transfer = rule.set_is_transfer
 
                 return True
 

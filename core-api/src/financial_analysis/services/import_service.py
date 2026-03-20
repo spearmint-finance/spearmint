@@ -179,8 +179,7 @@ class ImportService:
                     transaction_data['category_id'] = category.category_id
 
                     # Check if this is a transfer transaction
-                    if category.is_transfer_category:
-                        transaction_data['is_transfer'] = True
+                    if category.category_type == 'Transfer':
                         transaction_data['include_in_analysis'] = False
 
                     # Get classification if specified
@@ -426,16 +425,15 @@ class ImportService:
         if category_name in cache:
             category = cache[category_name]
             # Update existing category if it's a transfer but not marked as such
-            if is_transfer and not category.is_transfer_category:
-                category.is_transfer_category = True
+            if is_transfer and category.category_type != 'Transfer':
+                category.category_type = 'Transfer'
                 self.db.flush()
             return category
 
         # Create new category
         category = Category(
             category_name=category_name,
-            category_type=transaction_type,
-            is_transfer_category=is_transfer
+            category_type='Transfer' if is_transfer else transaction_type,
         )
         self.db.add(category)
         self.db.flush()
