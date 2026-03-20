@@ -32,7 +32,6 @@ export interface TransactionCreate {
   category_id: number; // Required field
   account_id?: number;
   balance?: number;
-  is_transfer?: boolean;
   notes?: string;
 }
 
@@ -44,7 +43,6 @@ export interface TransactionUpdate {
   balance?: number;
   category_id?: number;
   account_id?: number;
-  is_transfer?: boolean;
   notes?: string;
   // Force classification rules to re-apply even if a manual classification exists
   reapply_rules?: boolean;

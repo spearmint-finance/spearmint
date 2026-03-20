@@ -276,7 +276,7 @@ class EntityService:
             # - Transfers and loan payments → financing
             # - Capital expenses (classification excludes from expense calc) → investing
             # - Everything else → operating
-            if tx.is_transfer:
+            if tx.category and tx.category.category_type == 'Transfer':
                 financing_items.append(item)
             elif tx.classification_id:
                 from ..database.models import TransactionClassification

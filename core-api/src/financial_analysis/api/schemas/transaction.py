@@ -20,7 +20,6 @@ class TransactionBase(DecimalBaseModel):
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method")
     classification_id: Optional[int] = Field(None, gt=0, description="Classification ID")
     include_in_analysis: bool = Field(default=True, description="Include in analysis")
-    is_transfer: bool = Field(default=False, description="Is transfer transaction")
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
@@ -45,7 +44,6 @@ class TransactionUpdate(DecimalBaseModel):
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method")
     classification_id: Optional[int] = Field(None, gt=0, description="Classification ID")
     include_in_analysis: Optional[bool] = Field(None, description="Include in analysis")
-    is_transfer: Optional[bool] = Field(None, description="Is transfer transaction")
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
@@ -88,6 +86,7 @@ class TransactionResponse(TransactionBase):
     """Schema for transaction response."""
 
     transaction_id: int = Field(..., description="Transaction ID")
+    is_transfer: Optional[bool] = Field(None, description="Whether this is a transfer (computed from category type)")
     # Convenience field used by the UI to display/link paired transactions
     related_transaction_id: Optional[int] = Field(
         None,

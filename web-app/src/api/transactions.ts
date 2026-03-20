@@ -210,7 +210,6 @@ export const createTransaction = async (
     transactionType: data.transaction_type,
     categoryId: data.category_id,
     accountId: data.account_id,
-    isTransfer: data.is_transfer || false,
     notes: data.notes,
   } as any);
   return transformTransaction(response.data);
@@ -231,7 +230,6 @@ export const updateTransaction = async (
       transactionType: data.transaction_type,
       categoryId: data.category_id,
       accountId: data.account_id,
-      isTransfer: data.is_transfer,
       notes: data.notes,
     } as any);
   return transformTransaction(response.data);

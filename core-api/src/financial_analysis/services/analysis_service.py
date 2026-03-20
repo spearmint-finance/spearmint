@@ -139,7 +139,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)  # Always exclude transfers
+            # Transfers are excluded via include_in_analysis=False set at import/classification time
 
             # For both ANALYSIS and WITH_CAPITAL modes: exclude non-operating income
             # (e.g., credit card receipts, loan disbursements, reimbursements)
@@ -207,7 +207,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)  # Exclude transfers
+            # Transfers are excluded via include_in_analysis=False
             query = query.outerjoin(
                 TransactionClassification,
                 Transaction.classification_id == TransactionClassification.classification_id
@@ -290,7 +290,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)  # Always exclude transfers
+            # Transfers are excluded via include_in_analysis=False set at import/classification time
 
             # Join with classifications for filtering
             query = query.outerjoin(
@@ -386,7 +386,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)  # Exclude transfers
+            # Transfers are excluded via include_in_analysis=False
             query = query.outerjoin(
                 TransactionClassification,
                 Transaction.classification_id == TransactionClassification.classification_id
@@ -888,7 +888,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)
+            # Transfers excluded via include_in_analysis=False
 
             # Join with classifications to apply exclusion rules
             query = query.outerjoin(
@@ -1039,7 +1039,7 @@ class AnalysisService:
         # Apply mode filtering
         if mode == AnalysisMode.ANALYSIS:
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)
+            # Transfers excluded via include_in_analysis=False
             query = query.outerjoin(
                 TransactionClassification,
                 Transaction.classification_id == TransactionClassification.classification_id
@@ -1053,7 +1053,7 @@ class AnalysisService:
         elif mode == AnalysisMode.WITH_CAPITAL:
             # WITH_CAPITAL mode: exclude non-operating expenses EXCEPT capital expenses
             query = query.filter(Transaction.include_in_analysis == True)
-            query = query.filter(Transaction.is_transfer == False)
+            # Transfers excluded via include_in_analysis=False
             query = query.outerjoin(
                 TransactionClassification,
                 Transaction.classification_id == TransactionClassification.classification_id

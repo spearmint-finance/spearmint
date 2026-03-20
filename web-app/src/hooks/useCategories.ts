@@ -28,9 +28,8 @@ export const categoryKeys = {
  * Hook to fetch all categories with optional filters
  */
 export function useCategories(params?: {
-  category_type?: "Income" | "Expense" | "Both";
+  category_type?: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
-  include_transfer_categories?: boolean;
   search_text?: string;
 }) {
   return useQuery({
@@ -55,7 +54,7 @@ export function useCategory(categoryId: number) {
  * Hook to fetch root categories
  */
 export function useRootCategories(
-  categoryType?: "Income" | "Expense" | "Both"
+  categoryType?: "Income" | "Expense" | "Both" | "Transfer"
 ) {
   return useQuery({
     queryKey: categoryKeys.roots(categoryType),
