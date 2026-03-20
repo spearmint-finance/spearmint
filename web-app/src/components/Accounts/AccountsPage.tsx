@@ -68,7 +68,7 @@ const AccountsPage: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const { selectedEntityId, entities } = useEntityContext();
+  const { selectedEntityId, selectedEntity, entities } = useEntityContext();
 
   // Fetch accounts (filtered by selected entity)
   const {
@@ -310,7 +310,7 @@ const AccountsPage: React.FC = () => {
       {/* Net Worth Summary */}
       {netWorth && (
         <Box mb={3}>
-          <NetWorthCard netWorth={netWorth} />
+          <NetWorthCard netWorth={netWorth} entityName={selectedEntity?.entity_name} />
         </Box>
       )}
 
