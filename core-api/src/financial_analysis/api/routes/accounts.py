@@ -210,6 +210,7 @@ def get_account(
         "opening_balance": account.opening_balance,
         "opening_balance_date": account.opening_balance_date,
         "notes": account.notes,
+        "entity_id": account.entity_id,
         "created_at": account.created_at,
         "updated_at": account.updated_at
     }
@@ -257,6 +258,7 @@ def update_account(
         "opening_balance": updated_account.opening_balance,
         "opening_balance_date": updated_account.opening_balance_date,
         "notes": updated_account.notes,
+        "entity_id": updated_account.entity_id,
         "created_at": updated_account.created_at,
         "updated_at": updated_account.updated_at
     }
