@@ -102,7 +102,7 @@ export const getAccounts = async (params?: {
   if (params?.entity_id != null) queryParams.set("entity_id", String(params.entity_id));
 
   const url = `${baseUrl}/api/accounts?${queryParams.toString()}`;
-  const response = await fetch(url, );
+  const response = await fetch(url);
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.detail || `Failed to fetch accounts: ${response.statusText}`);

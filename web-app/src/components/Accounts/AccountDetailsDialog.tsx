@@ -21,6 +21,10 @@ import {
   TextField,
   InputAdornment,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -50,6 +54,8 @@ import {
 } from '../../api/accounts';
 import BalanceHistoryChart from './BalanceHistoryChart';
 import { formatCurrency } from '../../utils/formatters';
+import { useEntityContext } from '../../contexts/EntityContext';
+import { ENTITY_TYPE_LABELS } from '../../types/entity';
 
 interface AccountDetailsDialogProps {
   open: boolean;
@@ -86,6 +92,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   onAccountUpdated,
 }) => {
   const navigate = useNavigate();
+  const { entities } = useEntityContext();
   const [tabValue, setTabValue] = useState(0);
   const [showAddBalance, setShowAddBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
@@ -99,6 +106,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     institution_name: account.institution_name || '',
     account_number_last4: account.account_number_last4 || '',
     notes: account.notes || '',
+    entity_id: account.entity_id != null ? String(account.entity_id) : '',
   });
 
   // Fetch balance history
@@ -172,6 +180,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       institution_name: account.institution_name || '',
       account_number_last4: account.account_number_last4 || '',
       notes: account.notes || '',
+      entity_id: account.entity_id != null ? String(account.entity_id) : '',
     });
     setIsEditing(true);
   };
@@ -187,6 +196,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       institution_name: editForm.institution_name.trim() || undefined,
       account_number_last4: editForm.account_number_last4 || undefined,
       notes: editForm.notes.trim() || undefined,
+      entity_id: editForm.entity_id ? Number(editForm.entity_id) : undefined,
     };
     updateAccountMutation.mutate(update);
   };
@@ -339,6 +349,25 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   inputProps={{ maxLength: 4, pattern: '[0-9]*' }}
                 />
               </Grid>
+              {entities.length > 0 && (
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Entity</InputLabel>
+                    <Select
+                      value={editForm.entity_id}
+                      label="Entity"
+                      onChange={(e) => setEditForm({ ...editForm, entity_id: e.target.value as string })}
+                    >
+                      <MenuItem value="">No entity</MenuItem>
+                      {entities.map((entity) => (
+                        <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                          {entity.entity_name} ({ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
               <Grid item xs={12}>
                 <TextField
                   label="Notes"
@@ -380,6 +409,17 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       secondary={formatCurrency(account.opening_balance)}
                     />
                   </ListItem>
+                  {(() => {
+                    const entity = entities.find(e => e.entity_id === account.entity_id);
+                    return entity ? (
+                      <ListItem>
+                        <ListItemText
+                          primary="Entity"
+                          secondary={`${entity.entity_name} (${ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})`}
+                        />
+                      </ListItem>
+                    ) : null;
+                  })()}
                   {account.notes && (
                     <ListItem>
                       <ListItemText primary="Notes" secondary={account.notes} />

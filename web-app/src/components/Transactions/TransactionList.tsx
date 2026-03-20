@@ -935,7 +935,7 @@ function TransactionList() {
                 const start = Math.max(1, from || 0);
                 const total =
                   typeof count === "number" ? count.toLocaleString() : count;
-                return `${start}${to} of ${total}`; // EN DASH
+                return `${start}–${to} of ${total}`; // EN DASH
               },
             },
           }}
