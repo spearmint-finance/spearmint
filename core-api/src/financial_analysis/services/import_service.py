@@ -8,6 +8,7 @@ from typing import Optional, Dict, List, Any, Tuple
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from ..database.models import (
@@ -215,10 +216,15 @@ class ImportService:
             # Record import history
             self._record_import_history(file_path, mode, result)
             
+        except OperationalError as e:
+            self.db.rollback()
+            logger.error("Database error during import: %s", e)
+            result.add_error(0, 'database', "Database is not properly initialized. Please contact support or restart the application.")
         except Exception as e:
             self.db.rollback()
+            logger.error("Unexpected error during import: %s", e)
             result.add_error(0, 'file', f"Failed to import file: {str(e)}")
-        
+
         return result
     
     def _read_excel_file(self, file_path: str, skip_rows: int = 0) -> pd.DataFrame:

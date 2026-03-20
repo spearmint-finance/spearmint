@@ -90,6 +90,15 @@ app.include_router(aggregator.router, prefix="/api", tags=["link"])
 app.include_router(agents.router, prefix="/a2a", tags=["a2a-agents"])
 
 
+# Ensure database tables exist on startup
+@app.on_event("startup")
+def ensure_database_tables():
+    """Create database tables if they don't exist."""
+    from ..database.base import engine, Base
+    from ..database import models  # noqa: F401 — registers all models
+    Base.metadata.create_all(bind=engine)
+
+
 # Root endpoint
 @app.get("/", tags=["system"])
 async def root():
