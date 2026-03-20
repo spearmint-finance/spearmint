@@ -360,31 +360,34 @@ export const clearTransactions = async (
 
 // ==================== Net Worth & Analytics ====================
 
-export const getNetWorth = async (as_of_date?: string): Promise<NetWorth> => {
-  const response = await accountsApi.getNetWorthApiAccountsNetWorthGet({
-    asOfDate: as_of_date,
-  });
-  // SDK returns camelCase, map to our interface format
-  const data = response.data as {
-    assets: string;
-    liabilities: string;
-    netWorth: string;
-    liquidAssets: string;
-    investments: string;
-    asOfDate: string;
-    accountBreakdown?: Record<string, string>;
-  };
+export const getNetWorth = async (params?: { as_of_date?: string; entity_id?: number }): Promise<NetWorth> => {
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:8080");
+
+  const queryParams = new URLSearchParams();
+  if (params?.as_of_date) queryParams.set("as_of_date", params.as_of_date);
+  if (params?.entity_id != null) queryParams.set("entity_id", String(params.entity_id));
+
+  const url = `${baseUrl}/api/accounts/net-worth?${queryParams.toString()}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail || `Failed to fetch net worth: ${response.statusText}`);
+  }
+  const data = await response.json();
   return {
     assets: data.assets,
     liabilities: data.liabilities,
-    net_worth: data.netWorth,
-    netWorth: data.netWorth,
-    liquid_assets: data.liquidAssets,
-    liquidAssets: data.liquidAssets,
+    net_worth: data.net_worth ?? data.netWorth,
+    netWorth: data.net_worth ?? data.netWorth,
+    liquid_assets: data.liquid_assets ?? data.liquidAssets,
+    liquidAssets: data.liquid_assets ?? data.liquidAssets,
     investments: data.investments,
-    as_of_date: data.asOfDate,
-    asOfDate: data.asOfDate,
-    account_breakdown: data.accountBreakdown,
-    accountBreakdown: data.accountBreakdown,
+    as_of_date: data.as_of_date ?? data.asOfDate,
+    asOfDate: data.as_of_date ?? data.asOfDate,
+    account_breakdown: data.account_breakdown ?? data.accountBreakdown,
+    accountBreakdown: data.account_breakdown ?? data.accountBreakdown,
   };
 };

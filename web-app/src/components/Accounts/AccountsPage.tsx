@@ -85,15 +85,17 @@ const AccountsPage: React.FC = () => {
       ),
   });
 
-  // Fetch net worth
+  // Fetch net worth (filtered by selected entity)
   const {
     data: netWorth,
     isLoading: netWorthLoading,
     isFetching: netWorthFetching,
     refetch: refetchNetWorth,
   } = useQuery({
-    queryKey: ['netWorth'],
-    queryFn: () => getNetWorth(),
+    queryKey: ['netWorth', { entity_id: selectedEntityId }],
+    queryFn: () => getNetWorth(
+      selectedEntityId != null ? { entity_id: selectedEntityId } : undefined
+    ),
   });
 
   // Fetch linked providers for sync status and reconnect banners
