@@ -18,9 +18,10 @@ import { NetWorth } from '../../types/account';
 
 interface NetWorthCardProps {
   netWorth: NetWorth;
+  entityName?: string;
 }
 
-const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
+const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => {
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -52,7 +53,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth }) => {
     <Card elevation={2}>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Net Worth Overview
+          Net Worth{entityName ? ` — ${entityName}` : ' Overview'}
         </Typography>
 
         <Grid container spacing={3}>
