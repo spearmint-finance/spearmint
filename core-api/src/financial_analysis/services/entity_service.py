@@ -5,7 +5,9 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 
-from ..database.models import Entity, Account, Transaction, Category
+from sqlalchemy import select
+
+from ..database.models import Entity, Account, Transaction, Category, Tag, TransactionTag
 
 
 class EntityService:
@@ -272,21 +274,14 @@ class EntityService:
                 "category_name": category_name,
             }
 
-            # Classification heuristic:
+            # Classification heuristic using tags:
             # - Transfers and loan payments → financing
-            # - Capital expenses (classification excludes from expense calc) → investing
+            # - Capital expenses (tagged 'capital-expense') → investing
             # - Everything else → operating
             if tx.category and tx.category.category_type == 'Transfer':
                 financing_items.append(item)
-            elif tx.classification_id:
-                from ..database.models import TransactionClassification
-                cls = self.db.query(TransactionClassification).filter(
-                    TransactionClassification.classification_id == tx.classification_id
-                ).first()
-                if cls and cls.exclude_from_expense_calc:
-                    investing_items.append(item)
-                else:
-                    operating_items.append(item)
+            elif any(t.tag_name == 'capital-expense' for t in tx.tags):
+                investing_items.append(item)
             else:
                 operating_items.append(item)
 

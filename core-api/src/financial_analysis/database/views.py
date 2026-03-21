@@ -12,61 +12,60 @@ from .base import engine
 VIEWS = {
     "v_analysis_transactions": """
         CREATE VIEW IF NOT EXISTS v_analysis_transactions AS
-        SELECT 
+        SELECT
             t.*,
             c.category_name,
-            c.category_type,
-            tc.classification_name,
-            tc.classification_code
+            c.category_type
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.category_id
-        LEFT JOIN transaction_classifications tc ON t.classification_id = tc.classification_id
         WHERE t.include_in_analysis = 1
     """,
-    
+
     "v_income_analysis": """
         CREATE VIEW IF NOT EXISTS v_income_analysis AS
-        SELECT 
+        SELECT
             t.*,
-            c.category_name,
-            tc.classification_name
+            c.category_name
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.category_id
-        LEFT JOIN transaction_classifications tc ON t.classification_id = tc.classification_id
         WHERE t.transaction_type = 'Income'
           AND t.include_in_analysis = 1
-          AND (tc.exclude_from_income_calc = 0 OR tc.exclude_from_income_calc IS NULL)
+          AND t.transaction_id NOT IN (
+              SELECT tt.transaction_id FROM transaction_tags tt
+              JOIN tags tg ON tt.tag_id = tg.tag_id
+              WHERE tg.tag_name = 'exclude-from-income'
+          )
     """,
-    
+
     "v_expense_analysis": """
         CREATE VIEW IF NOT EXISTS v_expense_analysis AS
-        SELECT 
+        SELECT
             t.*,
-            c.category_name,
-            tc.classification_name
+            c.category_name
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.category_id
-        LEFT JOIN transaction_classifications tc ON t.classification_id = tc.classification_id
         WHERE t.transaction_type = 'Expense'
           AND t.include_in_analysis = 1
-          AND (tc.exclude_from_expense_calc = 0 OR tc.exclude_from_expense_calc IS NULL)
+          AND t.transaction_id NOT IN (
+              SELECT tt.transaction_id FROM transaction_tags tt
+              JOIN tags tg ON tt.tag_id = tg.tag_id
+              WHERE tg.tag_name = 'exclude-from-expenses'
+          )
     """,
-    
+
     "v_transfer_transactions": """
         CREATE VIEW IF NOT EXISTS v_transfer_transactions AS
-        SELECT 
+        SELECT
             t.*,
             c.category_name,
-            tc.classification_name,
             tr.relationship_type,
             t2.transaction_id as related_tx_id,
             t2.description as related_tx_description
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.category_id
-        LEFT JOIN transaction_classifications tc ON t.classification_id = tc.classification_id
-        LEFT JOIN transaction_relationships tr 
+        LEFT JOIN transaction_relationships tr
             ON t.transaction_id = tr.transaction_id_1 OR t.transaction_id = tr.transaction_id_2
-        LEFT JOIN transactions t2 
+        LEFT JOIN transactions t2
             ON (tr.transaction_id_1 = t2.transaction_id AND tr.transaction_id_2 = t.transaction_id)
             OR (tr.transaction_id_2 = t2.transaction_id AND tr.transaction_id_1 = t.transaction_id)
         WHERE c.category_type = 'Transfer'

@@ -16,8 +16,10 @@ import numpy as np
 from sqlalchemy import func, and_, or_, text
 from sqlalchemy.orm import Session
 
+from sqlalchemy import select
+
 from ..database.models import (
-    Transaction, Category, TransactionClassification
+    Transaction, Category, Tag, TransactionTag
 )
 
 
@@ -143,35 +145,34 @@ class AnalysisService:
 
             # For both ANALYSIS and WITH_CAPITAL modes: exclude non-operating income
             # (e.g., credit card receipts, loan disbursements, reimbursements)
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+            exclude_income_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-income')
+                .subquery()
             )
             query = query.filter(
-                or_(
-                    TransactionClassification.exclude_from_income_calc == 0,
-                    TransactionClassification.exclude_from_income_calc == None
-                )
+                ~Transaction.transaction_id.in_(select(exclude_income_subq))
             )
-        
+
         # Apply date range
         if date_range:
             if date_range.start_date:
                 query = query.filter(Transaction.transaction_date >= date_range.start_date)
             if date_range.end_date:
                 query = query.filter(Transaction.transaction_date <= date_range.end_date)
-        
+
         # Get transactions
         transactions = query.all()
-        
+
         # Calculate totals
         total_income = sum(t.amount for t in transactions)
         transaction_count = len(transactions)
         average_transaction = total_income / transaction_count if transaction_count > 0 else Decimal(0)
-        
+
         # Breakdown by category
         breakdown = self._breakdown_by_category(transactions)
-        
+
         return IncomeAnalysisResult(
             total_income=total_income,
             transaction_count=transaction_count,
@@ -208,15 +209,14 @@ class AnalysisService:
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
             # Transfers are excluded via include_in_analysis=False
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+            exclude_income_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-income')
+                .subquery()
             )
             query = query.filter(
-                or_(
-                    TransactionClassification.exclude_from_income_calc == 0,
-                    TransactionClassification.exclude_from_income_calc == None
-                )
+                ~Transaction.transaction_id.in_(select(exclude_income_subq))
             )
 
         # Apply date range
@@ -225,7 +225,7 @@ class AnalysisService:
                 query = query.filter(Transaction.transaction_date >= date_range.start_date)
             if date_range.end_date:
                 query = query.filter(Transaction.transaction_date <= date_range.end_date)
-        
+
         # Get transactions
         transactions = query.all()
 
@@ -250,7 +250,7 @@ class AnalysisService:
             'amount': 'sum',
             'date': 'count'
         }).reset_index()
-        
+
         # Convert to TrendDataPoint
         trends = [
             TrendDataPoint(
@@ -260,7 +260,7 @@ class AnalysisService:
             )
             for _, row in grouped.iterrows()
         ]
-        
+
         return sorted(trends, key=lambda x: x.period)
 
     # ==================== Expense Analysis ====================
@@ -292,28 +292,32 @@ class AnalysisService:
             query = query.filter(Transaction.include_in_analysis == True)
             # Transfers are excluded via include_in_analysis=False set at import/classification time
 
-            # Join with classifications for filtering
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+            # Build tag-based exclusion subquery
+            exclude_expense_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-expenses')
+                .subquery()
             )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses (capital, CC payments, refunds, etc.)
                 query = query.filter(
-                    or_(
-                        TransactionClassification.exclude_from_expense_calc == 0,
-                        TransactionClassification.exclude_from_expense_calc == None
-                    )
+                    ~Transaction.transaction_id.in_(select(exclude_expense_subq))
                 )
             elif mode == AnalysisMode.WITH_CAPITAL:
                 # WITH_CAPITAL mode: exclude non-operating expenses EXCEPT capital expenses
-                # Include if: no classification, OR exclude_from_expense_calc=False, OR is Capital Expense
+                # Include if: not tagged exclude-from-expenses, OR tagged capital-expense
+                capital_expense_subq = (
+                    select(TransactionTag.transaction_id)
+                    .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                    .where(Tag.tag_name == 'capital-expense')
+                    .subquery()
+                )
                 query = query.filter(
                     or_(
-                        TransactionClassification.exclude_from_expense_calc == 0,
-                        TransactionClassification.exclude_from_expense_calc == None,
-                        TransactionClassification.classification_name == 'Capital Expense'
+                        ~Transaction.transaction_id.in_(select(exclude_expense_subq)),
+                        Transaction.transaction_id.in_(select(capital_expense_subq))
                     )
                 )
 
@@ -387,26 +391,32 @@ class AnalysisService:
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
             # Transfers are excluded via include_in_analysis=False
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+
+            # Build tag-based exclusion subquery
+            exclude_expense_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-expenses')
+                .subquery()
             )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses
                 query = query.filter(
-                    or_(
-                        TransactionClassification.exclude_from_expense_calc == False,
-                        TransactionClassification.exclude_from_expense_calc == None
-                    )
+                    ~Transaction.transaction_id.in_(select(exclude_expense_subq))
                 )
             elif mode == AnalysisMode.WITH_CAPITAL:
                 # WITH_CAPITAL mode: exclude non-operating expenses EXCEPT capital expenses
+                capital_expense_subq = (
+                    select(TransactionTag.transaction_id)
+                    .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                    .where(Tag.tag_name == 'capital-expense')
+                    .subquery()
+                )
                 query = query.filter(
                     or_(
-                        TransactionClassification.exclude_from_expense_calc == 0,
-                        TransactionClassification.exclude_from_expense_calc == None,
-                        TransactionClassification.classification_name == 'Capital Expense'
+                        ~Transaction.transaction_id.in_(select(exclude_expense_subq)),
+                        Transaction.transaction_id.in_(select(capital_expense_subq))
                     )
                 )
 
@@ -890,34 +900,41 @@ class AnalysisService:
             query = query.filter(Transaction.include_in_analysis == True)
             # Transfers excluded via include_in_analysis=False
 
-            # Join with classifications to apply exclusion rules
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+            # Build tag-based exclusion subqueries
+            exclude_income_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-income')
+                .subquery()
+            )
+            exclude_expense_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-expenses')
+                .subquery()
             )
 
-            # For income transactions: exclude if exclude_from_income_calc is True
-            # For expense transactions: exclude if exclude_from_expense_calc is True
-            # (unless it's a capital expense in WITH_CAPITAL mode)
             if mode == AnalysisMode.WITH_CAPITAL:
                 # WITH_CAPITAL: include capital expenses, exclude other non-operating transactions
+                capital_expense_subq = (
+                    select(TransactionTag.transaction_id)
+                    .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                    .where(Tag.tag_name == 'capital-expense')
+                    .subquery()
+                )
                 query = query.filter(
                     or_(
                         # Income: not excluded from income calc
                         and_(
                             Category.category_type == 'Income',
-                            or_(
-                                TransactionClassification.exclude_from_income_calc == 0,
-                                TransactionClassification.exclude_from_income_calc == None
-                            )
+                            ~Transaction.transaction_id.in_(select(exclude_income_subq))
                         ),
                         # Expense: not excluded OR is capital expense
                         and_(
                             Category.category_type == 'Expense',
                             or_(
-                                TransactionClassification.exclude_from_expense_calc == 0,
-                                TransactionClassification.exclude_from_expense_calc == None,
-                                TransactionClassification.classification_name == 'Capital Expense'
+                                ~Transaction.transaction_id.in_(select(exclude_expense_subq)),
+                                Transaction.transaction_id.in_(select(capital_expense_subq))
                             )
                         )
                     )
@@ -929,18 +946,12 @@ class AnalysisService:
                         # Income: not excluded from income calc
                         and_(
                             Category.category_type == 'Income',
-                            or_(
-                                TransactionClassification.exclude_from_income_calc == 0,
-                                TransactionClassification.exclude_from_income_calc == None
-                            )
+                            ~Transaction.transaction_id.in_(select(exclude_income_subq))
                         ),
                         # Expense: not excluded from expense calc
                         and_(
                             Category.category_type == 'Expense',
-                            or_(
-                                TransactionClassification.exclude_from_expense_calc == 0,
-                                TransactionClassification.exclude_from_expense_calc == None
-                            )
+                            ~Transaction.transaction_id.in_(select(exclude_expense_subq))
                         )
                     )
                 )
@@ -1037,34 +1048,36 @@ class AnalysisService:
         )
 
         # Apply mode filtering
-        if mode == AnalysisMode.ANALYSIS:
+        if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
             # Transfers excluded via include_in_analysis=False
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
+
+            # Build tag-based exclusion subquery
+            exclude_expense_subq = (
+                select(TransactionTag.transaction_id)
+                .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                .where(Tag.tag_name == 'exclude-from-expenses')
+                .subquery()
             )
-            query = query.filter(
-                or_(
-                    TransactionClassification.exclude_from_expense_calc == False,
-                    TransactionClassification.exclude_from_expense_calc == None
+
+            if mode == AnalysisMode.ANALYSIS:
+                query = query.filter(
+                    ~Transaction.transaction_id.in_(select(exclude_expense_subq))
                 )
-            )
-        elif mode == AnalysisMode.WITH_CAPITAL:
-            # WITH_CAPITAL mode: exclude non-operating expenses EXCEPT capital expenses
-            query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers excluded via include_in_analysis=False
-            query = query.outerjoin(
-                TransactionClassification,
-                Transaction.classification_id == TransactionClassification.classification_id
-            )
-            query = query.filter(
-                or_(
-                    TransactionClassification.exclude_from_expense_calc == 0,
-                    TransactionClassification.exclude_from_expense_calc == None,
-                    TransactionClassification.classification_name == 'Capital Expense'
+            elif mode == AnalysisMode.WITH_CAPITAL:
+                # WITH_CAPITAL mode: exclude non-operating expenses EXCEPT capital expenses
+                capital_expense_subq = (
+                    select(TransactionTag.transaction_id)
+                    .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+                    .where(Tag.tag_name == 'capital-expense')
+                    .subquery()
                 )
-            )
+                query = query.filter(
+                    or_(
+                        ~Transaction.transaction_id.in_(select(exclude_expense_subq)),
+                        Transaction.transaction_id.in_(select(capital_expense_subq))
+                    )
+                )
 
         # Apply date range filter
         if date_range:
