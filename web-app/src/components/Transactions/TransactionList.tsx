@@ -98,7 +98,9 @@ function TransactionList() {
 
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
-  const { data: categoriesData } = useCategories();
+  const { data: categoriesData } = useCategories({
+    entity_id: selectedEntityId ?? undefined,
+  });
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
