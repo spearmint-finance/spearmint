@@ -18,7 +18,6 @@ class TransactionBase(DecimalBaseModel):
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method")
-    classification_id: Optional[int] = Field(None, gt=0, description="Classification ID")
     include_in_analysis: bool = Field(default=True, description="Include in analysis")
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
@@ -42,15 +41,12 @@ class TransactionUpdate(DecimalBaseModel):
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
     payment_method: Optional[str] = Field(None, max_length=50, description="Payment method")
-    classification_id: Optional[int] = Field(None, gt=0, description="Classification ID")
     include_in_analysis: Optional[bool] = Field(None, description="Include in analysis")
     transfer_account_from: Optional[str] = Field(None, max_length=100, description="Transfer from account")
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
     account_id: Optional[int] = Field(None, gt=0, description="Account ID this transaction belongs to")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
-    # Force re-application of classification rules even if a manual classification exists
-    reapply_rules: Optional[bool] = Field(None, description="If true, re-apply classification rules on this update")
 
 
 class CategoryInfo(BaseModel):
@@ -59,16 +55,6 @@ class CategoryInfo(BaseModel):
     category_id: int
     category_name: str
     category_type: str
-    
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ClassificationInfo(BaseModel):
-    """Classification information for transaction response."""
-    
-    classification_id: int
-    classification_name: str
-    classification_code: str
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -93,7 +79,6 @@ class TransactionResponse(TransactionBase):
         description="If present, the ID of a related transaction (e.g., transfer pair, dividend reinvestment pair)"
     )
     category: Optional[CategoryInfo] = Field(None, description="Category information")
-    classification: Optional[ClassificationInfo] = Field(None, description="Classification information")
     tags: List[TagInfo] = Field(default_factory=list, description="Associated tags")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")

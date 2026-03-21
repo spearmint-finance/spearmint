@@ -12,7 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from ..database.models import (
-    Transaction, Category, TransactionClassification,
+    Transaction, Category,
     Tag, TransactionTag, ImportHistory, ImportProfile, Account
 )
 from ..utils.validators import DataValidator, DuplicateDetector, ValidationError
@@ -71,7 +71,6 @@ class ImportService:
         'description': ['full description', 'description', 'desc', 'memo'],  # Prioritize 'full description'
         'payment_method': ['payment_method', 'payment', 'method', 'institution'],  # Added 'institution'
         'tags': ['tags', 'tag'],
-        'classification': ['classification', 'class'],
         'include_in_analysis': ['include_in_analysis', 'include', 'analyze'],
         # Additional metadata fields (stored in notes)
         'transaction_id_external': ['transaction id', 'transaction_id', 'trans_id', 'external_id'],
@@ -141,9 +140,8 @@ class ImportService:
             if skip_duplicates:
                 existing_keys = self._get_existing_duplicate_keys()
             
-            # Get or create categories and classifications
+            # Get or create categories
             category_cache = self._build_category_cache()
-            classification_cache = self._build_classification_cache()
             tag_cache = {}
             
             # Process each row
@@ -181,14 +179,6 @@ class ImportService:
                     # Check if this is a transfer transaction
                     if category.category_type == 'Transfer':
                         transaction_data['include_in_analysis'] = False
-
-                    # Get classification if specified
-                    classification_code = transaction_data.pop('classification_code', None)
-                    if classification_code:
-                        classification = classification_cache.get(classification_code)
-                        if classification:
-                            transaction_data['classification_id'] = classification.classification_id
-                            result.classified_rows += 1
 
                     # Extract tags
                     tags = transaction_data.pop('tags', [])
@@ -331,7 +321,6 @@ class ImportService:
             source = self.validator.validate_optional_string(row.get('source'), 'Source', 255)
             description = self.validator.validate_optional_string(row.get('description'), 'Description')
             payment_method = self.validator.validate_optional_string(row.get('payment_method'), 'Payment Method', 50)
-            classification_code = self.validator.validate_optional_string(row.get('classification'), 'Classification', 20)
             include_in_analysis = self.validator.validate_boolean(row.get('include_in_analysis'), 'Include in Analysis', True)
 
             # Parse tags
@@ -373,7 +362,6 @@ class ImportService:
                 'source': source,
                 'description': description,
                 'payment_method': payment_method,
-                'classification_code': classification_code,
                 'include_in_analysis': include_in_analysis,
                 'notes': notes,
                 'tags': tags
@@ -406,11 +394,6 @@ class ImportService:
         """Build cache of existing categories."""
         categories = self.db.query(Category).all()
         return {cat.category_name: cat for cat in categories}
-    
-    def _build_classification_cache(self) -> Dict[str, TransactionClassification]:
-        """Build cache of existing classifications."""
-        classifications = self.db.query(TransactionClassification).all()
-        return {cls.classification_code: cls for cls in classifications}
     
     def _get_or_create_category(
         self,

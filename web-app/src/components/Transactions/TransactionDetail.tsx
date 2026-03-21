@@ -237,66 +237,46 @@ function TransactionDetail({
                 </Grid>
               )}
 
-            {/* Classification */}
-            {transaction.classification_name && (
-              <Grid item xs={12} sm={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Classification
-                </Typography>
-                <Typography variant="body1">
-                  {transaction.classification_name}
-                </Typography>
-              </Grid>
-            )}
-
-            {/* Related Transaction (Dividend Reinvestment) */}
-            {transaction.related_transaction_id &&
-              (transaction.classification_name === "Dividend Reinvestment" ||
-                transaction.classification_name?.includes(
-                  "Investment Distribution"
-                )) && (
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 1 }} />
+            {/* Related Transaction */}
+            {transaction.related_transaction_id && (
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: "info.lighter",
+                    borderRadius: 1,
+                    border: "1px solid",
+                    borderColor: "info.light",
+                  }}
+                >
                   <Box
                     sx={{
-                      p: 2,
-                      bgcolor: "info.lighter",
-                      borderRadius: 1,
-                      border: "1px solid",
-                      borderColor: "info.light",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mb: 1,
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        mb: 1,
-                      }}
-                    >
-                      <LinkIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" color="primary">
-                        Linked Dividend Reinvestment Pair
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      This transaction is part of a dividend reinvestment pair.
-                      {transaction.classification_name ===
-                      "Dividend Reinvestment"
-                        ? " The dividend income was automatically reinvested."
-                        : " This dividend was automatically reinvested."}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mt: 1, display: "block" }}
-                    >
-                      Related Transaction ID:{" "}
-                      {transaction.related_transaction_id}
+                    <LinkIcon fontSize="small" color="primary" />
+                    <Typography variant="subtitle2" color="primary">
+                      Linked Transaction
                     </Typography>
                   </Box>
-                </Grid>
-              )}
+                  <Typography variant="body2" color="text.secondary">
+                    This transaction is linked to another transaction (e.g., transfer pair).
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: "block" }}
+                  >
+                    Related Transaction ID:{" "}
+                    {transaction.related_transaction_id}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
 
             {/* Notes */}
             {transaction.notes && (

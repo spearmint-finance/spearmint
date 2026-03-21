@@ -2,7 +2,7 @@
 Integration tests for end-to-end workflows.
 
 Tests complete user workflows from data import through analysis,
-classification, projections, and reporting.
+projections, and reporting.
 """
 
 import pytest
@@ -39,33 +39,26 @@ class TestCompleteUserWorkflow:
             assert response.status_code == 201
             transactions.append(response.json())
         
-        # Step 2: Auto-classify transactions
-        auto_classify_response = client.post(
-            "/api/transactions/auto-classify",
-            json={"force_reclassify": False}
-        )
-        assert auto_classify_response.status_code == 200
-        
-        # Step 3: Analyze income
+        # Step 2: Analyze income
         income_response = client.get("/api/analysis/income", params={"mode": "analysis"})
         assert income_response.status_code == 200
         income_data = income_response.json()
         assert income_data["transaction_count"] == 5  # Half are income
         
-        # Step 4: Analyze expenses
+        # Step 3: Analyze expenses
         expense_response = client.get("/api/analysis/expenses", params={"mode": "analysis"})
         assert expense_response.status_code == 200
         expense_data = expense_response.json()
         assert expense_data["transaction_count"] == 5  # Half are expenses
         
-        # Step 5: Get cash flow
+        # Step 4: Get cash flow
         cashflow_response = client.get("/api/analysis/cashflow", params={"mode": "analysis"})
         assert cashflow_response.status_code == 200
         cashflow_data = cashflow_response.json()
         # Verify cashflow is calculated (Income: 2500, Expense: 3000, Net: -500)
         assert Decimal(str(cashflow_data["net_cash_flow"])) == Decimal("-500.00")
         
-        # Step 6: Generate income projection
+        # Step 5: Generate income projection
         projection_response = client.get(
             "/api/projections/income",
             params={
@@ -79,7 +72,7 @@ class TestCompleteUserWorkflow:
         assert "projected_total" in projection_data
         assert "daily_projections" in projection_data
         
-        # Step 7: Generate summary report
+        # Step 6: Generate summary report
         report_response = client.get("/api/reports/summary")
         assert report_response.status_code == 200
         report_data = report_response.json()
@@ -119,35 +112,6 @@ class TestImportAnalyzeWorkflow:
         assert expense_response.status_code == 200
         expense_data = expense_response.json()
         assert Decimal(str(expense_data["total_expenses"])) == Decimal("300.00")
-
-
-class TestClassifyAnalyzeWorkflow:
-    """Test classification and analysis workflow."""
-    
-    def test_classify_and_reanalyze(self, client, sample_transactions):
-        """Test classifying transactions and re-analyzing."""
-        # Get initial income
-        initial_response = client.get("/api/analysis/income", params={"mode": "analysis"})
-        assert initial_response.status_code == 200
-        initial_income = Decimal(str(initial_response.json()["total_income"]))
-        
-        # Classify some income transactions as transfers
-        bulk_classify_response = client.post(
-            "/api/transactions/classify/bulk",
-            json={
-                "transaction_ids": [1],  # Classify first income transaction
-                "classification_id": 2  # TRANSFER
-            }
-        )
-        assert bulk_classify_response.status_code == 200
-        
-        # Re-analyze income
-        new_response = client.get("/api/analysis/income", params={"mode": "analysis"})
-        assert new_response.status_code == 200
-        new_income = Decimal(str(new_response.json()["total_income"]))
-        
-        # Income should decrease
-        assert new_income < initial_income
 
 
 class TestProjectionWorkflow:
@@ -261,49 +225,6 @@ class TestRelationshipWorkflow:
             assert related_response.status_code == 200
             related_data = related_response.json()
             assert "related_transactions" in related_data
-
-
-class TestErrorRecoveryWorkflow:
-    """Test error recovery in workflows."""
-    
-    def test_recover_from_failed_classification(self, client, sample_transactions):
-        """Test recovering from failed classification."""
-        # Try to classify with invalid classification
-        response = client.post(
-            "/api/transactions/1/classify",
-            json={"classification_id": 99999}
-        )
-        assert response.status_code == 404
-        
-        # Verify transaction is unchanged
-        transaction_response = client.get("/api/transactions/1")
-        assert transaction_response.status_code == 200
-        transaction_data = transaction_response.json()
-        assert transaction_data["classification_id"] == 1  # Still STANDARD
-        
-        # Successfully classify with valid classification
-        success_response = client.post(
-            "/api/transactions/1/classify",
-            json={"classification_id": 2}
-        )
-        assert success_response.status_code == 200
-    
-    def test_partial_bulk_operation_handling(self, client, sample_transactions):
-        """Test handling partial failures in bulk operations."""
-        # Try to bulk classify with mix of valid and invalid IDs
-        bulk_response = client.post(
-            "/api/transactions/classify/bulk",
-            json={
-                "transaction_ids": [1, 2, 99999],  # 99999 doesn't exist
-                "classification_id": 2
-            }
-        )
-        assert bulk_response.status_code == 200
-        bulk_data = bulk_response.json()
-        
-        # Should report partial success
-        assert bulk_data["success_count"] == 2
-        assert bulk_data["failed_count"] == 1
 
 
 if __name__ == "__main__":

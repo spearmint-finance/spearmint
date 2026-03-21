@@ -4,8 +4,6 @@
 from .models import (
     Transaction,
     Category,
-    TransactionClassification,
-    ClassificationRule,
     Account,
 )
 from .assistant_models import (

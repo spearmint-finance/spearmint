@@ -4,7 +4,7 @@ Demo transaction data seeder for showcasing application features.
 Generates 12 months of realistic financial transactions including:
 - Multiple income sources (salary, freelance, dividends, refunds)
 - Varied expense categories (rent, groceries, utilities, dining, etc.)
-- Classification edge cases (transfers, CC payments, reimbursements)
+- Edge cases (transfers, CC payments, reimbursements)
 - Data quality test cases (miscategorized items, outliers)
 
 Usage:
@@ -27,7 +27,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .base import SessionLocal
-from .models import Account, AccountBalance, Category, Transaction, TransactionClassification
+from .models import Account, AccountBalance, Category, Transaction
 
 
 # Constants
@@ -409,12 +409,6 @@ def seed_demo_accounts(db: Session) -> dict[str, int]:
     return account_map
 
 
-def get_classification_map(db: Session) -> dict[str, int]:
-    """Get mapping of classification_code -> classification_id."""
-    classifications = db.query(TransactionClassification).all()
-    return {c.classification_code: c.classification_id for c in classifications}
-
-
 # =============================================================================
 # Income Transaction Generation
 # =============================================================================
@@ -422,7 +416,6 @@ def get_classification_map(db: Session) -> dict[str, int]:
 def generate_income_transactions(
     month_date: date,
     categories: dict[str, int],
-    classifications: dict[str, int]
 ) -> list[dict]:
     """
     Generate income transactions for a given month.
@@ -430,7 +423,6 @@ def generate_income_transactions(
     Args:
         month_date: First day of the month
         categories: Mapping of category_name -> category_id
-        classifications: Mapping of classification_code -> classification_id
 
     Returns:
         List of transaction dicts ready for insertion
@@ -447,7 +439,6 @@ def generate_income_transactions(
         "amount": salary_amount,
         "transaction_type": "Income",
         "category_id": categories["Salary"],
-        "classification_id": classifications.get("STANDARD"),
         "description": f"{DEMO_MARKER} Direct Deposit - {employer}",
         "source": employer,
         "payment_method": "Direct Deposit",
@@ -458,7 +449,6 @@ def generate_income_transactions(
         "amount": salary_amount,
         "transaction_type": "Income",
         "category_id": categories["Salary"],
-        "classification_id": classifications.get("STANDARD"),
         "description": f"{DEMO_MARKER} Direct Deposit - {employer}",
         "source": employer,
         "payment_method": "Direct Deposit",
@@ -474,7 +464,6 @@ def generate_income_transactions(
             "amount": random_amount(500, 2000),
             "transaction_type": "Income",
             "category_id": categories["Freelance Income"],
-            "classification_id": classifications.get("STANDARD"),
             "description": f"{DEMO_MARKER} {client_desc}",
             "payment_method": "ACH Transfer",
         })
@@ -487,7 +476,6 @@ def generate_income_transactions(
                 "amount": random_amount(100, 500),
                 "transaction_type": "Income",
                 "category_id": categories["Dividends"],
-                "classification_id": classifications.get("STANDARD"),
                 "description": f"{DEMO_MARKER} Dividend - {fund}",
                 "source": "Vanguard",
             })
@@ -499,7 +487,6 @@ def generate_income_transactions(
         "amount": random_amount(5, 50),
         "transaction_type": "Income",
         "category_id": categories["Interest"],
-        "classification_id": classifications.get("STANDARD"),
         "description": f"{DEMO_MARKER} Interest - High Yield Savings",
         "source": "Marcus by Goldman Sachs",
     })
@@ -513,7 +500,6 @@ def generate_income_transactions(
             "amount": random_amount(20, 150),
             "transaction_type": "Income",
             "category_id": categories["Refunds"],
-            "classification_id": classifications.get("REFUND"),
             "description": f"{DEMO_MARKER} {random.choice(refund_sources)}",
             "include_in_analysis": True,  # Refunds show as income but classification excludes from calcs
         })
@@ -536,7 +522,6 @@ def generate_expense_transactions(
     Args:
         month_date: First day of the month
         categories: Mapping of category_name -> category_id
-        classifications: Mapping of classification_code -> classification_id
 
     Returns:
         List of transaction dicts ready for insertion
@@ -551,7 +536,6 @@ def generate_expense_transactions(
         "amount": Decimal("1850.00"),
         "transaction_type": "Expense",
         "category_id": categories["Rent/Mortgage"],
-        "classification_id": standard_class,
         "description": f"{DEMO_MARKER} Rent Payment - 123 Main Street Apt 4B",
         "source": PRIMARY_CHECKING,
         "payment_method": "ACH Transfer",
@@ -564,7 +548,6 @@ def generate_expense_transactions(
             "amount": random_amount(float(min_amt), float(max_amt)),
             "transaction_type": "Expense",
             "category_id": categories["Utilities"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {util_name}",
             "source": PRIMARY_CHECKING,
             "payment_method": "Auto Pay",
@@ -580,7 +563,6 @@ def generate_expense_transactions(
             "amount": random_amount(50, 250),
             "transaction_type": "Expense",
             "category_id": categories["Groceries"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(GROCERY_MERCHANTS)}",
             "source": source,
             "payment_method": payment,
@@ -596,7 +578,6 @@ def generate_expense_transactions(
             "amount": random_amount(15, 100),
             "transaction_type": "Expense",
             "category_id": categories["Dining & Restaurants"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(DINING_MERCHANTS)}",
             "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
@@ -612,7 +593,6 @@ def generate_expense_transactions(
             "amount": random_amount(20, 80),
             "transaction_type": "Expense",
             "category_id": categories["Transportation"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(TRANSPORTATION_MERCHANTS)}",
             "source": source,
             "payment_method": payment,
@@ -626,7 +606,6 @@ def generate_expense_transactions(
             "amount": sub_amount,
             "transaction_type": "Expense",
             "category_id": categories["Subscriptions"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {sub_name}",
             "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
@@ -642,7 +621,6 @@ def generate_expense_transactions(
             "amount": random_amount(20, 300),
             "transaction_type": "Expense",
             "category_id": categories["Shopping"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(SHOPPING_MERCHANTS)}",
             "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
@@ -658,7 +636,6 @@ def generate_expense_transactions(
             "amount": random_amount(20, 150),
             "transaction_type": "Expense",
             "category_id": categories["Healthcare"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(HEALTHCARE_MERCHANTS)}",
             "source": source,
             "payment_method": payment,
@@ -672,7 +649,6 @@ def generate_expense_transactions(
             "amount": random_amount(10, 100),
             "transaction_type": "Expense",
             "category_id": categories["Entertainment"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} {random.choice(ENTERTAINMENT_MERCHANTS)}",
             "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
@@ -684,7 +660,6 @@ def generate_expense_transactions(
         "amount": Decimal("185.00"),
         "transaction_type": "Expense",
         "category_id": categories["Insurance"],
-        "classification_id": standard_class,
         "description": f"{DEMO_MARKER} Auto Insurance - GEICO",
         "source": PRIMARY_CHECKING,
         "payment_method": "Auto Pay",
@@ -700,7 +675,6 @@ def generate_expense_transactions(
 def generate_transfer_transactions(
     month_date: date,
     categories: dict[str, int],
-    classifications: dict[str, int]
 ) -> list[dict]:
     """
     Generate transfer transactions (internal transfers, CC payments).
@@ -709,10 +683,6 @@ def generate_transfer_transactions(
     """
     transactions = []
     year, month = month_date.year, month_date.month
-
-    transfer_class = classifications.get("TRANSFER")
-    cc_payment_class = classifications.get("CC_PAYMENT")
-    cc_receipt_class = classifications.get("CC_RECEIPT")
 
     # Internal transfers - 2-3 per month
     num_transfers = random.randint(2, 3)
@@ -726,7 +696,6 @@ def generate_transfer_transactions(
             "amount": transfer_amount,
             "transaction_type": "Expense",
             "category_id": categories["Transfers"],
-            "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer to Savings Account",
             "source": PRIMARY_CHECKING,
 
@@ -741,7 +710,6 @@ def generate_transfer_transactions(
             "amount": transfer_amount,
             "transaction_type": "Income",
             "category_id": categories["Transfers"],
-            "classification_id": transfer_class,
             "description": f"{DEMO_MARKER} Transfer from Checking Account",
             "source": SAVINGS_ACCOUNT,
 
@@ -761,7 +729,6 @@ def generate_transfer_transactions(
         "amount": cc_amount,
         "transaction_type": "Expense",
         "category_id": categories["Credit Card Payment"],
-        "classification_id": cc_payment_class,
         "description": f"{DEMO_MARKER} Payment to {cc_card}",
         "source": PRIMARY_CHECKING,
         "include_in_analysis": False,
@@ -774,7 +741,6 @@ def generate_transfer_transactions(
         "amount": cc_amount,
         "transaction_type": "Income",
         "category_id": categories["Credit Card Payment"],
-        "classification_id": cc_receipt_class,
         "description": f"{DEMO_MARKER} Payment Received - {cc_card}",
         "source": cc_card,
         "include_in_analysis": False,
@@ -786,7 +752,6 @@ def generate_transfer_transactions(
 def generate_edge_cases(
     month_date: date,
     categories: dict[str, int],
-    classifications: dict[str, int],
     month_index: int
 ) -> list[dict]:
     """
@@ -796,11 +761,6 @@ def generate_edge_cases(
     """
     transactions = []
     year, month = month_date.year, month_date.month
-
-    reimb_paid_class = classifications.get("REIMB_PAID")
-    reimb_recv_class = classifications.get("REIMB_RECEIVED")
-    capital_class = classifications.get("CAPITAL_EXPENSE")
-    standard_class = classifications.get("STANDARD")
 
     # Reimbursement pair - every other month
     if month_index % 2 == 0:
@@ -813,7 +773,6 @@ def generate_edge_cases(
             "amount": reimb_amount,
             "transaction_type": "Expense",
             "category_id": categories["Shopping"],  # Work supplies
-            "classification_id": reimb_paid_class,
             "description": f"{DEMO_MARKER} Work Supplies - To Be Reimbursed",
             "notes": "Submit expense report",
         })
@@ -824,7 +783,6 @@ def generate_edge_cases(
             "amount": reimb_amount,
             "transaction_type": "Income",
             "category_id": categories["Reimbursements"],
-            "classification_id": reimb_recv_class,
             "description": f"{DEMO_MARKER} Expense Reimbursement - Work Supplies",
             "include_in_analysis": False,  # Excluded from income calcs
         })
@@ -842,7 +800,6 @@ def generate_edge_cases(
             "amount": item_amount,
             "transaction_type": "Expense",
             "category_id": categories["Shopping"],
-            "classification_id": capital_class,
             "description": f"{DEMO_MARKER} {item_name}",
             "notes": "Capital expense - excluded from operating expenses",
         })
@@ -855,7 +812,6 @@ def generate_edge_cases(
             "amount": random_amount(50, 150),
             "transaction_type": "Income",  # WRONG - should be expense
             "category_id": categories["Groceries"],  # Expense category as income = warning
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} Safeway - MISCATEGORIZED",
             "notes": "Data quality test - expense marked as income",
         })
@@ -868,7 +824,6 @@ def generate_edge_cases(
                 "amount": random_amount(25, 200),
                 "transaction_type": random.choice(["Income", "Expense"]),
                 "category_id": categories["Uncategorized"],
-                "classification_id": standard_class,
                 "description": f"{DEMO_MARKER} Unknown Transaction - Needs Review",
                 "notes": "Data quality test - uncategorized",
             })
@@ -880,7 +835,6 @@ def generate_edge_cases(
             "amount": random_amount(5000, 10000),  # Unusually high
             "transaction_type": "Expense",
             "category_id": categories["Shopping"],
-            "classification_id": standard_class,
             "description": f"{DEMO_MARKER} Large Purchase - OUTLIER",
             "notes": "Data quality test - outlier amount",
         })
@@ -916,12 +870,6 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
     # Seed categories
     categories = seed_demo_categories(db)
 
-    # Get classification mappings
-    classifications = get_classification_map(db)
-    if not classifications:
-        print("[ERROR] No classifications found. Run init_db first.")
-        return {"total": 0, "error": "No classifications"}
-
     # Generate transactions for each month
     month_dates = get_month_dates(months)
 
@@ -936,10 +884,10 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
         month_name = month_date.strftime("%B %Y")
 
         # Generate all transaction types
-        income_txns = generate_income_transactions(month_date, categories, classifications)
-        expense_txns = generate_expense_transactions(month_date, categories, classifications)
-        transfer_txns = generate_transfer_transactions(month_date, categories, classifications)
-        edge_txns = generate_edge_cases(month_date, categories, classifications, i)
+        income_txns = generate_income_transactions(month_date, categories)
+        expense_txns = generate_expense_transactions(month_date, categories)
+        transfer_txns = generate_transfer_transactions(month_date, categories)
+        edge_txns = generate_edge_cases(month_date, categories, i)
 
         # Combine and insert
         all_txns = income_txns + expense_txns + transfer_txns + edge_txns

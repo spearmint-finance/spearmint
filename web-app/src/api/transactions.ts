@@ -10,7 +10,6 @@ export interface TransactionListParams {
   end_date?: string;
   transaction_type?: "Income" | "Expense";
   category_id?: number;
-  classification_id?: number;
   include_in_analysis?: boolean;
   is_transfer?: boolean;
   min_amount?: number;
@@ -50,8 +49,6 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     backendTransaction.isTransfer ?? backendTransaction.is_transfer;
   const categoryId =
     backendTransaction.categoryId ?? backendTransaction.category_id;
-  const classificationId =
-    backendTransaction.classificationId ?? backendTransaction.classification_id;
   const paymentMethod =
     backendTransaction.paymentMethod ?? backendTransaction.payment_method;
   const transferAccountFrom =
@@ -80,15 +77,6 @@ const transformTransaction = (backendTransaction: any): Transaction => {
       ? rawCategoryName
       : undefined;
 
-  // Handle nested classification object (supports both camelCase and snake_case)
-  const rawClassificationName =
-    backendTransaction.classification?.classificationName ??
-    backendTransaction.classification?.classification_name;
-  const classificationName =
-    rawClassificationName && rawClassificationName !== "nan" && rawClassificationName.trim() !== ""
-      ? rawClassificationName
-      : undefined;
-
   return {
     id: transactionId,
     date: transactionDate
@@ -101,8 +89,6 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     balance: backendTransaction.balance,
     category_id: categoryId,
     category_name: categoryName,
-    classification_id: classificationId,
-    classification_name: classificationName,
     related_transaction_id: relatedTransactionId,
     account_id: accountId,
     source: backendTransaction.source,
@@ -142,8 +128,6 @@ export const getTransactions = async (
     queryParams.set("transaction_type", params.transaction_type);
   if (params?.category_id != null)
     queryParams.set("category_id", String(params.category_id));
-  if (params?.classification_id != null)
-    queryParams.set("classification_id", String(params.classification_id));
   if (params?.include_in_analysis != null)
     queryParams.set("include_in_analysis", String(params.include_in_analysis));
   if (params?.is_transfer != null)

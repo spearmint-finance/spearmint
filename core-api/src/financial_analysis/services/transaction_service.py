@@ -10,7 +10,7 @@ from sqlalchemy import and_, or_, desc, asc, func, case
 logger = logging.getLogger(__name__)
 
 from ..database.models import (
-    Transaction, Category, TransactionClassification,
+    Transaction, Category,
     Tag, TransactionTag, Account
 )
 from ..utils.validators import DataValidator, ValidationError
@@ -25,14 +25,12 @@ class TransactionFilter:
         end_date: Optional[date] = None,
         transaction_type: Optional[str] = None,
         category_id: Optional[int] = None,
-        classification_id: Optional[int] = None,
         include_in_analysis: Optional[bool] = None,
         is_transfer: Optional[bool] = None,  # deprecated: kept for API compat, uses category join
         min_amount: Optional[Decimal] = None,
         max_amount: Optional[Decimal] = None,
         search_text: Optional[str] = None,
         tag_ids: Optional[List[int]] = None,
-        exclude_classification_ids: Optional[List[int]] = None,
         account_id: Optional[int] = None,
         entity_id: Optional[int] = None,
         limit: int = 100,
@@ -44,14 +42,12 @@ class TransactionFilter:
         self.end_date = end_date
         self.transaction_type = transaction_type
         self.category_id = category_id
-        self.classification_id = classification_id
         self.include_in_analysis = include_in_analysis
         self.is_transfer = is_transfer
         self.min_amount = min_amount
         self.max_amount = max_amount
         self.search_text = search_text
         self.tag_ids = tag_ids or []
-        self.exclude_classification_ids = exclude_classification_ids or []
         self.account_id = account_id
         self.entity_id = entity_id
         self.limit = limit
@@ -82,7 +78,6 @@ class TransactionService:
         source: Optional[str] = None,
         description: Optional[str] = None,
         payment_method: Optional[str] = None,
-        classification_id: Optional[int] = None,
         include_in_analysis: bool = True,
         transfer_account_from: Optional[str] = None,
         transfer_account_to: Optional[str] = None,
@@ -101,7 +96,6 @@ class TransactionService:
             source: Source of transaction
             description: Transaction description
             payment_method: Payment method used
-            classification_id: Classification ID
             include_in_analysis: Whether to include in analysis
             transfer_account_from: Source account for transfers
             transfer_account_to: Destination account for transfers
@@ -124,14 +118,6 @@ class TransactionService:
         if not category:
             raise ValidationError(f"Category with ID {category_id} not found")
 
-        # Verify classification if provided
-        if classification_id:
-            classification = self.db.query(TransactionClassification).filter(
-                TransactionClassification.classification_id == classification_id
-            ).first()
-            if not classification:
-                raise ValidationError(f"Classification with ID {classification_id} not found")
-
         # Create transaction
         transaction = Transaction(
             transaction_date=transaction_date,
@@ -141,7 +127,6 @@ class TransactionService:
             source=source,
             description=description,
             payment_method=payment_method,
-            classification_id=classification_id,
             include_in_analysis=include_in_analysis,
             transfer_account_from=transfer_account_from,
             transfer_account_to=transfer_account_to,
@@ -209,14 +194,11 @@ class TransactionService:
         if filters.category_id:
             conditions.append(Transaction.category_id == filters.category_id)
 
-        if filters.classification_id:
-            conditions.append(Transaction.classification_id == filters.classification_id)
-
         if filters.include_in_analysis is not None:
             conditions.append(Transaction.include_in_analysis == filters.include_in_analysis)
 
         if filters.is_transfer is not None:
-            # Join Category to filter by category_type instead of removed is_transfer column
+            # Join Category to filter by category_type
             query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True)
             if filters.is_transfer:
                 conditions.append(Category.category_type == 'Transfer')
@@ -255,14 +237,6 @@ class TransactionService:
                 TransactionTag,
                 Transaction.transaction_id == TransactionTag.transaction_id
             ).filter(TransactionTag.tag_id.in_(filters.tag_ids))
-
-        if filters.exclude_classification_ids:
-            conditions.append(
-                or_(
-                    Transaction.classification_id.is_(None),
-                    Transaction.classification_id.notin_(filters.exclude_classification_ids)
-                )
-            )
 
         if conditions:
             query = query.filter(and_(*conditions))
@@ -329,8 +303,6 @@ class TransactionService:
             conditions.append(Transaction.transaction_type == filters.transaction_type)
         if filters.category_id:
             conditions.append(Transaction.category_id == filters.category_id)
-        if filters.classification_id:
-            conditions.append(Transaction.classification_id == filters.classification_id)
         if filters.include_in_analysis is not None:
             conditions.append(Transaction.include_in_analysis == filters.include_in_analysis)
         if filters.is_transfer is not None:
@@ -360,14 +332,6 @@ class TransactionService:
                     Category.category_name.ilike(search_pattern)
                 )
             )
-        if filters.exclude_classification_ids:
-            conditions.append(
-                or_(
-                    Transaction.classification_id.is_(None),
-                    Transaction.classification_id.notin_(filters.exclude_classification_ids)
-                )
-            )
-
         if conditions:
             query = query.filter(and_(*conditions))
 
@@ -418,13 +382,6 @@ class TransactionService:
             category = self.db.query(Category).filter(Category.category_id == updates['category_id']).first()
             if not category:
                 raise ValidationError(f"Category with ID {updates['category_id']} not found")
-
-        if 'classification_id' in updates and updates['classification_id']:
-            classification = self.db.query(TransactionClassification).filter(
-                TransactionClassification.classification_id == updates['classification_id']
-            ).first()
-            if not classification:
-                raise ValidationError(f"Classification with ID {updates['classification_id']} not found")
 
         # Handle tags separately
         tag_names = updates.pop('tag_names', None)

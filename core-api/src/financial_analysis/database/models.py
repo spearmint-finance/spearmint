@@ -19,39 +19,6 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
-class TransactionClassification(Base):
-    """
-    Transaction classifications table (PRD Section 3.2.2).
-
-    Stores classification types that determine how transactions are treated
-    in financial calculations.
-    """
-    __tablename__ = "transaction_classifications"
-
-    classification_id = Column(Integer, primary_key=True, autoincrement=True)
-    classification_name = Column(String(50), nullable=False, unique=True)
-    classification_code = Column(String(20), nullable=False, unique=True)
-    description = Column(Text)
-    exclude_from_income_calc = Column(Boolean, default=False)
-    exclude_from_expense_calc = Column(Boolean, default=False)
-    exclude_from_cashflow_calc = Column(Boolean, default=False)
-    is_system_classification = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
-
-    # Relationships
-    transactions = relationship("Transaction", back_populates="classification")
-    classification_rules = relationship("ClassificationRule", back_populates="classification")
-
-    # Indexes
-    __table_args__ = (
-        Index('idx_classification_code', 'classification_code'),
-    )
-
-    def __repr__(self):
-        return f"<TransactionClassification(id={self.classification_id}, name='{self.classification_name}')>"
-
-
 class Category(Base):
     """
     Categories table (PRD Section 3.2.3).
@@ -97,7 +64,6 @@ class Transaction(Base):
     source = Column(String(255))
     description = Column(Text)
     payment_method = Column(String(50))
-    classification_id = Column(Integer, ForeignKey('transaction_classifications.classification_id'))
     include_in_analysis = Column(Boolean, default=True)
     related_transaction_id = Column(Integer, ForeignKey('transactions.transaction_id'))
     transfer_account_from = Column(String(100))
@@ -122,7 +88,6 @@ class Transaction(Base):
 
     # Relationships
     category = relationship("Category", back_populates="transactions")
-    classification = relationship("TransactionClassification", back_populates="transactions")
     related_transaction = relationship("Transaction", remote_side=[transaction_id], backref="related_transactions")
     tags = relationship("Tag", secondary="transaction_tags", back_populates="transactions")
     splits = relationship("TransactionSplit", back_populates="transaction", cascade="all, delete-orphan")
@@ -134,7 +99,6 @@ class Transaction(Base):
         Index('idx_transaction_date', 'transaction_date'),
         Index('idx_transaction_type', 'transaction_type'),
         Index('idx_category_id', 'category_id'),
-        Index('idx_classification_id', 'classification_id'),
         Index('idx_include_in_analysis', 'include_in_analysis'),
         Index('idx_related_transaction', 'related_transaction_id'),
         Index('idx_account_id', 'account_id'),
@@ -172,46 +136,6 @@ class TransactionRelationship(Base):
 
     def __repr__(self):
         return f"<TransactionRelationship(id={self.relationship_id}, type='{self.relationship_type}')>"
-
-
-class ClassificationRule(Base):
-    """
-    Classification rules table (PRD Section 3.2.5).
-
-    Pattern-based rules for automatic transaction classification.
-    """
-    __tablename__ = "classification_rules"
-
-    rule_id = Column(Integer, primary_key=True, autoincrement=True)
-    rule_name = Column(String(100), nullable=False)
-    rule_priority = Column(Integer, default=100)
-    classification_id = Column(Integer, ForeignKey('transaction_classifications.classification_id'), nullable=False)
-    is_active = Column(Boolean, default=True)
-
-    # Pattern matching criteria
-    description_pattern = Column(String(255))
-    category_pattern = Column(String(100))
-    source_pattern = Column(String(255))
-    amount_min = Column(Numeric(10, 2))
-    amount_max = Column(Numeric(10, 2))
-    payment_method_pattern = Column(String(50))
-
-    # Actions
-    set_include_in_analysis = Column(Boolean)
-    created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
-
-    # Relationships
-    classification = relationship("TransactionClassification", back_populates="classification_rules")
-
-    # Indexes
-    __table_args__ = (
-        Index('idx_rule_priority', 'rule_priority'),
-        Index('idx_rule_active', 'is_active'),
-    )
-
-    def __repr__(self):
-        return f"<ClassificationRule(id={self.rule_id}, name='{self.rule_name}', priority={self.rule_priority})>"
 
 
 class CategoryRule(Base):

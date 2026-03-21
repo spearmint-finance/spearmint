@@ -45,7 +45,6 @@ export const systemApi = sdk.system;
 export const transactionsApi = sdk.transactions;
 export const accountsApi = sdk.accounts;
 export const reportsApi = sdk.reports;
-export const classificationsApi = sdk.classifications;
 export const maintenanceApi = sdk.maintenance;
 export const analysisApi = sdk.analysis;
 export const projectionsApi = sdk.projections;

@@ -12,9 +12,8 @@ from sqlalchemy.orm import sessionmaker, Session, scoped_session
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 
-from financial_analysis.database.models import Base, Category, Transaction, TransactionClassification
+from financial_analysis.database.models import Base, Category, Transaction
 from financial_analysis.api.dependencies import get_db
-from financial_analysis.database.seed_data import seed_classifications as project_seed_classifications
 
 
 # Test database URL (in-memory SQLite with shared cache for better session isolation)
@@ -54,9 +53,6 @@ def test_db_session(test_db_engine):
         expire_on_commit=False
     )
     session = TestingSessionLocal()
-
-    # Seed system classifications using the project's canonical seeder
-    project_seed_classifications(session)
 
     yield session
 
@@ -161,7 +157,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("5000.00"),
             transaction_type="Income",
             category_id=1,
-            classification_id=1
         ),
         Transaction(
             transaction_id=2,
@@ -170,7 +165,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("1000.00"),
             transaction_type="Income",
             category_id=1,
-            classification_id=1
         ),
         # Expense transactions
         Transaction(
@@ -180,7 +174,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("150.00"),
             transaction_type="Expense",
             category_id=2,
-            classification_id=1
         ),
         Transaction(
             transaction_id=4,
@@ -189,7 +182,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("100.00"),
             transaction_type="Expense",
             category_id=3,
-            classification_id=1
         ),
         Transaction(
             transaction_id=5,
@@ -198,7 +190,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("50.00"),
             transaction_type="Expense",
             category_id=4,
-            classification_id=1
         ),
         # Transfer pair
         Transaction(
@@ -208,7 +199,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("500.00"),
             transaction_type="Expense",
             category_id=2,  # Need a category
-            classification_id=2,
             include_in_analysis=False
         ),
         Transaction(
@@ -218,7 +208,6 @@ def sample_transactions(test_db_session, sample_categories):
             amount=Decimal("500.00"),
             transaction_type="Income",
             category_id=1,  # Need a category
-            classification_id=2,
             include_in_analysis=False
         ),
     ]
