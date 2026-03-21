@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc, func, case
+from sqlalchemy import and_, or_, desc, asc, func, case, exists
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,15 @@ class TransactionService:
         transfer_account_to: Optional[str] = None,
         notes: Optional[str] = None,
         tag_names: Optional[List[str]] = None,
-        account_id: Optional[int] = None
+        account_id: Optional[int] = None,
+        entity_id: Optional[int] = None,
+        is_capital_expense: bool = False,
+        is_tax_deductible: bool = False,
+        is_recurring: bool = False,
+        is_reimbursable: bool = False,
+        exclude_from_income: bool = False,
+        exclude_from_expenses: bool = False,
+        splits: Optional[List] = None,
     ) -> Transaction:
         """
         Create a new transaction.
@@ -131,11 +139,32 @@ class TransactionService:
             transfer_account_from=transfer_account_from,
             transfer_account_to=transfer_account_to,
             notes=notes,
-            account_id=account_id
+            account_id=account_id,
+            entity_id=entity_id,
+            is_capital_expense=is_capital_expense,
+            is_tax_deductible=is_tax_deductible,
+            is_recurring=is_recurring,
+            is_reimbursable=is_reimbursable,
+            exclude_from_income=exclude_from_income,
+            exclude_from_expenses=exclude_from_expenses,
         )
 
         self.db.add(transaction)
         self.db.flush()  # Get transaction_id
+
+        # Add splits if provided
+        if splits:
+            for s in splits:
+                from ..database.models import TransactionSplit
+                split = TransactionSplit(
+                    transaction_id=transaction.transaction_id,
+                    amount=s.amount if hasattr(s, 'amount') else s['amount'],
+                    category_id=s.category_id if hasattr(s, 'category_id') else s['category_id'],
+                    entity_id=s.entity_id if hasattr(s, 'entity_id') else s.get('entity_id'),
+                    description=s.description if hasattr(s, 'description') else s.get('description'),
+                    notes=s.notes if hasattr(s, 'notes') else s.get('notes'),
+                )
+                self.db.add(split)
 
         # Add tags if provided
         if tag_names:
@@ -210,20 +239,21 @@ class TransactionService:
 
         if filters.entity_id:
             # Show transactions explicitly assigned to this entity,
-            # OR inherited from account (entity_id IS NULL and account belongs to entity)
+            # OR inherited from account (entity_id IS NULL and account belongs to entity).
+            # Use EXISTS to avoid duplicate rows from the join.
             from ..database.models import account_entities
-            query = query.outerjoin(
-                Account,
-                Transaction.account_id == Account.account_id
-            ).outerjoin(
-                account_entities,
-                Account.account_id == account_entities.c.account_id
-            ).filter(
+            account_has_entity = exists().where(
+                and_(
+                    account_entities.c.account_id == Transaction.account_id,
+                    account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            conditions.append(
                 or_(
                     Transaction.entity_id == filters.entity_id,
                     and_(
                         Transaction.entity_id.is_(None),
-                        account_entities.c.entity_id == filters.entity_id
+                        account_has_entity
                     )
                 )
             )
@@ -328,18 +358,18 @@ class TransactionService:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
             from ..database.models import account_entities
-            query = query.outerjoin(
-                Account,
-                Transaction.account_id == Account.account_id
-            ).outerjoin(
-                account_entities,
-                Account.account_id == account_entities.c.account_id
-            ).filter(
+            account_has_entity = exists().where(
+                and_(
+                    account_entities.c.account_id == Transaction.account_id,
+                    account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            conditions.append(
                 or_(
                     Transaction.entity_id == filters.entity_id,
                     and_(
                         Transaction.entity_id.is_(None),
-                        account_entities.c.entity_id == filters.entity_id
+                        account_has_entity
                     )
                 )
             )
@@ -410,6 +440,8 @@ class TransactionService:
 
         # Handle tags separately
         tag_names = updates.pop('tag_names', None)
+        # Handle splits separately
+        splits = updates.pop('splits', None)
         # Remove deprecated reapply_rules flag (classification auto-apply removed in Phase 2)
         updates.pop('reapply_rules', None)
 
@@ -435,6 +467,23 @@ class TransactionService:
             # Add new tags
             if tag_names:
                 self._add_tags(transaction, tag_names)
+
+        # Replace splits if provided (None = no change, [] = remove all)
+        if splits is not None:
+            from ..database.models import TransactionSplit
+            self.db.query(TransactionSplit).filter(
+                TransactionSplit.transaction_id == transaction_id
+            ).delete()
+            for s in splits:
+                split = TransactionSplit(
+                    transaction_id=transaction_id,
+                    amount=s.amount if hasattr(s, 'amount') else s['amount'],
+                    category_id=s.category_id if hasattr(s, 'category_id') else s['category_id'],
+                    entity_id=s.entity_id if hasattr(s, 'entity_id') else s.get('entity_id'),
+                    description=s.description if hasattr(s, 'description') else s.get('description'),
+                    notes=s.notes if hasattr(s, 'notes') else s.get('notes'),
+                )
+                self.db.add(split)
 
         self.db.commit()
         self.db.refresh(transaction)

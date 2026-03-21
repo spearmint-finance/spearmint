@@ -51,7 +51,15 @@ def create_transaction(
             transfer_account_to=transaction.transfer_account_to,
             notes=transaction.notes,
             tag_names=transaction.tag_names,
-            account_id=transaction.account_id
+            account_id=transaction.account_id,
+            entity_id=transaction.entity_id,
+            is_capital_expense=transaction.is_capital_expense or False,
+            is_tax_deductible=transaction.is_tax_deductible or False,
+            is_recurring=transaction.is_recurring or False,
+            is_reimbursable=transaction.is_reimbursable or False,
+            exclude_from_income=transaction.exclude_from_income or False,
+            exclude_from_expenses=transaction.exclude_from_expenses or False,
+            splits=transaction.splits,
         )
         return created
     except ValidationError as e:

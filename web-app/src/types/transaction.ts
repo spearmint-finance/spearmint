@@ -1,5 +1,24 @@
 // Transaction types based on backend API schemas
 
+export interface TransactionSplit {
+  split_id: number;
+  transaction_id: number;
+  amount: number;
+  category_id: number;
+  category_name?: string;
+  entity_id?: number | null;
+  description?: string;
+  notes?: string;
+}
+
+export interface TransactionSplitCreate {
+  amount: number;
+  category_id: number;
+  entity_id?: number | null;
+  description?: string;
+  notes?: string;
+}
+
 export interface Transaction {
   id: number;
   date: string;
@@ -25,6 +44,7 @@ export interface Transaction {
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
+  splits?: TransactionSplit[];
   created_at?: string;
   updated_at?: string;
 }
@@ -33,7 +53,7 @@ export interface TransactionCreate {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense" | "Transfer";
+  transaction_type: "Income" | "Expense";
   category_id: number; // Required field
   account_id?: number;
   balance?: number;
@@ -46,6 +66,7 @@ export interface TransactionCreate {
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
+  splits?: TransactionSplitCreate[];
 }
 
 export interface TransactionUpdate {
@@ -65,6 +86,7 @@ export interface TransactionUpdate {
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
+  splits?: TransactionSplitCreate[];
 }
 
 export interface TransactionFilter {

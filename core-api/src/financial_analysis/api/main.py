@@ -121,6 +121,26 @@ def ensure_database_tables():
                     "REFERENCES entities(entity_id)"
                 ))
 
+    # Migration: repurpose transaction_splits from person-based to category-based
+    if inspector.has_table("transaction_splits"):
+        columns = [c["name"] for c in inspector.get_columns("transaction_splits")]
+        if "person_id" in columns:
+            with engine.begin() as conn:
+                conn.execute(text("DROP TABLE transaction_splits"))
+            # create_all below will recreate with new schema
+    Base.metadata.create_all(bind=engine)  # ensure new table exists after drop
+
+    # Migration: convert Transfer transaction_type to Income/Expense based on amount sign
+    if inspector.has_table("transactions"):
+        columns = [c["name"] for c in inspector.get_columns("transactions")]
+        if "transaction_type" in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "UPDATE transactions SET transaction_type = "
+                    "CASE WHEN amount >= 0 THEN 'Income' ELSE 'Expense' END "
+                    "WHERE transaction_type = 'Transfer'"
+                ))
+
     # Migration: migrate account.entity_id data to account_entities join table
     if inspector.has_table("accounts") and inspector.has_table("account_entities"):
         columns = [c["name"] for c in inspector.get_columns("accounts")]

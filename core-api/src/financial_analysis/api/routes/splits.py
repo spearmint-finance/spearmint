@@ -1,49 +1,78 @@
-"""Transaction Splits API routes."""
+"""Transaction Splits API routes — category-based line-item splits."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from ..dependencies import get_db
-from ...database.models import Transaction, TransactionSplit, Person
-from ..schemas.split import TransactionSplitCreate, TransactionSplitRead
+from ...database.models import Transaction, TransactionSplit
+from ..schemas.split import TransactionSplitCreate, TransactionSplitResponse
 
 router = APIRouter(prefix="/transactions", tags=["splits"])
 
 
-@router.get("/{transaction_id}/splits", response_model=List[TransactionSplitRead])
+@router.get("/{transaction_id}/splits", response_model=List[TransactionSplitResponse])
 def get_transaction_splits(transaction_id: int, db: Session = Depends(get_db)):
+    """Get all splits for a transaction."""
     tx = db.query(Transaction).filter(Transaction.transaction_id == transaction_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    return db.query(TransactionSplit).filter(TransactionSplit.transaction_id == transaction_id).all()
+    splits = db.query(TransactionSplit).options(
+        joinedload(TransactionSplit.category),
+        joinedload(TransactionSplit.entity)
+    ).filter(TransactionSplit.transaction_id == transaction_id).all()
+    # Attach category_name for response
+    result = []
+    for s in splits:
+        s.category_name = s.category.category_name if s.category else None
+        result.append(s)
+    return result
 
 
-@router.post("/{transaction_id}/splits", response_model=TransactionSplitRead, status_code=status.HTTP_201_CREATED)
-def create_transaction_split(transaction_id: int, payload: TransactionSplitCreate, db: Session = Depends(get_db)):
+@router.put("/{transaction_id}/splits", response_model=List[TransactionSplitResponse], status_code=200)
+def set_transaction_splits(
+    transaction_id: int,
+    splits: List[TransactionSplitCreate],
+    db: Session = Depends(get_db)
+):
+    """Replace all splits for a transaction. Send empty list to remove all splits."""
     tx = db.query(Transaction).filter(Transaction.transaction_id == transaction_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    person = db.query(Person).filter(Person.person_id == payload.person_id).first()
-    if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
+    # Validate split amounts sum to transaction amount
+    if splits:
+        total = sum(abs(float(s.amount)) for s in splits)
+        tx_amount = abs(float(tx.amount))
+        if abs(total - tx_amount) > 0.01:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Split amounts ({total:.2f}) must sum to transaction amount ({tx_amount:.2f})"
+            )
 
-    # Enforce single split per person per transaction
-    existing = db.query(TransactionSplit).filter(
-        TransactionSplit.transaction_id == transaction_id,
-        TransactionSplit.person_id == payload.person_id
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Split for this person already exists for the transaction")
+    # Replace all existing splits
+    db.query(TransactionSplit).filter(
+        TransactionSplit.transaction_id == transaction_id
+    ).delete()
 
-    split = TransactionSplit(
-        transaction_id=transaction_id,
-        person_id=payload.person_id,
-        amount=payload.amount,
-    )
-    db.add(split)
+    result = []
+    for s in splits:
+        split = TransactionSplit(
+            transaction_id=transaction_id,
+            amount=s.amount,
+            category_id=s.category_id,
+            entity_id=s.entity_id,
+            description=s.description,
+            notes=s.notes,
+        )
+        db.add(split)
+        db.flush()
+        db.refresh(split)
+        # Attach category_name
+        from ...database.models import Category
+        cat = db.query(Category).filter(Category.category_id == split.category_id).first()
+        split.category_name = cat.category_name if cat else None
+        result.append(split)
+
     db.commit()
-    db.refresh(split)
-    return split
-
+    return result
