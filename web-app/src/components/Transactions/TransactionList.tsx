@@ -377,25 +377,6 @@ function TransactionList() {
       },
     },
     {
-      field: "transaction_type",
-      headerName: "Type",
-      width: 120,
-      filterable: false,
-      renderCell: (params) => {
-        const isTransfer = params.row.is_transfer;
-        const label = isTransfer ? "Transfer" : params.value;
-        const color = isTransfer
-          ? "default"
-          : params.value === "Income"
-          ? "success"
-          : "error";
-
-        return (
-          <Chip label={label} size="small" color={color} variant="outlined" />
-        );
-      },
-    },
-    {
       field: "amount",
       headerName: "Amount",
       width: 130,
@@ -416,40 +397,19 @@ function TransactionList() {
     {
       field: "account_id",
       headerName: "Account",
-      width: 180,
+      width: 220,
       valueGetter: (_value, row) => {
         if (row.account_id && accountsData) {
           const account = accountsData.find(
             (a) => a.account_id === row.account_id
           );
-          if (account) return account.account_name;
+          if (account) {
+            const parts = [account.institution_name, account.account_name].filter(Boolean);
+            return parts.join(" - ") || account.account_name;
+          }
         }
         return row.source || "-";
       },
-      filterable: false,
-    },
-    {
-      field: "payment_method",
-      headerName: "Institution",
-      width: 150,
-      valueGetter: (_value, row) => {
-        if (row.account_id && accountsData) {
-          const account = accountsData.find(
-            (a) => a.account_id === row.account_id
-          );
-          if (account?.institution_name) return account.institution_name;
-        }
-        return row.payment_method || "-";
-      },
-      filterable: false,
-    },
-    {
-      field: "balance",
-      headerName: "Balance",
-      width: 130,
-      align: "right",
-      headerAlign: "right",
-      valueFormatter: (value) => (value ? formatCurrency(value) : "-"),
       filterable: false,
     },
   ];
