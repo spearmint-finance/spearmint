@@ -211,6 +211,7 @@ export const createTransaction = async (
     categoryId: data.category_id,
     accountId: data.account_id,
     notes: data.notes,
+    tagNames: data.tag_names,
   } as any);
   return transformTransaction(response.data);
 };
@@ -231,6 +232,7 @@ export const updateTransaction = async (
       categoryId: data.category_id,
       accountId: data.account_id,
       notes: data.notes,
+      tagNames: data.tag_names,
     } as any);
   return transformTransaction(response.data);
 };

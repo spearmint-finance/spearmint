@@ -9,6 +9,7 @@ import hashlib
 import os
 from sqlalchemy.orm import Session
 from .models import TransactionClassification, ClassificationRule, APIKey
+from .seed_tags import seed_tags
 
 
 DEFAULT_CLASSIFICATIONS = [
@@ -267,5 +268,6 @@ def seed_all(db: Session) -> None:
     seed_classifications(db)
     seed_classification_rules(db)
     seed_api_keys(db)
+    seed_tags(db)
     print("\n[OK] All seed data loaded successfully")
 
