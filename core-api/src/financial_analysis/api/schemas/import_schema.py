@@ -23,12 +23,14 @@ class ImportErrorDetail(BaseModel):
 
 class ImportResponse(BaseModel):
     """Schema for import response."""
-    
+
     total_rows: int = Field(..., description="Total rows processed")
     successful_rows: int = Field(..., description="Successfully imported rows")
     failed_rows: int = Field(..., description="Failed rows")
     classified_rows: int = Field(..., description="Automatically classified rows")
     skipped_duplicates: int = Field(..., description="Skipped duplicate rows")
+    accounts_created: int = Field(default=0, description="Accounts auto-created from Accounts sheet")
+    accounts_skipped: int = Field(default=0, description="Accounts skipped (already exist)")
     success_rate: float = Field(..., description="Success rate percentage")
     errors: List[ImportErrorDetail] = Field(default_factory=list, description="List of errors")
     warnings: List[str] = Field(default_factory=list, description="List of warnings")
