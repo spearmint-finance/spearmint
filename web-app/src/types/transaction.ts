@@ -5,7 +5,7 @@ export interface Transaction {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense";
+  transaction_type: "Income" | "Expense" | "Transfer";
   is_transfer?: boolean;
   balance?: number;
   category_id?: number;
@@ -33,7 +33,7 @@ export interface TransactionCreate {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense";
+  transaction_type: "Income" | "Expense" | "Transfer";
   category_id: number; // Required field
   account_id?: number;
   balance?: number;

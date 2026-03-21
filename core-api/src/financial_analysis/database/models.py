@@ -110,7 +110,7 @@ class Transaction(Base):
 
     # Constraints and Indexes
     __table_args__ = (
-        CheckConstraint("transaction_type IN ('Income', 'Expense')", name='check_transaction_type'),
+        CheckConstraint("transaction_type IN ('Income', 'Expense', 'Transfer')", name='check_transaction_type'),
         Index('idx_transaction_date', 'transaction_date'),
         Index('idx_transaction_type', 'transaction_type'),
         Index('idx_category_id', 'category_id'),
