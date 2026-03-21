@@ -17,6 +17,8 @@ import {
   CircularProgress,
   Box,
   Divider,
+  Autocomplete,
+  Chip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useSnackbar } from "notistack";
@@ -40,6 +42,16 @@ interface TransactionFormProps {
   mode: "create" | "edit";
 }
 
+// Default tag suggestions matching seed_tags.py
+const DEFAULT_TAG_SUGGESTIONS = [
+  "capital-expense",
+  "tax-deductible",
+  "recurring",
+  "reimbursable",
+  "exclude-from-income",
+  "exclude-from-expenses",
+];
+
 interface FormData {
   date: string;
   description: string;
@@ -48,6 +60,7 @@ interface FormData {
   category_id: number; // Required field
   account_id: string; // Empty string = no account selected
   notes?: string;
+  tags: string[];
 }
 
 function TransactionForm({
@@ -97,6 +110,7 @@ function TransactionForm({
       category_id: "" as any, // Empty string for unselected state
       account_id: "",
       notes: "",
+      tags: [],
     },
   });
 
@@ -114,6 +128,7 @@ function TransactionForm({
         category_id: transaction.category_id,
         account_id: transaction.account_id ? String(transaction.account_id) : "",
         notes: transaction.notes || "",
+        tags: transaction.tags || [],
       });
     } else if (mode === "create") {
       reset({
@@ -124,6 +139,7 @@ function TransactionForm({
         category_id: "" as any, // Empty string for unselected state
         account_id: "",
         notes: "",
+        tags: [],
       });
     }
   }, [transaction, mode, reset]);
@@ -155,6 +171,7 @@ function TransactionForm({
           category_id: categoryId,
           account_id: accountId,
           notes: data.notes,
+          tag_names: data.tags.length > 0 ? data.tags : undefined,
         };
         await createMutation.mutateAsync(createData);
         enqueueSnackbar("Transaction created successfully", {
@@ -169,6 +186,7 @@ function TransactionForm({
           category_id: categoryId,
           account_id: accountId,
           notes: data.notes,
+          tag_names: data.tags,
         };
         await updateMutation.mutateAsync({
           id: transaction.id,
@@ -427,6 +445,46 @@ function TransactionForm({
                     fullWidth
                     multiline
                     rows={3}
+                  />
+                )}
+              />
+            </Grid>
+
+            {/* Tags */}
+            <Grid item xs={12}>
+              <Controller
+                name="tags"
+                control={control}
+                render={({ field }) => (
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    options={DEFAULT_TAG_SUGGESTIONS.filter(
+                      (tag) => !field.value.includes(tag)
+                    )}
+                    value={field.value}
+                    onChange={(_event, newValue) => {
+                      field.onChange(newValue);
+                    }}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          variant="outlined"
+                          label={option}
+                          size="small"
+                          {...getTagProps({ index })}
+                          key={option}
+                        />
+                      ))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Tags"
+                        placeholder="Add tags..."
+                        helperText="Select from suggestions or type to create new tags"
+                      />
+                    )}
                   />
                 )}
               />
