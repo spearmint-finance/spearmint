@@ -11,18 +11,32 @@ import {
   Divider,
   Grid,
   IconButton,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import SaveIcon from "@mui/icons-material/Save";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "../../types/transaction";
-import { useDeleteTransaction } from "../../hooks/useTransactions";
+import { useDeleteTransaction, useUpdateTransaction } from "../../hooks/useTransactions";
 import { getAccounts } from "../../api/accounts";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionForm from "./TransactionForm";
+
+// Default tag suggestions matching seed_tags.py
+const DEFAULT_TAG_SUGGESTIONS = [
+  "capital-expense",
+  "tax-deductible",
+  "recurring",
+  "reimbursable",
+  "exclude-from-income",
+  "exclude-from-expenses",
+];
 
 interface TransactionDetailProps {
   open: boolean;
@@ -37,12 +51,15 @@ function TransactionDetail({
 }: TransactionDetailProps) {
   const { enqueueSnackbar } = useSnackbar();
   const deleteMutation = useDeleteTransaction();
+  const updateMutation = useUpdateTransaction();
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [editingTags, setEditingTags] = useState(false);
+  const [editedTags, setEditedTags] = useState<string[]>([]);
 
   const linkedAccount = transaction?.account_id && accountsData
     ? accountsData.find((a) => a.account_id === transaction.account_id)
@@ -62,6 +79,24 @@ function TransactionDetail({
       onClose();
     } catch (error) {
       enqueueSnackbar("Failed to delete transaction", { variant: "error" });
+    }
+  };
+
+  const handleStartEditTags = () => {
+    setEditedTags(transaction.tags || []);
+    setEditingTags(true);
+  };
+
+  const handleSaveTags = async () => {
+    try {
+      await updateMutation.mutateAsync({
+        id: transaction.id,
+        data: { tag_names: editedTags },
+      });
+      enqueueSnackbar("Tags updated successfully", { variant: "success" });
+      setEditingTags(false);
+    } catch (error) {
+      enqueueSnackbar("Failed to update tags", { variant: "error" });
     }
   };
 
@@ -274,15 +309,73 @@ function TransactionDetail({
             )}
 
             {/* Tags */}
-            {transaction.tags && transaction.tags.length > 0 && (
-              <Grid item xs={12}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  gutterBottom
-                >
+            <Grid item xs={12}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                <Typography variant="caption" color="text.secondary">
                   Tags
                 </Typography>
+                {!editingTags && (
+                  <IconButton
+                    size="small"
+                    onClick={handleStartEditTags}
+                    aria-label="Edit tags"
+                    sx={{ p: 0.25 }}
+                  >
+                    <LocalOfferIcon fontSize="small" sx={{ fontSize: 16 }} />
+                  </IconButton>
+                )}
+              </Box>
+              {editingTags ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Autocomplete
+                    multiple
+                    freeSolo
+                    options={DEFAULT_TAG_SUGGESTIONS.filter(
+                      (tag) => !editedTags.includes(tag)
+                    )}
+                    value={editedTags}
+                    onChange={(_event, newValue) => {
+                      setEditedTags(newValue);
+                    }}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          variant="outlined"
+                          label={option}
+                          size="small"
+                          {...getTagProps({ index })}
+                          key={option}
+                        />
+                      ))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        size="small"
+                        placeholder="Add tags..."
+                      />
+                    )}
+                  />
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={<SaveIcon />}
+                      onClick={handleSaveTags}
+                      disabled={updateMutation.isPending}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setEditingTags(false)}
+                      disabled={updateMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </Box>
+                </Box>
+              ) : transaction.tags && transaction.tags.length > 0 ? (
                 <Box
                   sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}
                 >
@@ -295,8 +388,12 @@ function TransactionDetail({
                     />
                   ))}
                 </Box>
-              </Grid>
-            )}
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No tags
+                </Typography>
+              )}
+            </Grid>
 
             {/* Metadata */}
             {transaction.created_at && (

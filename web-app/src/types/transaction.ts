@@ -33,6 +33,7 @@ export interface TransactionCreate {
   account_id?: number;
   balance?: number;
   notes?: string;
+  tag_names?: string[];
 }
 
 export interface TransactionUpdate {
@@ -44,6 +45,7 @@ export interface TransactionUpdate {
   category_id?: number;
   account_id?: number;
   notes?: string;
+  tag_names?: string[];
   // Force classification rules to re-apply even if a manual classification exists
   reapply_rules?: boolean;
 }
