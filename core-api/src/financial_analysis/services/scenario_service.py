@@ -13,9 +13,7 @@ from calendar import monthrange
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 
-from sqlalchemy import select
-
-from ..database.models import Transaction, TransactionSplit, Category, Tag, TransactionTag
+from ..database.models import Transaction, TransactionSplit, Category
 from ..api.schemas.scenario import (
     ScenarioPreviewRequest,
     ScenarioPreviewResponse,
@@ -91,29 +89,15 @@ class ScenarioService:
             Transaction.transaction_date >= lookback_start,
         )
 
-        # Tag-based exclusion subqueries
-        exclude_income_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'exclude-from-income')
-            .subquery()
-        )
-        exclude_expense_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'exclude-from-expenses')
-            .subquery()
-        )
-
-        # For income: exclude transactions tagged exclude-from-income
+        # For income: exclude transactions with exclude_from_income flag
         inc_q = base_q.filter(
             Transaction.transaction_type == "Income",
-            ~Transaction.transaction_id.in_(select(exclude_income_subq))
+            Transaction.exclude_from_income != True
         )
-        # For expenses: exclude transactions tagged exclude-from-expenses
+        # For expenses: exclude transactions with exclude_from_expenses flag
         exp_q = base_q.filter(
             Transaction.transaction_type == "Expense",
-            ~Transaction.transaction_id.in_(select(exclude_expense_subq))
+            Transaction.exclude_from_expenses != True
         )
 
         # Fetch transactions and any splits

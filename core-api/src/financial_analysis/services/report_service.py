@@ -12,10 +12,8 @@ import io
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from sqlalchemy import select
-
 from .analysis_service import AnalysisService, AnalysisMode, DateRange
-from ..database.models import Transaction, Category, Account, TransactionRelationship, Tag, TransactionTag
+from ..database.models import Transaction, Category, Account, TransactionRelationship
 
 
 class ReportFormat(str, Enum):
@@ -361,20 +359,14 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=365)
 
-        # Query CapEx transactions - find transactions tagged 'capital-expense'
-        capex_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'capital-expense')
-            .subquery()
-        )
+        # Query CapEx transactions using boolean field
         query = self.db.query(Transaction).outerjoin(
             Category,
             Transaction.category_id == Category.category_id
         ).filter(
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date,
-            Transaction.transaction_id.in_(select(capex_subq))
+            Transaction.is_capital_expense == True
         ).order_by(Transaction.transaction_date.desc())
 
         transactions = query.all()
@@ -456,16 +448,10 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=30)
 
-        capex_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'capital-expense')
-            .subquery()
-        )
         result = self.db.query(func.sum(func.abs(Transaction.amount))).filter(
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date,
-            Transaction.transaction_id.in_(select(capex_subq))
+            Transaction.is_capital_expense == True
         ).scalar()
 
         return float(result) if result else 0.0
@@ -499,20 +485,12 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=90)
 
-        # Find transactions tagged 'reimbursable'
-        reimbursable_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'reimbursable')
-            .subquery()
-        )
-
-        # Query all reimbursable transactions in the period
+        # Query all reimbursable transactions in the period using boolean field
         expense_query = self.db.query(Transaction).outerjoin(
             Category,
             Transaction.category_id == Category.category_id
         ).filter(
-            Transaction.transaction_id.in_(select(reimbursable_subq)),
+            Transaction.is_reimbursable == True,
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date
         ).order_by(Transaction.transaction_date.desc())
@@ -663,17 +641,9 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=90)
 
-        # Find transactions tagged 'reimbursable'
-        reimbursable_subq = (
-            select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'reimbursable')
-            .subquery()
-        )
-
-        # Get all reimbursable expense IDs
+        # Get all reimbursable expense IDs using boolean field
         expenses = self.db.query(Transaction.transaction_id, Transaction.amount).filter(
-            Transaction.transaction_id.in_(select(reimbursable_subq)),
+            Transaction.is_reimbursable == True,
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date
         ).all()

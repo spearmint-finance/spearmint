@@ -9,7 +9,7 @@ import pandas as pd
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from ...database.models import Category, Transaction, Tag, TransactionTag
+from ...database.models import Category, Transaction
 from .schemas import CategoryStats, DataQualityReport, SpendingAnalysisResult
 
 
@@ -155,16 +155,6 @@ class SpendingAnalyzer:
 
     def _query_transactions(self, start_date: date, end_date: date) -> list:
         """Query analysis-eligible transactions, joining category."""
-        from sqlalchemy import select as sa_select
-
-        # Build tag-based exclusion subquery
-        exclude_expense_subq = (
-            sa_select(TransactionTag.transaction_id)
-            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
-            .where(Tag.tag_name == 'exclude-from-expenses')
-            .subquery()
-        )
-
         query = (
             self.db.query(Transaction)
             .outerjoin(Category, Transaction.category_id == Category.category_id)
@@ -174,7 +164,7 @@ class SpendingAnalyzer:
             .filter(Transaction.transaction_date <= end_date)
             .filter(
                 or_(
-                    ~Transaction.transaction_id.in_(sa_select(exclude_expense_subq)),
+                    or_(Transaction.exclude_from_expenses == False, Transaction.exclude_from_expenses == None),
                     # Also include income transactions (not excluded by expense filter)
                     Transaction.transaction_type == "Income",
                 )

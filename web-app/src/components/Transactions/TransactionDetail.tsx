@@ -13,6 +13,8 @@ import {
   IconButton,
   Autocomplete,
   TextField,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -287,6 +289,48 @@ function TransactionDetail({
                 <Typography variant="body2">{transaction.notes}</Typography>
               </Grid>
             )}
+
+            {/* Properties */}
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+                Properties
+              </Typography>
+              <Grid container spacing={0}>
+                {([
+                  { field: "is_capital_expense" as const, label: "Capital Expense" },
+                  { field: "is_tax_deductible" as const, label: "Tax Deductible" },
+                  { field: "is_recurring" as const, label: "Recurring" },
+                  { field: "is_reimbursable" as const, label: "Reimbursable" },
+                  { field: "exclude_from_income" as const, label: "Exclude from Income" },
+                  { field: "exclude_from_expenses" as const, label: "Exclude from Expenses" },
+                ] as const).map(({ field, label }) => (
+                  <Grid item xs={6} sm={4} key={field}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={!!transaction[field]}
+                          onChange={async (e) => {
+                            try {
+                              await updateMutation.mutateAsync({
+                                id: transaction.id,
+                                data: { [field]: e.target.checked },
+                              });
+                              enqueueSnackbar(`${label} updated`, { variant: "success" });
+                            } catch {
+                              enqueueSnackbar(`Failed to update ${label}`, { variant: "error" });
+                            }
+                          }}
+                          disabled={updateMutation.isPending}
+                        />
+                      }
+                      label={<Typography variant="body2">{label}</Typography>}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Grid>
 
             {/* Tags */}
             <Grid item xs={12}>
