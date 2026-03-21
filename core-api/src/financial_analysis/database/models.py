@@ -33,15 +33,18 @@ class Category(Base):
     parent_category_id = Column(Integer, ForeignKey('categories.category_id'))
     description = Column(Text)
     is_fixed_obligation = Column(Boolean, default=False)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)  # NULL = global
     created_at = Column(DateTime, default=utc_now)
 
     # Relationships
     parent_category = relationship("Category", remote_side=[category_id], backref="subcategories")
     transactions = relationship("Transaction", back_populates="category")
+    entity = relationship("Entity")
 
     # Constraints
     __table_args__ = (
         CheckConstraint("category_type IN ('Income', 'Expense', 'Transfer', 'Both')", name='check_category_type'),
+        Index('idx_category_entity', 'entity_id'),
     )
 
     def __repr__(self):

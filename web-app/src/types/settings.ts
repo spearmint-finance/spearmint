@@ -9,6 +9,7 @@ export interface Category {
   category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id: number | null;
   description: string | null;
+  entity_id: number | null;
   created_at: string;
   updated_at?: string;
 }
@@ -18,6 +19,7 @@ export interface CategoryCreate {
   category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
   description?: string | null;
+  entity_id?: number | null;
 }
 
 export interface CategoryUpdate {
@@ -25,6 +27,7 @@ export interface CategoryUpdate {
   category_type?: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
   description?: string | null;
+  entity_id?: number | null;
 }
 
 export interface CategoriesResponse {

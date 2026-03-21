@@ -54,6 +54,7 @@ def create_category(
             category_type=category.category_type,
             parent_category_id=category.parent_category_id,
             description=category.description,
+            entity_id=category.entity_id,
         )
         return created
     except ValidationError as e:
@@ -92,6 +93,7 @@ def list_categories(
     parent_category_id: Optional[int] = Query(None, description="Parent category ID filter (null for root categories)"),
     include_transfer_categories: bool = Query(True, description="Include transfer categories"),
     search_text: Optional[str] = Query(None, description="Search in category name or description"),
+    entity_id: Optional[int] = Query(None, description="Filter by entity ID (returns entity-specific + global categories)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -114,7 +116,8 @@ def list_categories(
             category_type=category_type,
             parent_category_id=parent_category_id,
             include_transfer_categories=include_transfer_categories,
-            search_text=search_text
+            search_text=search_text,
+            entity_id=entity_id,
         )
         
         return CategoryListResponse(
