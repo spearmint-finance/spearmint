@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc, func, case
+from sqlalchemy import and_, or_, desc, asc, func, case, exists
 
 logger = logging.getLogger(__name__)
 
@@ -210,20 +210,21 @@ class TransactionService:
 
         if filters.entity_id:
             # Show transactions explicitly assigned to this entity,
-            # OR inherited from account (entity_id IS NULL and account belongs to entity)
+            # OR inherited from account (entity_id IS NULL and account belongs to entity).
+            # Use EXISTS to avoid duplicate rows from the join.
             from ..database.models import account_entities
-            query = query.outerjoin(
-                Account,
-                Transaction.account_id == Account.account_id
-            ).outerjoin(
-                account_entities,
-                Account.account_id == account_entities.c.account_id
-            ).filter(
+            account_has_entity = exists().where(
+                and_(
+                    account_entities.c.account_id == Transaction.account_id,
+                    account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            conditions.append(
                 or_(
                     Transaction.entity_id == filters.entity_id,
                     and_(
                         Transaction.entity_id.is_(None),
-                        account_entities.c.entity_id == filters.entity_id
+                        account_has_entity
                     )
                 )
             )
@@ -328,18 +329,18 @@ class TransactionService:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
             from ..database.models import account_entities
-            query = query.outerjoin(
-                Account,
-                Transaction.account_id == Account.account_id
-            ).outerjoin(
-                account_entities,
-                Account.account_id == account_entities.c.account_id
-            ).filter(
+            account_has_entity = exists().where(
+                and_(
+                    account_entities.c.account_id == Transaction.account_id,
+                    account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            conditions.append(
                 or_(
                     Transaction.entity_id == filters.entity_id,
                     and_(
                         Transaction.entity_id.is_(None),
-                        account_entities.c.entity_id == filters.entity_id
+                        account_has_entity
                     )
                 )
             )

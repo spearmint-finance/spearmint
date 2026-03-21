@@ -82,9 +82,13 @@ export const categoriesApi = {
    * Create a new category
    */
   create: async (category: CategoryCreate): Promise<Category> => {
-    const response = await categoriesClient.createCategory(
-      category
-    );
+    const response = await categoriesClient.createCategory({
+      categoryName: category.category_name,
+      categoryType: category.category_type,
+      parentCategoryId: category.parent_category_id ?? undefined,
+      description: category.description ?? undefined,
+      entityId: category.entity_id ?? undefined,
+    } as any);
     return response.data as unknown as Category;
   },
 
