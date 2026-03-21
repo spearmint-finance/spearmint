@@ -53,7 +53,7 @@ async function apiFetch<T>(
 }
 
 export const getEntities = async (): Promise<Entity[]> => {
-  const data = await apiFetch<any[]>("/api/entities/");
+  const data = await apiFetch<any[]>("/api/entities");
   return data.map(transformEntity);
 };
 
@@ -63,7 +63,7 @@ export const getEntity = async (id: number): Promise<Entity> => {
 };
 
 export const createEntity = async (entity: EntityCreate): Promise<Entity> => {
-  const data = await apiFetch<any>("/api/entities/", {
+  const data = await apiFetch<any>("/api/entities", {
     method: "POST",
     body: JSON.stringify({
       entity_name: entity.entity_name,
