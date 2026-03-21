@@ -14,11 +14,13 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Checkbox,
   CircularProgress,
   Box,
   Divider,
   Autocomplete,
   Chip,
+  Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useSnackbar } from "notistack";
@@ -64,6 +66,12 @@ interface FormData {
   entity_id: string; // Empty string = inherit from account
   notes?: string;
   tags: string[];
+  is_capital_expense: boolean;
+  is_tax_deductible: boolean;
+  is_recurring: boolean;
+  is_reimbursable: boolean;
+  exclude_from_income: boolean;
+  exclude_from_expenses: boolean;
 }
 
 function TransactionForm({
@@ -117,6 +125,12 @@ function TransactionForm({
       entity_id: "",
       notes: "",
       tags: [],
+      is_capital_expense: false,
+      is_tax_deductible: false,
+      is_recurring: false,
+      is_reimbursable: false,
+      exclude_from_income: false,
+      exclude_from_expenses: false,
     },
   });
 
@@ -136,6 +150,12 @@ function TransactionForm({
         entity_id: transaction.entity_id ? String(transaction.entity_id) : "",
         notes: transaction.notes || "",
         tags: transaction.tags || [],
+        is_capital_expense: !!transaction.is_capital_expense,
+        is_tax_deductible: !!transaction.is_tax_deductible,
+        is_recurring: !!transaction.is_recurring,
+        is_reimbursable: !!transaction.is_reimbursable,
+        exclude_from_income: !!transaction.exclude_from_income,
+        exclude_from_expenses: !!transaction.exclude_from_expenses,
       });
     } else if (mode === "create") {
       reset({
@@ -148,6 +168,12 @@ function TransactionForm({
         entity_id: selectedEntityId ? String(selectedEntityId) : "",
         notes: "",
         tags: [],
+        is_capital_expense: false,
+        is_tax_deductible: false,
+        is_recurring: false,
+        is_reimbursable: false,
+        exclude_from_income: false,
+        exclude_from_expenses: false,
       });
     }
   }, [transaction, mode, reset]);
@@ -182,6 +208,12 @@ function TransactionForm({
           entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags.length > 0 ? data.tags : undefined,
+          is_capital_expense: data.is_capital_expense,
+          is_tax_deductible: data.is_tax_deductible,
+          is_recurring: data.is_recurring,
+          is_reimbursable: data.is_reimbursable,
+          exclude_from_income: data.exclude_from_income,
+          exclude_from_expenses: data.exclude_from_expenses,
         };
         await createMutation.mutateAsync(createData);
         enqueueSnackbar("Transaction created successfully", {
@@ -198,6 +230,12 @@ function TransactionForm({
           entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags,
+          is_capital_expense: data.is_capital_expense,
+          is_tax_deductible: data.is_tax_deductible,
+          is_recurring: data.is_recurring,
+          is_reimbursable: data.is_reimbursable,
+          exclude_from_income: data.exclude_from_income,
+          exclude_from_expenses: data.exclude_from_expenses,
         };
         await updateMutation.mutateAsync({
           id: transaction.id,
@@ -502,6 +540,43 @@ function TransactionForm({
                   />
                 )}
               />
+            </Grid>
+
+            {/* Properties */}
+            <Grid item xs={12}>
+              <Divider sx={{ mb: 1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+                Properties
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0 }}>
+                {([
+                  { name: "is_capital_expense" as const, label: "Capital Expense" },
+                  { name: "is_tax_deductible" as const, label: "Tax Deductible" },
+                  { name: "is_recurring" as const, label: "Recurring" },
+                  { name: "is_reimbursable" as const, label: "Reimbursable" },
+                  { name: "exclude_from_income" as const, label: "Exclude from Income" },
+                  { name: "exclude_from_expenses" as const, label: "Exclude from Expenses" },
+                ]).map(({ name, label }) => (
+                  <Controller
+                    key={name}
+                    name={name}
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={!!field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            size="small"
+                          />
+                        }
+                        label={label}
+                        sx={{ minWidth: "50%" }}
+                      />
+                    )}
+                  />
+                ))}
+              </Box>
             </Grid>
 
             {/* Tags */}

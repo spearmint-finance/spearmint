@@ -52,7 +52,7 @@ export interface TransactionUpdate {
   date?: string;
   description?: string;
   amount?: number;
-  transaction_type?: "Income" | "Expense";
+  transaction_type?: "Income" | "Expense" | "Transfer";
   balance?: number;
   category_id?: number;
   account_id?: number;
