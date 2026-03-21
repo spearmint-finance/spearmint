@@ -92,10 +92,22 @@ app.include_router(agents.router, prefix="/a2a", tags=["a2a-agents"])
 # Ensure database tables exist on startup
 @app.on_event("startup")
 def ensure_database_tables():
-    """Create database tables if they don't exist."""
+    """Create database tables if they don't exist, and run lightweight migrations."""
     from ..database.base import engine, Base
     from ..database import models  # noqa: F401 — registers all models
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight migrations for existing databases
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    if inspector.has_table("categories"):
+        columns = [c["name"] for c in inspector.get_columns("categories")]
+        if "entity_id" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE categories ADD COLUMN entity_id INTEGER "
+                    "REFERENCES entities(entity_id)"
+                ))
 
 
 # Root endpoint

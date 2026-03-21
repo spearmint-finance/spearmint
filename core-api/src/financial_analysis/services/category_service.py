@@ -30,6 +30,7 @@ class CategoryService:
         category_type: str,
         parent_category_id: Optional[int] = None,
         description: Optional[str] = None,
+        entity_id: Optional[int] = None,
     ) -> Category:
         """
         Create a new category.
@@ -83,6 +84,7 @@ class CategoryService:
             category_type=category_type,
             parent_category_id=parent_category_id,
             description=description,
+            entity_id=entity_id,
         )
         
         self.db.add(category)
@@ -124,7 +126,8 @@ class CategoryService:
         category_type: Optional[str] = None,
         parent_category_id: Optional[int] = None,
         include_transfer_categories: bool = True,
-        search_text: Optional[str] = None
+        search_text: Optional[str] = None,
+        entity_id: Optional[int] = None,
     ) -> List[Category]:
         """
         List categories with optional filters.
@@ -167,7 +170,16 @@ class CategoryService:
                     Category.description.ilike(search_pattern)
                 )
             )
-        
+
+        if entity_id is not None:
+            # Show entity-specific categories + global categories (entity_id IS NULL)
+            query = query.filter(
+                or_(
+                    Category.entity_id == entity_id,
+                    Category.entity_id.is_(None)
+                )
+            )
+
         return query.order_by(Category.category_name).all()
     
     def get_root_categories(self, category_type: Optional[str] = None) -> List[Category]:
