@@ -30,11 +30,7 @@ VIEWS = {
         LEFT JOIN categories c ON t.category_id = c.category_id
         WHERE t.transaction_type = 'Income'
           AND t.include_in_analysis = 1
-          AND t.transaction_id NOT IN (
-              SELECT tt.transaction_id FROM transaction_tags tt
-              JOIN tags tg ON tt.tag_id = tg.tag_id
-              WHERE tg.tag_name = 'exclude-from-income'
-          )
+          AND (t.exclude_from_income = 0 OR t.exclude_from_income IS NULL)
     """,
 
     "v_expense_analysis": """
@@ -46,11 +42,7 @@ VIEWS = {
         LEFT JOIN categories c ON t.category_id = c.category_id
         WHERE t.transaction_type = 'Expense'
           AND t.include_in_analysis = 1
-          AND t.transaction_id NOT IN (
-              SELECT tt.transaction_id FROM transaction_tags tt
-              JOIN tags tg ON tt.tag_id = tg.tag_id
-              WHERE tg.tag_name = 'exclude-from-expenses'
-          )
+          AND (t.exclude_from_expenses = 0 OR t.exclude_from_expenses IS NULL)
     """,
 
     "v_transfer_transactions": """

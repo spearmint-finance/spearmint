@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
-from financial_analysis.database.models import Transaction, Category, TransactionRelationship, Tag, TransactionTag
+from financial_analysis.database.models import Transaction, Category, TransactionRelationship
 from financial_analysis.services.report_service import ReportService, AnalysisMode
 
 
@@ -300,7 +300,8 @@ def capex_data(db_session):
         category_id=vehicle_cat.category_id,
         description='Used Toyota Camry',
         source='Test Source',
-        notes='Company vehicle purchase'
+        notes='Company vehicle purchase',
+        is_capital_expense=True
     )
     db_session.add(tx1)
 
@@ -312,7 +313,8 @@ def capex_data(db_session):
         category_id=equipment_cat.category_id,
         description='MacBook Pro',
         source='Test Source',
-        notes='Work laptop'
+        notes='Work laptop',
+        is_capital_expense=True
     )
     db_session.add(tx2)
 
@@ -323,21 +325,11 @@ def capex_data(db_session):
         category_id=equipment_cat.category_id,
         description='Office Furniture',
         source='Test Source',
-        notes='Desk and chair'
+        notes='Desk and chair',
+        is_capital_expense=True
     )
     db_session.add(tx3)
 
-    db_session.commit()
-
-    # Add 'capital-expense' tag to all CapEx transactions
-    capex_tag = db_session.query(Tag).filter(Tag.tag_name == 'capital-expense').first()
-    if not capex_tag:
-        capex_tag = Tag(tag_name='capital-expense')
-        db_session.add(capex_tag)
-        db_session.commit()
-
-    for tx in [tx1, tx2, tx3]:
-        db_session.add(TransactionTag(transaction_id=tx.transaction_id, tag_id=capex_tag.tag_id))
     db_session.commit()
 
     return {
@@ -534,6 +526,7 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Client dinner - Chicago trip',
         category_id=expense_cat.category_id,
+        is_reimbursable=True,
     )
     expense2 = Transaction(
         transaction_date=today - timedelta(days=20),
@@ -541,6 +534,7 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Hotel for conference',
         category_id=expense_cat.category_id,
+        is_reimbursable=True,
     )
     expense3 = Transaction(
         transaction_date=today - timedelta(days=10),
@@ -548,19 +542,9 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Office supplies',
         category_id=expense_cat.category_id,
+        is_reimbursable=True,
     )
     db_session.add_all([expense1, expense2, expense3])
-    db_session.commit()
-
-    # Add 'reimbursable' tag to expense transactions
-    reimb_tag = db_session.query(Tag).filter(Tag.tag_name == 'reimbursable').first()
-    if not reimb_tag:
-        reimb_tag = Tag(tag_name='reimbursable')
-        db_session.add(reimb_tag)
-        db_session.commit()
-
-    for tx in [expense1, expense2, expense3]:
-        db_session.add(TransactionTag(transaction_id=tx.transaction_id, tag_id=reimb_tag.tag_id))
     db_session.commit()
 
     # Create a reimbursement for expense1 (linked)

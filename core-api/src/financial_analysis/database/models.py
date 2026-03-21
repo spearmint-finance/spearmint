@@ -80,6 +80,14 @@ class Transaction(Base):
     # External provider dedup field (Plaid transaction_id or Akoya transaction ID)
     external_transaction_id = Column(String(100), unique=True)
 
+    # Transaction properties
+    is_capital_expense = Column(Boolean, default=False)
+    is_tax_deductible = Column(Boolean, default=False)
+    is_recurring = Column(Boolean, default=False)
+    is_reimbursable = Column(Boolean, default=False)
+    exclude_from_income = Column(Boolean, default=False)
+    exclude_from_expenses = Column(Boolean, default=False)
+
     # Investment transaction fields
     affects_cash_balance = Column(Boolean, default=True)
     affects_investment_value = Column(Boolean, default=False)

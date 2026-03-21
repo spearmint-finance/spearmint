@@ -23,6 +23,12 @@ class TransactionBase(DecimalBaseModel):
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
     account_id: Optional[int] = Field(None, gt=0, description="Account ID this transaction belongs to")
+    is_capital_expense: bool = Field(default=False, description="Capital expenditure")
+    is_tax_deductible: bool = Field(default=False, description="Tax deductible")
+    is_recurring: bool = Field(default=False, description="Recurring transaction")
+    is_reimbursable: bool = Field(default=False, description="Reimbursable expense")
+    exclude_from_income: bool = Field(default=False, description="Exclude from income analysis")
+    exclude_from_expenses: bool = Field(default=False, description="Exclude from expense analysis")
 
 
 class TransactionCreate(TransactionBase):
@@ -46,6 +52,12 @@ class TransactionUpdate(DecimalBaseModel):
     transfer_account_to: Optional[str] = Field(None, max_length=100, description="Transfer to account")
     notes: Optional[str] = Field(None, description="Additional notes")
     account_id: Optional[int] = Field(None, gt=0, description="Account ID this transaction belongs to")
+    is_capital_expense: Optional[bool] = Field(None, description="Capital expenditure")
+    is_tax_deductible: Optional[bool] = Field(None, description="Tax deductible")
+    is_recurring: Optional[bool] = Field(None, description="Recurring transaction")
+    is_reimbursable: Optional[bool] = Field(None, description="Reimbursable expense")
+    exclude_from_income: Optional[bool] = Field(None, description="Exclude from income analysis")
+    exclude_from_expenses: Optional[bool] = Field(None, description="Exclude from expense analysis")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
 
 
