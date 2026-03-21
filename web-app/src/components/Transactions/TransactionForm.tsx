@@ -34,6 +34,7 @@ import {
 import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "../../api/accounts";
+import { useEntityContext } from "../../contexts/EntityContext";
 
 interface TransactionFormProps {
   open: boolean;
@@ -73,8 +74,9 @@ function TransactionForm({
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
   const createCategoryMutation = useCreateCategory();
+  const { selectedEntityId } = useEntityContext();
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } =
-    useCategories();
+    useCategories({ entity_id: selectedEntityId ?? undefined });
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
