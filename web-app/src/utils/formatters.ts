@@ -3,19 +3,20 @@
  */
 export const formatCurrency = (
   amount: number | string,
-  currency = "USD"
+  currency = "USD",
+  decimals = 2
 ): string => {
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
 
   if (isNaN(numAmount)) {
-    return "$0.00";
+    return decimals === 0 ? "$0" : "$0.00";
   }
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(numAmount);
 };
 
