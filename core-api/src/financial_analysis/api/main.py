@@ -111,15 +111,24 @@ def ensure_database_tables():
                     "REFERENCES entities(entity_id)"
                 ))
 
-    # Migration: add entity_id to transactions
+    # Migration: add missing columns to transactions
     if inspector.has_table("transactions"):
         columns = [c["name"] for c in inspector.get_columns("transactions")]
-        if "entity_id" not in columns:
-            with engine.begin() as conn:
-                conn.execute(text(
-                    "ALTER TABLE transactions ADD COLUMN entity_id INTEGER "
-                    "REFERENCES entities(entity_id)"
-                ))
+        tx_additions = [
+            ("entity_id", "INTEGER REFERENCES entities(entity_id)"),
+            ("is_capital_expense", "BOOLEAN DEFAULT 0"),
+            ("is_tax_deductible", "BOOLEAN DEFAULT 0"),
+            ("is_recurring", "BOOLEAN DEFAULT 0"),
+            ("is_reimbursable", "BOOLEAN DEFAULT 0"),
+            ("exclude_from_income", "BOOLEAN DEFAULT 0"),
+            ("exclude_from_expenses", "BOOLEAN DEFAULT 0"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in tx_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE transactions ADD COLUMN {col_name} {col_def}"
+                    ))
 
     # Migration: repurpose transaction_splits from person-based to category-based
     if inspector.has_table("transaction_splits"):
