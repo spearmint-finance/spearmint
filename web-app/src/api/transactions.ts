@@ -193,7 +193,7 @@ export const getTransactions = async (
  */
 export const getTransaction = async (id: number): Promise<Transaction> => {
   const response =
-    await transactionsApi.getTransactionApiTransactionsTransactionIdGet(id);
+    await transactionsApi.getTransaction(id);
   return transformTransaction(response.data);
 };
 
@@ -203,7 +203,7 @@ export const getTransaction = async (id: number): Promise<Transaction> => {
 export const createTransaction = async (
   data: TransactionCreate
 ): Promise<Transaction> => {
-  const response = await transactionsApi.createTransactionApiTransactionsPost({
+  const response = await transactionsApi.createTransaction({
     transactionDate: data.date,
     description: data.description,
     amount: data.amount,
@@ -223,7 +223,7 @@ export const updateTransaction = async (
   data: TransactionUpdate
 ): Promise<Transaction> => {
   const response =
-    await transactionsApi.updateTransactionApiTransactionsTransactionIdPut(id, {
+    await transactionsApi.updateTransaction(id, {
       transactionDate: data.date,
       description: data.description,
       amount: data.amount,
@@ -239,5 +239,5 @@ export const updateTransaction = async (
  * Delete a transaction
  */
 export const deleteTransaction = async (id: number): Promise<void> => {
-  await transactionsApi.deleteTransactionApiTransactionsTransactionIdDelete(id);
+  await transactionsApi.deleteTransaction(id);
 };

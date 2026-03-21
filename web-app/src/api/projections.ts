@@ -27,7 +27,7 @@ export interface ProjectionQueryParams {
 export const getIncomeProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<IncomeProjectionResponse> => {
-  const response = await projectionsApi.projectIncomeApiProjectionsIncomeGet({
+  const response = await projectionsApi.projectIncome({
     startDate: params.start_date,
     endDate: params.end_date,
     projectionDays: params.projection_days,
@@ -44,7 +44,7 @@ export const getExpenseProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<ExpenseProjectionResponse> => {
   const response =
-    await projectionsApi.projectExpensesApiProjectionsExpensesGet({
+    await projectionsApi.projectExpenses({
       startDate: params.start_date,
       endDate: params.end_date,
       projectionDays: params.projection_days,
@@ -61,7 +61,7 @@ export const getCashflowProjection = async (
   params: ProjectionQueryParams = {}
 ): Promise<CashflowProjectionResponse> => {
   const response =
-    await projectionsApi.projectCashflowApiProjectionsCashflowGet({
+    await projectionsApi.projectCashflow({
       startDate: params.start_date,
       endDate: params.end_date,
       projectionDays: params.projection_days,
@@ -79,7 +79,7 @@ export const getScenarios = async (
   params: Omit<ProjectionQueryParams, "include_scenarios"> = {}
 ): Promise<CashflowProjectionResponse> => {
   const response =
-    await projectionsApi.projectCashflowApiProjectionsCashflowGet({
+    await projectionsApi.projectCashflow({
       startDate: params.start_date,
       endDate: params.end_date,
       projectionDays: params.projection_days,
@@ -97,7 +97,7 @@ export const validateProjection = async (
   data: ValidationRequest
 ): Promise<AccuracyMetrics> => {
   const response =
-    await projectionsApi.validateProjectionApiProjectionsValidatePost(data);
+    await projectionsApi.validateProjection(data);
   return response.data as unknown as AccuracyMetrics;
 };
 

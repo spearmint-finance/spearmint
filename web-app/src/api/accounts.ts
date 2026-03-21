@@ -128,12 +128,12 @@ export const createAccount = async (
     entityId: account.entity_id,
     notes: account.notes || undefined,
   };
-  const response = await accountsApi.createAccountApiAccountsPost(sdkPayload as any);
+  const response = await accountsApi.createAccount(sdkPayload as any);
   return transformAccount(response.data);
 };
 
 export const getAccount = async (accountId: number): Promise<Account> => {
-  const response = await accountsApi.getAccountApiAccountsAccountIdGet(
+  const response = await accountsApi.getAccount(
     accountId
   );
   return transformAccount(response.data);
@@ -153,7 +153,7 @@ export const updateAccount = async (
     isActive: account.is_active,
     notes: account.notes || undefined,
   };
-  const response = await accountsApi.updateAccountApiAccountsAccountIdPut(
+  const response = await accountsApi.updateAccount(
     accountId,
     sdkPayload as any
   );
@@ -161,11 +161,11 @@ export const updateAccount = async (
 };
 
 export const deleteAccount = async (accountId: number): Promise<void> => {
-  await accountsApi.deleteAccountApiAccountsAccountIdDelete(accountId);
+  await accountsApi.deleteAccount(accountId);
 };
 
 export const getAccountSummary = async (): Promise<AccountSummary[]> => {
-  const response = await accountsApi.getAccountSummaryApiAccountsSummaryGet();
+  const response = await accountsApi.getAccountSummary();
   return response.data as unknown as AccountSummary[];
 };
 
@@ -180,7 +180,7 @@ export const getBalanceHistory = async (
   }
 ): Promise<BalanceHistory> => {
   const response =
-    await accountsApi.getBalanceHistoryApiAccountsAccountIdBalancesGet(
+    await accountsApi.getBalanceHistory(
       accountId,
       {
         startDate: params?.start_date,
@@ -206,7 +206,7 @@ export const addBalanceSnapshot = async (
     notes: balance.notes || undefined,
   };
   const response =
-    await accountsApi.addBalanceSnapshotApiAccountsAccountIdBalancesPost(
+    await accountsApi.addBalanceSnapshot(
       accountId,
       sdkPayload as any
     );
@@ -217,7 +217,7 @@ export const getCurrentBalance = async (
   accountId: number
 ): Promise<Balance> => {
   const response =
-    await accountsApi.getCurrentBalanceApiAccountsAccountIdCurrentBalanceGet(
+    await accountsApi.getCurrentBalance(
       accountId
     );
   return response.data as unknown as Balance;
@@ -235,7 +235,7 @@ export const getCalculatedBalance = async (
   based_on_transactions: number;
 }> => {
   const response =
-    await accountsApi.getCalculatedBalanceApiAccountsAccountIdCalculatedBalanceGet(
+    await accountsApi.getCalculatedBalance(
       accountId,
       { asOfDate: as_of_date }
     );
@@ -247,7 +247,7 @@ export const getCalculatedBalance = async (
 export const getHoldings = async (
   accountId: number
 ): Promise<InvestmentHolding[]> => {
-  const response = await accountsApi.getHoldingsApiAccountsAccountIdHoldingsGet(
+  const response = await accountsApi.getHoldings(
     accountId
   );
   return response.data as unknown as InvestmentHolding[];
@@ -269,7 +269,7 @@ export const addHolding = async (
     assetClass: holding.asset_class || undefined,
     sector: holding.sector || undefined,
   };
-  const response = await accountsApi.addHoldingApiAccountsAccountIdHoldingsPost(
+  const response = await accountsApi.addHolding(
     accountId,
     sdkPayload as any
   );
@@ -280,7 +280,7 @@ export const getPortfolioSummary = async (
   accountId: number
 ): Promise<PortfolioSummary> => {
   const response =
-    await accountsApi.getPortfolioSummaryApiAccountsAccountIdPortfolioGet(
+    await accountsApi.getPortfolioSummary(
       accountId
     );
   return response.data as unknown as PortfolioSummary;
@@ -302,7 +302,7 @@ export const createReconciliation = async (
     notes: reconciliation.notes || undefined,
   };
   const response =
-    await accountsApi.createReconciliationApiAccountsAccountIdReconcilePost(
+    await accountsApi.createReconciliation(
       accountId,
       sdkPayload as any
     );
@@ -314,7 +314,7 @@ export const getReconciliations = async (
   is_reconciled?: boolean
 ): Promise<Reconciliation[]> => {
   const response =
-    await accountsApi.getReconciliationsApiAccountsAccountIdReconciliationsGet(
+    await accountsApi.getReconciliations(
       accountId,
       { isReconciled: is_reconciled }
     );
@@ -335,7 +335,7 @@ export const completeReconciliation = async (
     clearedTransactionIds: data.cleared_transaction_ids,
   };
   const response =
-    await accountsApi.completeReconciliationApiAccountsReconciliationsReconciliationIdCompletePut(
+    await accountsApi.completeReconciliation(
       reconciliationId,
       sdkPayload as any
     );
@@ -352,7 +352,7 @@ export const clearTransactions = async (
     clearedDate: cleared_date,
   };
   const response =
-    await accountsApi.clearTransactionsApiAccountsTransactionsClearPost(
+    await accountsApi.clearTransactions(
       sdkPayload as any
     );
   return response.data as unknown as { message: string; cleared_count: number };

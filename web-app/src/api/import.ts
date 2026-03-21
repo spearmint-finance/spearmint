@@ -16,7 +16,7 @@ export const importApi = {
     skipDuplicates: boolean = true
   ): Promise<ImportResponse> => {
     // The SDK should handle multipart/form-data if spec is correct
-    const response = await importClient.importTransactionsApiImportPost({
+    const response = await importClient.importTransactions({
       file,
       mode,
       skipDuplicates,
@@ -42,7 +42,7 @@ export const importApi = {
     limit: number = 50,
     offset: number = 0
   ): Promise<ImportHistoryResponse> => {
-    const response = await importClient.getImportHistoryApiImportHistoryGet({
+    const response = await importClient.getImportHistory({
       limit,
       offset,
     });
@@ -68,7 +68,7 @@ export const importApi = {
    */
   getImportDetail: async (importId: number): Promise<ImportHistoryDetail> => {
     const response =
-      await importClient.getImportDetailApiImportHistoryImportIdGet(importId);
+      await importClient.getImportDetail(importId);
     const item = response.data as any;
     return {
       import_id: item.importId ?? item.import_id,
@@ -90,7 +90,7 @@ export const importApi = {
    */
   getImportStatus: async (importId: number): Promise<ImportStatusResponse> => {
     const response =
-      await importClient.getImportStatusApiImportStatusImportIdGet(importId);
+      await importClient.getImportStatus(importId);
     const item = response.data as any;
     return {
       import_id: item.importId ?? item.import_id,
