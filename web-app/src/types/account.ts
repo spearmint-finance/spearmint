@@ -36,8 +36,8 @@ export interface Account {
   current_balance_date?: string;
   cash_balance?: number;
   investment_value?: number;
-  // Entity assignment
-  entity_id?: number;
+  // Entity assignments (many-to-many)
+  entity_ids: number[];
   // Linked provider info
   link_type?: 'manual' | 'plaid' | 'akoya';
   linked_provider_id?: number;
@@ -52,7 +52,7 @@ export interface AccountCreate {
   currency?: string;
   opening_balance?: number;
   opening_balance_date?: string;
-  entity_id?: number;
+  entity_ids?: number[];
   notes?: string;
 }
 
@@ -62,7 +62,7 @@ export interface AccountUpdate {
   institution_name?: string;
   account_number_last4?: string;
   is_active?: boolean;
-  entity_id?: number;
+  entity_ids?: number[];
   notes?: string;
 }
 

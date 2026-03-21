@@ -35,7 +35,7 @@ class AccountService:
         currency: str = 'USD',
         opening_balance: Decimal = Decimal('0'),
         opening_balance_date: Optional[date] = None,
-        entity_id: Optional[int] = None,
+        entity_ids: Optional[List[int]] = None,
         notes: Optional[str] = None
     ) -> Account:
         """
@@ -50,12 +50,14 @@ class AccountService:
             currency: Currency code (default USD)
             opening_balance: Initial balance
             opening_balance_date: Date of opening balance
-            entity_id: Entity this account belongs to
+            entity_ids: Entity IDs this account belongs to
             notes: Optional notes
 
         Returns:
             Created Account object
         """
+        from ..database.models import Entity
+
         # Determine account capabilities based on type
         has_cash = account_type in ['checking', 'savings', 'brokerage']
         has_investments = account_type in ['brokerage', 'investment', '401k', 'ira']
@@ -71,9 +73,15 @@ class AccountService:
             has_investment_component=has_investments,
             opening_balance=opening_balance,
             opening_balance_date=opening_balance_date or date.today(),
-            entity_id=entity_id,
             notes=notes
         )
+
+        # Assign entities
+        if entity_ids:
+            entities = self.db.query(Entity).filter(
+                Entity.entity_id.in_(entity_ids)
+            ).all()
+            account.entities = entities
 
         self.db.add(account)
         self.db.commit()
@@ -122,7 +130,10 @@ class AccountService:
             query = query.filter(Account.account_type == account_type)
 
         if entity_id is not None:
-            query = query.filter(Account.entity_id == entity_id)
+            from ..database.models import account_entities
+            query = query.join(account_entities).filter(
+                account_entities.c.entity_id == entity_id
+            )
 
         return query.order_by(Account.account_name).all()
 
@@ -144,6 +155,15 @@ class AccountService:
         account = self.get_account(account_id)
         if not account:
             return None
+
+        # Handle entity_ids separately (many-to-many)
+        entity_ids = kwargs.pop('entity_ids', None)
+        if entity_ids is not None:
+            from ..database.models import Entity
+            entities = self.db.query(Entity).filter(
+                Entity.entity_id.in_(entity_ids)
+            ).all() if entity_ids else []
+            account.entities = entities
 
         for key, value in kwargs.items():
             if hasattr(account, key):

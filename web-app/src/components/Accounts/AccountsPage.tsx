@@ -220,14 +220,16 @@ const AccountsPage: React.FC = () => {
               </Box>
             )}
 
-            {selectedEntityId == null && entities.length > 1 && account.entity_id && (() => {
-              const entity = entities.find(e => e.entity_id === account.entity_id);
-              return entity ? (
-                <Box mt={1}>
-                  <Chip label={entity.entity_name} size="small" variant="outlined" color="info" />
-                </Box>
-              ) : null;
-            })()}
+            {selectedEntityId == null && entities.length > 1 && account.entity_ids.length > 0 && (
+              <Box mt={1} display="flex" gap={0.5} flexWrap="wrap">
+                {account.entity_ids.map((eid) => {
+                  const entity = entities.find((e) => e.entity_id === eid);
+                  return entity ? (
+                    <Chip key={eid} label={entity.entity_name} size="small" variant="outlined" color="info" />
+                  ) : null;
+                })}
+              </Box>
+            )}
           </CardContent>
         </Card>
       </Grid>

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from sqlalchemy import (
     Column, Integer, String, Numeric, Date, DateTime, Boolean, Text,
-    ForeignKey, CheckConstraint, UniqueConstraint, Index, func, JSON
+    ForeignKey, CheckConstraint, UniqueConstraint, Index, Table, func, JSON
 )
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -436,6 +436,16 @@ class LinkedProvider(Base):
         return f"<LinkedProvider(id={self.id}, type='{self.provider_type}', institution='{self.institution_name}', status='{self.status}')>"
 
 
+# Many-to-many association table for accounts ↔ entities
+account_entities = Table(
+    'account_entities',
+    Base.metadata,
+    Column('account_id', Integer, ForeignKey('accounts.account_id'), primary_key=True),
+    Column('entity_id', Integer, ForeignKey('entities.entity_id'), primary_key=True),
+    extend_existing=True,
+)
+
+
 class Entity(Base):
     """
     Entities table for separating financial books.
@@ -458,7 +468,7 @@ class Entity(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
-    accounts = relationship("Account", back_populates="entity")
+    accounts = relationship("Account", secondary=account_entities, back_populates="entities")
 
     # Constraints and Indexes
     __table_args__ = (
@@ -472,6 +482,7 @@ class Entity(Base):
 
     def __repr__(self):
         return f"<Entity(id={self.entity_id}, name='{self.entity_name}', type='{self.entity_type}')>"
+
 
 
 class Account(Base):
@@ -508,7 +519,7 @@ class Account(Base):
     link_type = Column(String(20), default='manual')  # manual, plaid, akoya
 
     # Relationships
-    entity = relationship("Entity", back_populates="accounts")
+    entities = relationship("Entity", secondary=account_entities, back_populates="accounts")
     linked_provider = relationship("LinkedProvider", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account")
     balances = relationship("AccountBalance", back_populates="account", cascade="all, delete-orphan")
