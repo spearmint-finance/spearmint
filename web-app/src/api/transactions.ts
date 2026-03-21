@@ -118,6 +118,16 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     exclude_from_income: excludeFromIncome,
     exclude_from_expenses: excludeFromExpenses,
     entity_id: backendTransaction.entityId ?? backendTransaction.entity_id ?? null,
+    splits: (backendTransaction.splits || []).map((s: any) => ({
+      split_id: s.splitId ?? s.split_id,
+      transaction_id: s.transactionId ?? s.transaction_id,
+      amount: s.amount,
+      category_id: s.categoryId ?? s.category_id,
+      category_name: s.categoryName ?? s.category_name,
+      entity_id: s.entityId ?? s.entity_id ?? null,
+      description: s.description,
+      notes: s.notes,
+    })),
     created_at: createdAt ? new Date(createdAt).toISOString() : "",
     updated_at: updatedAt ? new Date(updatedAt).toISOString() : "",
   };
@@ -227,4 +237,28 @@ export const updateTransaction = async (
  */
 export const deleteTransaction = async (id: number): Promise<void> => {
   await transactionsApi.deleteTransaction(id);
+};
+
+/**
+ * Set splits for a transaction (replaces all existing splits)
+ */
+export const setTransactionSplits = async (
+  transactionId: number,
+  splits: { amount: number; category_id: number; entity_id?: number | null; description?: string; notes?: string }[]
+): Promise<void> => {
+  const response = await fetch(`/api/transactions/${transactionId}/splits`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(splits.map(s => ({
+      amount: s.amount,
+      category_id: s.category_id,
+      entity_id: s.entity_id ?? null,
+      description: s.description ?? null,
+      notes: s.notes ?? null,
+    }))),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || 'Failed to set splits');
+  }
 };

@@ -14,11 +14,14 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Checkbox,
   CircularProgress,
   Box,
   Divider,
   Autocomplete,
   Chip,
+  Typography,
+  IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { useSnackbar } from "notistack";
@@ -30,7 +33,9 @@ import type {
 import {
   useCreateTransaction,
   useUpdateTransaction,
+  useSetTransactionSplits,
 } from "../../hooks/useTransactions";
+
 import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "../../api/accounts";
@@ -54,16 +59,30 @@ const DEFAULT_TAG_SUGGESTIONS = [
   "exclude-from-expenses",
 ];
 
+interface SplitRow {
+  amount: number;
+  category_id: number;
+  entity_id: string; // empty string = none
+  description: string;
+}
+
 interface FormData {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense" | "Transfer";
+  transaction_type: "Income" | "Expense";
   category_id: number; // Required field
   account_id: string; // Empty string = no account selected
   entity_id: string; // Empty string = inherit from account
   notes?: string;
   tags: string[];
+  is_capital_expense: boolean;
+  is_tax_deductible: boolean;
+  is_recurring: boolean;
+  is_reimbursable: boolean;
+  exclude_from_income: boolean;
+  exclude_from_expenses: boolean;
+  splits: SplitRow[];
 }
 
 function TransactionForm({
@@ -75,6 +94,7 @@ function TransactionForm({
   const { enqueueSnackbar } = useSnackbar();
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
+  const setTransactionSplitsMutation = useSetTransactionSplits();
   const createCategoryMutation = useCreateCategory();
   const { selectedEntityId } = useEntityContext();
   const { data: entitiesData = [] } = useEntities();
@@ -117,6 +137,13 @@ function TransactionForm({
       entity_id: "",
       notes: "",
       tags: [],
+      is_capital_expense: false,
+      is_tax_deductible: false,
+      is_recurring: false,
+      is_reimbursable: false,
+      exclude_from_income: false,
+      exclude_from_expenses: false,
+      splits: [],
     },
   });
 
@@ -130,12 +157,24 @@ function TransactionForm({
         date: transaction.date,
         description: transaction.description,
         amount: Math.abs(transaction.amount),
-        transaction_type: transaction.is_transfer ? "Transfer" : transaction.transaction_type,
+        transaction_type: transaction.transaction_type === "Transfer" ? "Expense" : transaction.transaction_type,
         category_id: transaction.category_id,
         account_id: transaction.account_id ? String(transaction.account_id) : "",
         entity_id: transaction.entity_id ? String(transaction.entity_id) : "",
         notes: transaction.notes || "",
         tags: transaction.tags || [],
+        is_capital_expense: !!transaction.is_capital_expense,
+        is_tax_deductible: !!transaction.is_tax_deductible,
+        is_recurring: !!transaction.is_recurring,
+        is_reimbursable: !!transaction.is_reimbursable,
+        exclude_from_income: !!transaction.exclude_from_income,
+        exclude_from_expenses: !!transaction.exclude_from_expenses,
+        splits: transaction.splits?.map(s => ({
+          amount: s.amount,
+          category_id: s.category_id ?? 0,
+          entity_id: s.entity_id ? String(s.entity_id) : "",
+          description: s.description ?? "",
+        })) ?? [],
       });
     } else if (mode === "create") {
       reset({
@@ -148,6 +187,13 @@ function TransactionForm({
         entity_id: selectedEntityId ? String(selectedEntityId) : "",
         notes: "",
         tags: [],
+        is_capital_expense: false,
+        is_tax_deductible: false,
+        is_recurring: false,
+        is_reimbursable: false,
+        exclude_from_income: false,
+        exclude_from_expenses: false,
+        splits: [],
       });
     }
   }, [transaction, mode, reset]);
@@ -182,8 +228,23 @@ function TransactionForm({
           entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags.length > 0 ? data.tags : undefined,
+          is_capital_expense: data.is_capital_expense,
+          is_tax_deductible: data.is_tax_deductible,
+          is_recurring: data.is_recurring,
+          is_reimbursable: data.is_reimbursable,
+          exclude_from_income: data.exclude_from_income,
+          exclude_from_expenses: data.exclude_from_expenses,
         };
-        await createMutation.mutateAsync(createData);
+        const created = await createMutation.mutateAsync(createData);
+        if (data.splits.length > 0) {
+          const splitData = data.splits.map(s => ({
+            amount: s.amount,
+            category_id: typeof s.category_id === 'string' ? parseInt(s.category_id, 10) : s.category_id,
+            entity_id: s.entity_id ? parseInt(s.entity_id, 10) : null,
+            description: s.description || undefined,
+          }));
+          await setTransactionSplitsMutation.mutateAsync({ id: created.id, splits: splitData });
+        }
         enqueueSnackbar("Transaction created successfully", {
           variant: "success",
         });
@@ -198,11 +259,27 @@ function TransactionForm({
           entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags,
+          is_capital_expense: data.is_capital_expense,
+          is_tax_deductible: data.is_tax_deductible,
+          is_recurring: data.is_recurring,
+          is_reimbursable: data.is_reimbursable,
+          exclude_from_income: data.exclude_from_income,
+          exclude_from_expenses: data.exclude_from_expenses,
         };
         await updateMutation.mutateAsync({
           id: transaction.id,
           data: updateData,
         });
+        // Save splits separately via the splits endpoint
+        const splitData = data.splits.map(s => ({
+          amount: s.amount,
+          category_id: typeof s.category_id === 'string' ? parseInt(s.category_id, 10) : s.category_id,
+          entity_id: s.entity_id ? parseInt(s.entity_id, 10) : null,
+          description: s.description || undefined,
+        }));
+        if (splitData.length > 0 || (transaction.splits && transaction.splits.length > 0)) {
+          await setTransactionSplitsMutation.mutateAsync({ id: transaction.id, splits: splitData });
+        }
         enqueueSnackbar("Transaction updated successfully", {
           variant: "success",
         });
@@ -295,11 +372,6 @@ function TransactionForm({
                         value="Expense"
                         control={<Radio size="small" />}
                         label="Expense"
-                      />
-                      <FormControlLabel
-                        value="Transfer"
-                        control={<Radio size="small" />}
-                        label="Transfer"
                       />
                     </RadioGroup>
                   )}
@@ -397,9 +469,8 @@ function TransactionForm({
                         ...(categoriesData?.categories
                           .filter((category) => {
                             // Filter categories by selected transaction type
-                            if (transactionType === "Transfer") return category.category_type === "Transfer";
-                            if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both";
-                            if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both";
+                            if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both" || category.category_type === "Transfer";
+                            if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both" || category.category_type === "Transfer";
                             return true;
                           })
                           .map((category) => (
@@ -500,6 +571,176 @@ function TransactionForm({
                     multiline
                     rows={3}
                   />
+                )}
+              />
+            </Grid>
+
+            {/* Properties */}
+            <Grid item xs={12}>
+              <Divider sx={{ mb: 1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+                Properties
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0 }}>
+                {([
+                  { name: "is_capital_expense" as const, label: "Capital Expense" },
+                  { name: "is_tax_deductible" as const, label: "Tax Deductible" },
+                  { name: "is_recurring" as const, label: "Recurring" },
+                  { name: "is_reimbursable" as const, label: "Reimbursable" },
+                  { name: "exclude_from_income" as const, label: "Exclude from Income" },
+                  { name: "exclude_from_expenses" as const, label: "Exclude from Expenses" },
+                ]).map(({ name, label }) => (
+                  <Controller
+                    key={name}
+                    name={name}
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={!!field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            size="small"
+                          />
+                        }
+                        label={label}
+                        sx={{ minWidth: "50%" }}
+                      />
+                    )}
+                  />
+                ))}
+              </Box>
+            </Grid>
+
+            {/* Splits */}
+            <Grid item xs={12}>
+              <Divider sx={{ mb: 1 }} />
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Split Transaction
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => {
+                    const currentSplits = watch("splits") || [];
+                    setValue("splits", [
+                      ...currentSplits,
+                      { amount: 0, category_id: 0, entity_id: "", description: "" }
+                    ]);
+                  }}
+                >
+                  Add Split
+                </Button>
+              </Box>
+              <Controller
+                name="splits"
+                control={control}
+                render={({ field }) => (
+                  <Box>
+                    {(field.value || []).length === 0 ? (
+                      <Typography variant="caption" color="text.disabled" sx={{ fontStyle: "italic" }}>
+                        No splits — transaction is a single line item
+                      </Typography>
+                    ) : (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {/* Split sum validation */}
+                        {(() => {
+                          const total = (field.value || []).reduce((sum: number, s: SplitRow) => sum + (Number(s.amount) || 0), 0);
+                          const parentAmount = watch("amount") || 0;
+                          const diff = Math.abs(total - Number(parentAmount));
+                          return diff > 0.01 ? (
+                            <Typography variant="caption" color="error">
+                              Splits sum {total.toFixed(2)} ≠ transaction amount {Number(parentAmount).toFixed(2)}
+                            </Typography>
+                          ) : (
+                            <Typography variant="caption" color="success.main">
+                              Splits sum to {total.toFixed(2)} ✓
+                            </Typography>
+                          );
+                        })()}
+                        {(field.value || []).map((split: SplitRow, idx: number) => (
+                          <Box key={idx} sx={{ display: "flex", gap: 1, alignItems: "flex-start", p: 1, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+                            <TextField
+                              label="Amount"
+                              type="number"
+                              size="small"
+                              value={split.amount}
+                              onChange={(e) => {
+                                const updated = [...field.value];
+                                updated[idx] = { ...updated[idx], amount: parseFloat(e.target.value) || 0 };
+                                field.onChange(updated);
+                              }}
+                              inputProps={{ step: "0.01", min: "0" }}
+                              sx={{ width: 110 }}
+                            />
+                            <TextField
+                              label="Category"
+                              select
+                              size="small"
+                              value={split.category_id || ""}
+                              onChange={(e) => {
+                                const updated = [...field.value];
+                                updated[idx] = { ...updated[idx], category_id: parseInt(e.target.value, 10) || 0 };
+                                field.onChange(updated);
+                              }}
+                              sx={{ flex: 1, minWidth: 120 }}
+                              disabled={categoriesLoading}
+                            >
+                              <MenuItem value=""><em>Select</em></MenuItem>
+                              {categoriesData?.categories.map((cat) => (
+                                <MenuItem key={cat.category_id} value={cat.category_id}>
+                                  {cat.category_name}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                            {entitiesData.length > 0 && (
+                              <TextField
+                                label="Entity"
+                                select
+                                size="small"
+                                value={split.entity_id || ""}
+                                onChange={(e) => {
+                                  const updated = [...field.value];
+                                  updated[idx] = { ...updated[idx], entity_id: e.target.value };
+                                  field.onChange(updated);
+                                }}
+                                sx={{ width: 120 }}
+                              >
+                                <MenuItem value=""><em>None</em></MenuItem>
+                                {entitiesData.map((entity) => (
+                                  <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                                    {entity.entity_name}
+                                  </MenuItem>
+                                ))}
+                              </TextField>
+                            )}
+                            <TextField
+                              label="Description"
+                              size="small"
+                              value={split.description || ""}
+                              onChange={(e) => {
+                                const updated = [...field.value];
+                                updated[idx] = { ...updated[idx], description: e.target.value };
+                                field.onChange(updated);
+                              }}
+                              sx={{ flex: 1 }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                const updated = field.value.filter((_: SplitRow, i: number) => i !== idx);
+                                field.onChange(updated);
+                              }}
+                              color="error"
+                            >
+                              ✕
+                            </IconButton>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
                 )}
               />
             </Grid>

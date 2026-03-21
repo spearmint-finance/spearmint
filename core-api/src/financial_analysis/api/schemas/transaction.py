@@ -6,6 +6,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 from .analysis import DecimalBaseModel
+from .split import TransactionSplitCreate, TransactionSplitResponse
 
 
 class TransactionBase(DecimalBaseModel):
@@ -13,7 +14,7 @@ class TransactionBase(DecimalBaseModel):
 
     transaction_date: date = Field(..., description="Transaction date")
     amount: Decimal = Field(..., description="Transaction amount (can be negative for expenses)")
-    transaction_type: str = Field(..., pattern="^(Income|Expense|Transfer)$", description="Transaction type")
+    transaction_type: str = Field(..., pattern="^(Income|Expense)$", description="Transaction type: 'Income' or 'Expense'")
     category_id: int = Field(..., gt=0, description="Category ID")
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
@@ -34,8 +35,9 @@ class TransactionBase(DecimalBaseModel):
 
 class TransactionCreate(TransactionBase):
     """Schema for creating a transaction."""
-    
+
     tag_names: Optional[List[str]] = Field(default=None, description="List of tag names")
+    splits: Optional[List[TransactionSplitCreate]] = Field(default=None, description="Line-item splits for this transaction")
 
 
 class TransactionUpdate(DecimalBaseModel):
@@ -43,7 +45,7 @@ class TransactionUpdate(DecimalBaseModel):
 
     transaction_date: Optional[date] = Field(None, description="Transaction date")
     amount: Optional[Decimal] = Field(None, description="Transaction amount (can be negative for expenses)")
-    transaction_type: Optional[str] = Field(None, pattern="^(Income|Expense|Transfer)$", description="Transaction type")
+    transaction_type: Optional[str] = Field(None, pattern="^(Income|Expense)$", description="Transaction type: 'Income' or 'Expense'")
     category_id: Optional[int] = Field(None, gt=0, description="Category ID")
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
@@ -61,6 +63,7 @@ class TransactionUpdate(DecimalBaseModel):
     exclude_from_expenses: Optional[bool] = Field(None, description="Exclude from expense analysis")
     entity_id: Optional[int] = Field(None, description="Entity ID (null = inherit from account)")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
+    splits: Optional[List[TransactionSplitCreate]] = Field(None, description="If provided, replaces all splits. Empty list removes all splits.")
 
 
 class CategoryInfo(BaseModel):
@@ -94,6 +97,7 @@ class TransactionResponse(TransactionBase):
     )
     category: Optional[CategoryInfo] = Field(None, description="Category information")
     tags: List[TagInfo] = Field(default_factory=list, description="Associated tags")
+    splits: List[TransactionSplitResponse] = Field(default_factory=list, description="Line-item splits")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

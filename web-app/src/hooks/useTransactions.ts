@@ -5,6 +5,7 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
+  setTransactionSplits,
   type TransactionListParams,
 } from "../api/transactions";
 import type {
@@ -97,6 +98,21 @@ export const useDeleteTransaction = () => {
       queryClient.invalidateQueries({ queryKey: ["expense-analysis"] });
       queryClient.invalidateQueries({ queryKey: ["cash-flow-analysis"] });
       queryClient.invalidateQueries({ queryKey: ["financial-health"] });
+    },
+  });
+};
+
+/**
+ * Hook to set splits for a transaction
+ */
+export const useSetTransactionSplits = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, splits }: { id: number; splits: Parameters<typeof setTransactionSplits>[1] }) =>
+      setTransactionSplits(id, splits),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["transaction", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 };
