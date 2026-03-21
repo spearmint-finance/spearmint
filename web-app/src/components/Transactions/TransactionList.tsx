@@ -306,15 +306,9 @@ function TransactionList() {
 
         if (isUncategorized) {
           return (
-            <Tooltip title="Click to categorize this transaction">
-              <Chip
-                label="Uncategorized"
-                size="small"
-                color="warning"
-                variant="outlined"
-                icon={<span style={{ fontSize: "16px" }}>⚠️</span>}
-              />
-            </Tooltip>
+            <Typography variant="body2" sx={{ color: "warning.main", fontStyle: "italic" }}>
+              Uncategorized
+            </Typography>
           );
         }
 
