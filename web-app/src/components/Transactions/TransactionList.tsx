@@ -359,7 +359,6 @@ function TransactionList() {
                   variant: "success",
                 });
               } catch (err) {
-                console.error("Category update failed", err);
                 enqueueSnackbar("Failed to update transaction", {
                   variant: "error",
                 });
@@ -822,7 +821,6 @@ function TransactionList() {
                 });
               }
             } catch (error) {
-              console.error("Cell update error:", error);
               enqueueSnackbar("Failed to update transaction", {
                 variant: "error",
               });

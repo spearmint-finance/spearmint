@@ -234,7 +234,6 @@ function TransactionForm({
         variant: "success",
       });
     } catch (error) {
-      console.error("Error creating category:", error);
       enqueueSnackbar("Failed to create category", { variant: "error" });
     }
   };

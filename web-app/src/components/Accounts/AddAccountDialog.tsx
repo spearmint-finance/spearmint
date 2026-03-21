@@ -60,8 +60,8 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
       onAccountCreated();
       handleClose();
     },
-    onError: (error: any) => {
-      console.error('Error creating account:', error);
+    onError: () => {
+      // Error state is displayed via createMutation.isError Alert in the dialog
     },
   });
 
