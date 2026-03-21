@@ -7,11 +7,12 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class CategoryBase(BaseModel):
     """Base category schema with common fields."""
-    
+
     category_name: str = Field(..., min_length=1, max_length=100, description="Category name")
     category_type: str = Field(..., pattern="^(Income|Expense|Transfer|Both)$", description="Category type")
     parent_category_id: Optional[int] = Field(None, gt=0, description="Parent category ID")
     description: Optional[str] = Field(None, description="Category description")
+    entity_id: Optional[int] = Field(None, description="Entity ID (null = global, shared across all entities)")
 
 
 class CategoryCreate(CategoryBase):
@@ -21,19 +22,20 @@ class CategoryCreate(CategoryBase):
 
 class CategoryUpdate(BaseModel):
     """Schema for updating a category."""
-    
+
     category_name: Optional[str] = Field(None, min_length=1, max_length=100, description="Category name")
     category_type: Optional[str] = Field(None, pattern="^(Income|Expense|Transfer|Both)$", description="Category type")
     parent_category_id: Optional[int] = Field(None, gt=0, description="Parent category ID")
     description: Optional[str] = Field(None, description="Category description")
+    entity_id: Optional[int] = Field(None, description="Entity ID (null = global)")
 
 
 class CategoryResponse(CategoryBase):
     """Schema for category response."""
-    
+
     category_id: int = Field(..., description="Category ID")
     created_at: datetime = Field(..., description="Creation timestamp")
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

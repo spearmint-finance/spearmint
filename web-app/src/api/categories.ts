@@ -22,12 +22,14 @@ export const categoriesApi = {
     category_type?: "Income" | "Expense" | "Both" | "Transfer";
     parent_category_id?: number | null;
     search_text?: string;
+    entity_id?: number;
   }): Promise<CategoriesResponse> => {
     const response = await categoriesClient.listCategories({
       categoryType: params?.category_type,
       parentCategoryId: params?.parent_category_id,
       searchText: params?.search_text,
-    });
+      entityId: params?.entity_id,
+    } as any);
     const raw = response.data as Record<string, unknown>;
     const categories = ((raw.categories ?? raw) as Record<string, unknown>[]).map(
       (c) => ({
@@ -36,6 +38,7 @@ export const categoriesApi = {
         category_type: c.category_type ?? c.categoryType,
         parent_category_id: c.parent_category_id ?? c.parentCategoryId ?? null,
         description: c.description ?? null,
+        entity_id: c.entity_id ?? c.entityId ?? null,
         created_at: c.created_at ?? c.createdAt ?? "",
       })
     ) as Category[];

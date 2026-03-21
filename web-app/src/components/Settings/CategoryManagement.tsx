@@ -34,7 +34,6 @@ import {
   DataGrid,
   GridColDef,
   GridRenderCellParams,
-  GridRowParams,
 } from "@mui/x-data-grid";
 import {
   useCategories,
@@ -42,6 +41,7 @@ import {
   useUpdateCategory,
   useDeleteCategory,
 } from "../../hooks/useCategories";
+import { useEntities } from "../../hooks/useEntities";
 import type { Category, CategoryCreate } from "../../types/settings";
 import CategoryRulesList from "./CategoryRulesList";
 
@@ -50,6 +50,7 @@ interface CategoryFormData {
   category_type: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id: number | null;
   description: string;
+  entity_id: number | null;
 }
 
 const emptyFormData: CategoryFormData = {
@@ -57,6 +58,7 @@ const emptyFormData: CategoryFormData = {
   category_type: "Expense",
   parent_category_id: null,
   description: "",
+  entity_id: null,
 };
 
 export default function CategoryManagement() {
@@ -75,6 +77,7 @@ export default function CategoryManagement() {
 
   // Queries and mutations
   const { data, isLoading, error } = useCategories();
+  const { data: entities = [] } = useEntities();
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const deleteMutation = useDeleteCategory();
@@ -87,6 +90,7 @@ export default function CategoryManagement() {
         category_type: category.category_type,
         parent_category_id: category.parent_category_id,
         description: category.description || "",
+        entity_id: category.entity_id ?? null,
       });
     } else {
       setEditingCategory(null);
@@ -226,13 +230,25 @@ export default function CategoryManagement() {
       field: "description",
       headerName: "Description",
       flex: 1,
-      minWidth: 200,
+      minWidth: 150,
       editable: true,
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant="body2" color="text.secondary" noWrap>
           {params.value || "-"}
         </Typography>
       ),
+    },
+    {
+      field: "entity_id",
+      headerName: "Entity",
+      width: 150,
+      renderCell: (params: GridRenderCellParams) => {
+        if (!params.value) return <Chip label="Global" size="small" variant="outlined" />;
+        const entity = entities.find((e) => e.entity_id === params.value);
+        return entity ? (
+          <Chip label={entity.entity_name} size="small" color="primary" variant="outlined" />
+        ) : "-";
+      },
     },
     {
       field: "actions",
@@ -414,6 +430,27 @@ export default function CategoryManagement() {
               rows={3}
               fullWidth
             />
+
+            <TextField
+              select
+              label="Entity"
+              value={formData.entity_id ?? ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  entity_id: e.target.value ? Number(e.target.value) : null,
+                })
+              }
+              fullWidth
+              helperText="Global categories are shared across all entities"
+            >
+              <MenuItem value="">Global (all entities)</MenuItem>
+              {entities.map((entity) => (
+                <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                  {entity.entity_name}
+                </MenuItem>
+              ))}
+            </TextField>
 
           </Box>
         </DialogContent>
