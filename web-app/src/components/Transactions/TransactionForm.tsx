@@ -171,15 +171,12 @@ function TransactionForm({
       const accountId = data.account_id ? parseInt(data.account_id, 10) : undefined;
       const entityId = data.entity_id ? parseInt(data.entity_id, 10) : null;
 
-      // Map Transfer to Expense for the API (transfers are identified by category_type)
-      const apiTransactionType = data.transaction_type === "Transfer" ? "Expense" : data.transaction_type;
-
       if (mode === "create") {
         const createData: TransactionCreate = {
           date: data.date,
           description: data.description,
           amount: data.amount,
-          transaction_type: apiTransactionType as "Income" | "Expense",
+          transaction_type: data.transaction_type,
           category_id: categoryId,
           account_id: accountId,
           entity_id: entityId,
@@ -195,7 +192,7 @@ function TransactionForm({
           date: data.date,
           description: data.description,
           amount: data.amount,
-          transaction_type: apiTransactionType as "Income" | "Expense",
+          transaction_type: data.transaction_type,
           category_id: categoryId,
           account_id: accountId,
           entity_id: entityId,
