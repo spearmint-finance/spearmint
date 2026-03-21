@@ -97,12 +97,16 @@ class Transaction(Base):
     security_symbol = Column(String(20))
     security_quantity = Column(Numeric(15, 6))
 
+    # Direct entity assignment (NULL = inherit from account's entities)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+
     # Relationships
     category = relationship("Category", back_populates="transactions")
     related_transaction = relationship("Transaction", remote_side=[transaction_id], backref="related_transactions")
     tags = relationship("Tag", secondary="transaction_tags", back_populates="transactions")
     splits = relationship("TransactionSplit", back_populates="transaction", cascade="all, delete-orphan")
     account = relationship("Account", back_populates="transactions")
+    entity = relationship("Entity")
 
     # Constraints and Indexes
     __table_args__ = (
@@ -115,6 +119,7 @@ class Transaction(Base):
         Index('idx_account_id', 'account_id'),
         Index('idx_is_cleared', 'is_cleared'),
         Index('idx_security_symbol', 'security_symbol'),
+        Index('idx_transaction_entity', 'entity_id'),
     )
 
     def __repr__(self):

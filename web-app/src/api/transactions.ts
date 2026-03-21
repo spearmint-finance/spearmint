@@ -117,6 +117,7 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     is_reimbursable: isReimbursable,
     exclude_from_income: excludeFromIncome,
     exclude_from_expenses: excludeFromExpenses,
+    entity_id: backendTransaction.entityId ?? backendTransaction.entity_id ?? null,
     created_at: createdAt ? new Date(createdAt).toISOString() : "",
     updated_at: updatedAt ? new Date(updatedAt).toISOString() : "",
   };
@@ -188,6 +189,7 @@ export const createTransaction = async (
     isReimbursable: data.is_reimbursable,
     excludeFromIncome: data.exclude_from_income,
     excludeFromExpenses: data.exclude_from_expenses,
+    entityId: data.entity_id,
   } as any);
   return transformTransaction(response.data);
 };
@@ -215,6 +217,7 @@ export const updateTransaction = async (
       isReimbursable: data.is_reimbursable,
       excludeFromIncome: data.exclude_from_income,
       excludeFromExpenses: data.exclude_from_expenses,
+      entityId: data.entity_id,
     } as any);
   return transformTransaction(response.data);
 };

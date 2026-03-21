@@ -29,6 +29,7 @@ class TransactionBase(DecimalBaseModel):
     is_reimbursable: bool = Field(default=False, description="Reimbursable expense")
     exclude_from_income: bool = Field(default=False, description="Exclude from income analysis")
     exclude_from_expenses: bool = Field(default=False, description="Exclude from expense analysis")
+    entity_id: Optional[int] = Field(None, description="Entity ID (null = inherit from account)")
 
 
 class TransactionCreate(TransactionBase):
@@ -58,6 +59,7 @@ class TransactionUpdate(DecimalBaseModel):
     is_reimbursable: Optional[bool] = Field(None, description="Reimbursable expense")
     exclude_from_income: Optional[bool] = Field(None, description="Exclude from income analysis")
     exclude_from_expenses: Optional[bool] = Field(None, description="Exclude from expense analysis")
+    entity_id: Optional[int] = Field(None, description="Entity ID (null = inherit from account)")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
 
 
