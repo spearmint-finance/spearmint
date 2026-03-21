@@ -18,7 +18,6 @@ class TransactionSummary(DecimalBaseModel):
     description: Optional[str] = Field(None, description="Transaction description")
     source: Optional[str] = Field(None, description="Transaction source")
     category_name: Optional[str] = Field(None, description="Category name")
-    classification_name: Optional[str] = Field(None, description="Classification name")
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -46,7 +46,6 @@ def create_transaction(
             source=transaction.source,
             description=transaction.description,
             payment_method=transaction.payment_method,
-            classification_id=transaction.classification_id,
             include_in_analysis=transaction.include_in_analysis,
             transfer_account_from=transaction.transfer_account_from,
             transfer_account_to=transaction.transfer_account_to,
@@ -97,7 +96,6 @@ def list_transactions(
     end_date: Optional[date] = Query(None, description="End date filter"),
     transaction_type: Optional[str] = Query(None, pattern="^(Income|Expense)$", description="Filter by transaction type: 'Income' or 'Expense'"),
     category_id: Optional[int] = Query(None, gt=0, description="Filter by category ID"),
-    classification_id: Optional[int] = Query(None, gt=0, description="Filter by classification ID"),
     include_in_analysis: Optional[bool] = Query(None, description="Filter to include/exclude transactions marked for analysis"),
     is_transfer: Optional[bool] = Query(None, description="Filter by transfer status (derived from category type): true for transfers only, false to exclude transfers"),
     min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
@@ -124,32 +122,8 @@ def list_transactions(
     Returns:
         TransactionListResponse: List of transactions
     """
-    from ...database.models import TransactionClassification
-
     service = TransactionService(db)
 
-    # Build exclusion list for classifications
-    exclude_classification_ids = []
-
-    # Get all classifications that are excluded from expense calculations
-    # This matches the logic in AnalysisService.analyze_expenses()
-    if not include_capital_expenses:
-        excluded_classifications = db.query(TransactionClassification).filter(
-            TransactionClassification.exclude_from_expense_calc == True
-        ).all()
-        exclude_classification_ids.extend([c.classification_id for c in excluded_classifications])
-
-    # Get Credit Card Payment classification IDs (to exclude with transfers)
-    if not include_transfers:
-        credit_card_classifications = db.query(TransactionClassification).filter(
-            TransactionClassification.classification_name.in_([
-                "Credit Card Payment",
-                "Credit Card Receipt"
-            ])
-        ).all()
-        exclude_classification_ids.extend([c.classification_id for c in credit_card_classifications])
-
-    # Build filter with exclusions
     # Resolve transfer filtering precedence:
     # - If include_transfers is False, exclude transfers by default (is_transfer=False)
     # - Otherwise honor the explicit is_transfer filter (if provided)
@@ -160,13 +134,11 @@ def list_transactions(
         end_date=end_date,
         transaction_type=transaction_type,
         category_id=category_id,
-        classification_id=classification_id,
         include_in_analysis=include_in_analysis,
         is_transfer=resolved_is_transfer,
         min_amount=min_amount,
         max_amount=max_amount,
         search_text=search_text,
-        exclude_classification_ids=exclude_classification_ids if exclude_classification_ids else None,
         account_id=account_id,
         tag_ids=tag_ids,
         entity_id=entity_id,
@@ -209,7 +181,6 @@ def list_transactions(
 def update_transaction(
     transaction_id: int,
     transaction: TransactionUpdate,
-    reapply_rules: Optional[bool] = Query(None, description="If true, re-apply classification rules"),
     db: Session = Depends(get_db)
 ):
     """
@@ -228,10 +199,6 @@ def update_transaction(
     try:
         # Convert to dict and remove None values
         updates = transaction.model_dump(exclude_unset=True)
-
-        # If query param provided, let it override body or supply value
-        if reapply_rules is not None:
-            updates["reapply_rules"] = reapply_rules
 
         updated = service.update_transaction(transaction_id, **updates)
 

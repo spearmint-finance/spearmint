@@ -65,7 +65,7 @@ async def health_check():
 
 # Import routers
 from .routes import (
-    transactions, categories, import_routes, analysis, relationships, projections, reports, classifications,
+    transactions, categories, import_routes, analysis, relationships, projections, reports,
     persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator, entities
 )
 
@@ -77,7 +77,6 @@ app.include_router(analysis.router, prefix="/api", tags=["analysis"])
 app.include_router(relationships.router, prefix="/api", tags=["relationships"])
 app.include_router(projections.router, prefix="/api", tags=["projections"])
 app.include_router(reports.router, prefix="/api", tags=["reports"])
-app.include_router(classifications.router, prefix="/api", tags=["classifications"])
 app.include_router(persons.router, prefix="/api", tags=["persons"])
 app.include_router(splits.router, prefix="/api", tags=["splits"])
 app.include_router(scenarios.router, prefix="/api", tags=["scenarios"])

@@ -18,19 +18,19 @@ print('Database tables initialized.')
 echo "Checking for seed data..."
 python -c "
 from src.financial_analysis.database.base import SessionLocal
-from src.financial_analysis.database.models import TransactionClassification
+from src.financial_analysis.database.models import APIKey
 from src.financial_analysis.database.seed_data import seed_all
 
 db = SessionLocal()
 try:
-    # Check if classifications exist (indicator of seeded data)
-    count = db.query(TransactionClassification).count()
+    # Check if API keys exist (indicator of seeded data)
+    count = db.query(APIKey).count()
     if count == 0:
         print('Seeding default data...')
         seed_all(db)
         print('Default data seeded.')
     else:
-        print(f'Database already has {count} classifications, skipping seed.')
+        print(f'Database already has {count} API keys, skipping seed.')
 finally:
     db.close()
 "

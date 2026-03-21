@@ -9,8 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
-from financial_analysis.database.models import Transaction, Category, TransactionClassification
-from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.database.models import Transaction, Category
 from financial_analysis.services.projection_service import ProjectionService, ProjectionMethod
 
 
@@ -22,9 +21,6 @@ def db_session():
     
     Session = sessionmaker(bind=engine)
     session = Session()
-    
-    # Seed classifications
-    seed_classifications(session)
     
     yield session
     
@@ -43,11 +39,6 @@ def sample_data(db_session):
     db_session.commit()
     db_session.refresh(category)
     
-    # Get standard classification
-    standard_class = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'STANDARD'
-    ).first()
-    
     # Create 90 days of historical data with upward trend
     base_date = date.today() - timedelta(days=90)
     transactions = []
@@ -64,7 +55,6 @@ def sample_data(db_session):
             category_id=category.category_id,
             description=f'Daily income {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         transactions.append(tx)
     
@@ -73,7 +63,6 @@ def sample_data(db_session):
     
     return {
         'category': category,
-        'classification': standard_class,
         'start_date': base_date,
         'end_date': date.today() - timedelta(days=1),
         'transaction_count': 90
@@ -186,10 +175,6 @@ def test_project_expenses(db_session):
     db_session.commit()
     db_session.refresh(category)
     
-    standard_class = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'STANDARD'
-    ).first()
-    
     # Create 60 days of expense data
     base_date = date.today() - timedelta(days=60)
     for i in range(60):
@@ -200,7 +185,6 @@ def test_project_expenses(db_session):
             category_id=category.category_id,
             description=f'Daily expense {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         db_session.add(tx)
     
@@ -230,10 +214,6 @@ def test_project_cashflow(db_session, sample_data):
     db_session.commit()
     db_session.refresh(expense_category)
     
-    standard_class = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'STANDARD'
-    ).first()
-    
     base_date = sample_data['start_date']
     for i in range(90):
         tx = Transaction(
@@ -243,7 +223,6 @@ def test_project_cashflow(db_session, sample_data):
             category_id=expense_category.category_id,
             description=f'Daily expense {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         db_session.add(tx)
     
