@@ -209,11 +209,15 @@ class TransactionService:
             conditions.append(Transaction.account_id == filters.account_id)
 
         if filters.entity_id:
-            # Filter by entity through the account relationship
+            # Filter by entity through the account_entities many-to-many table
+            from ..database.models import account_entities
             query = query.join(
                 Account,
                 Transaction.account_id == Account.account_id
-            ).filter(Account.entity_id == filters.entity_id)
+            ).join(
+                account_entities,
+                Account.account_id == account_entities.c.account_id
+            ).filter(account_entities.c.entity_id == filters.entity_id)
 
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
@@ -314,10 +318,14 @@ class TransactionService:
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
+            from ..database.models import account_entities
             query = query.join(
                 Account,
                 Transaction.account_id == Account.account_id
-            ).filter(Account.entity_id == filters.entity_id)
+            ).join(
+                account_entities,
+                Account.account_id == account_entities.c.account_id
+            ).filter(account_entities.c.entity_id == filters.entity_id)
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
         if filters.max_amount:

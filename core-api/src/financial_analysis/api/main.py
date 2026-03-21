@@ -100,6 +100,8 @@ def ensure_database_tables():
     # Lightweight migrations for existing databases
     from sqlalchemy import inspect, text
     inspector = inspect(engine)
+
+    # Migration: add entity_id to categories
     if inspector.has_table("categories"):
         columns = [c["name"] for c in inspector.get_columns("categories")]
         if "entity_id" not in columns:
@@ -107,6 +109,18 @@ def ensure_database_tables():
                 conn.execute(text(
                     "ALTER TABLE categories ADD COLUMN entity_id INTEGER "
                     "REFERENCES entities(entity_id)"
+                ))
+
+    # Migration: migrate account.entity_id data to account_entities join table
+    if inspector.has_table("accounts") and inspector.has_table("account_entities"):
+        columns = [c["name"] for c in inspector.get_columns("accounts")]
+        if "entity_id" in columns:
+            with engine.begin() as conn:
+                # Copy existing entity_id assignments to the join table
+                conn.execute(text(
+                    "INSERT OR IGNORE INTO account_entities (account_id, entity_id) "
+                    "SELECT account_id, entity_id FROM accounts "
+                    "WHERE entity_id IS NOT NULL"
                 ))
 
 

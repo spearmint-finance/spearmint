@@ -106,7 +106,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     institution_name: account.institution_name || '',
     account_number_last4: account.account_number_last4 || '',
     notes: account.notes || '',
-    entity_id: account.entity_id != null ? String(account.entity_id) : '',
+    entity_ids: account.entity_ids || [],
   });
 
   // Fetch balance history
@@ -180,7 +180,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       institution_name: account.institution_name || '',
       account_number_last4: account.account_number_last4 || '',
       notes: account.notes || '',
-      entity_id: account.entity_id != null ? String(account.entity_id) : '',
+      entity_ids: account.entity_ids || [],
     });
     setIsEditing(true);
   };
@@ -196,7 +196,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       institution_name: editForm.institution_name.trim() || undefined,
       account_number_last4: editForm.account_number_last4 || undefined,
       notes: editForm.notes.trim() || undefined,
-      entity_id: editForm.entity_id ? Number(editForm.entity_id) : undefined,
+      entity_ids: editForm.entity_ids,
     };
     updateAccountMutation.mutate(update);
   };
@@ -352,15 +352,21 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
               {entities.length > 0 && (
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
-                    <InputLabel>Entity</InputLabel>
+                    <InputLabel>Entities</InputLabel>
                     <Select
-                      value={editForm.entity_id}
-                      label="Entity"
-                      onChange={(e) => setEditForm({ ...editForm, entity_id: e.target.value as string })}
+                      multiple
+                      value={editForm.entity_ids}
+                      label="Entities"
+                      onChange={(e) => setEditForm({ ...editForm, entity_ids: e.target.value as number[] })}
+                      renderValue={(selected) =>
+                        (selected as number[])
+                          .map((id) => entities.find((e) => e.entity_id === id)?.entity_name)
+                          .filter(Boolean)
+                          .join(', ')
+                      }
                     >
-                      <MenuItem value="">No entity</MenuItem>
                       {entities.map((entity) => (
-                        <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                        <MenuItem key={entity.entity_id} value={entity.entity_id}>
                           {entity.entity_name} ({ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})
                         </MenuItem>
                       ))}
@@ -409,17 +415,22 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       secondary={formatCurrency(account.opening_balance)}
                     />
                   </ListItem>
-                  {(() => {
-                    const entity = entities.find(e => e.entity_id === account.entity_id);
-                    return entity ? (
-                      <ListItem>
-                        <ListItemText
-                          primary="Entity"
-                          secondary={`${entity.entity_name} (${ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})`}
-                        />
-                      </ListItem>
-                    ) : null;
-                  })()}
+                  {account.entity_ids.length > 0 && (
+                    <ListItem>
+                      <ListItemText
+                        primary={account.entity_ids.length === 1 ? "Entity" : "Entities"}
+                        secondary={account.entity_ids
+                          .map((id) => {
+                            const entity = entities.find((e) => e.entity_id === id);
+                            return entity
+                              ? `${entity.entity_name} (${ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})`
+                              : null;
+                          })
+                          .filter(Boolean)
+                          .join(', ')}
+                      />
+                    </ListItem>
+                  )}
                   {account.notes && (
                     <ListItem>
                       <ListItemText primary="Notes" secondary={account.notes} />

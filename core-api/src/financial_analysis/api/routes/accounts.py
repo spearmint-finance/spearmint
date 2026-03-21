@@ -117,7 +117,7 @@ def list_accounts(
             "has_investment_component": account.has_investment_component,
             "opening_balance": account.opening_balance,
             "opening_balance_date": account.opening_balance_date,
-            "entity_id": account.entity_id,
+            "entity_ids": [e.entity_id for e in account.entities],
             "notes": account.notes,
             "created_at": account.created_at,
             "updated_at": account.updated_at
@@ -154,7 +154,7 @@ def create_account(
             currency=account.currency,
             opening_balance=account.opening_balance,
             opening_balance_date=account.opening_balance_date,
-            entity_id=account.entity_id,
+            entity_ids=account.entity_ids,
             notes=account.notes
         )
 
@@ -220,7 +220,7 @@ def get_account(
         "opening_balance": account.opening_balance,
         "opening_balance_date": account.opening_balance_date,
         "notes": account.notes,
-        "entity_id": account.entity_id,
+        "entity_ids": [e.entity_id for e in account.entities],
         "created_at": account.created_at,
         "updated_at": account.updated_at
     }
@@ -268,7 +268,7 @@ def update_account(
         "opening_balance": updated_account.opening_balance,
         "opening_balance_date": updated_account.opening_balance_date,
         "notes": updated_account.notes,
-        "entity_id": updated_account.entity_id,
+        "entity_ids": [e.entity_id for e in updated_account.entities],
         "created_at": updated_account.created_at,
         "updated_at": updated_account.updated_at
     }

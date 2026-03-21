@@ -87,10 +87,11 @@ class EntityService:
         if entity.is_default:
             raise ValueError("Cannot delete the default entity")
 
-        # Check for assigned accounts
+        # Check for assigned accounts via many-to-many
+        from ..database.models import account_entities
         account_count = (
-            self.db.query(func.count(Account.account_id))
-            .filter(Account.entity_id == entity_id)
+            self.db.query(func.count(account_entities.c.account_id))
+            .filter(account_entities.c.entity_id == entity_id)
             .scalar()
         )
         if account_count > 0:
@@ -105,9 +106,10 @@ class EntityService:
 
     def get_account_count(self, entity_id: int) -> int:
         """Get number of accounts assigned to an entity."""
+        from ..database.models import account_entities
         return (
-            self.db.query(func.count(Account.account_id))
-            .filter(Account.entity_id == entity_id)
+            self.db.query(func.count(account_entities.c.account_id))
+            .filter(account_entities.c.entity_id == entity_id)
             .scalar()
         )
 
@@ -139,11 +141,12 @@ class EntityService:
         if not entity:
             raise ValueError(f"Entity {entity_id} not found")
 
-        # Get entity's account IDs
+        # Get entity's account IDs via many-to-many
+        from ..database.models import account_entities
         account_ids = [
-            a.account_id
-            for a in self.db.query(Account.account_id)
-            .filter(Account.entity_id == entity_id)
+            row.account_id
+            for row in self.db.query(account_entities.c.account_id)
+            .filter(account_entities.c.entity_id == entity_id)
             .all()
         ]
 
@@ -225,10 +228,11 @@ class EntityService:
         if not entity:
             raise ValueError(f"Entity {entity_id} not found")
 
+        from ..database.models import account_entities
         account_ids = [
-            a.account_id
-            for a in self.db.query(Account.account_id)
-            .filter(Account.entity_id == entity_id)
+            row.account_id
+            for row in self.db.query(account_entities.c.account_id)
+            .filter(account_entities.c.entity_id == entity_id)
             .all()
         ]
 
