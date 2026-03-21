@@ -23,6 +23,8 @@ export interface ImportResponse {
   failed_rows: number;
   skipped_duplicates: number;
   classified_rows: number;
+  accounts_created: number;
+  accounts_skipped: number;
   errors: ImportError[];
   warnings: ImportWarning[];
 }
