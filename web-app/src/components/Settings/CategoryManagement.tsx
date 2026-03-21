@@ -379,7 +379,6 @@ export default function CategoryManagement() {
             >
               <MenuItem value="Income">Income</MenuItem>
               <MenuItem value="Expense">Expense</MenuItem>
-              <MenuItem value="Both">Both</MenuItem>
               <MenuItem value="Transfer">Transfer</MenuItem>
             </TextField>
 
