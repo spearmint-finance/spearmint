@@ -34,7 +34,7 @@ export const getClassifications = async (
   systemOnly: boolean = false
 ): Promise<ClassificationListResponse> => {
   const response =
-    await classificationsApi.listClassificationsApiClassificationsGet({
+    await classificationsApi.listClassifications({
       systemOnly,
     });
   return response.data as unknown as ClassificationListResponse;
@@ -47,7 +47,7 @@ export const getClassification = async (
   classificationId: number
 ): Promise<Classification> => {
   const response =
-    await classificationsApi.getClassificationApiClassificationsClassificationIdGet(
+    await classificationsApi.getClassification(
       classificationId
     );
   return response.data as unknown as Classification;
@@ -60,7 +60,7 @@ export const createClassification = async (
   data: ClassificationCreate
 ): Promise<Classification> => {
   const response =
-    await classificationsApi.createClassificationApiClassificationsPost(data);
+    await classificationsApi.createClassification(data);
   return response.data as unknown as Classification;
 };
 
@@ -72,7 +72,7 @@ export const updateClassification = async (
   data: ClassificationUpdate
 ): Promise<Classification> => {
   const response =
-    await classificationsApi.updateClassificationApiClassificationsClassificationIdPut(
+    await classificationsApi.updateClassification(
       classificationId,
       data
     );
@@ -85,7 +85,7 @@ export const updateClassification = async (
 export const deleteClassification = async (
   classificationId: number
 ): Promise<void> => {
-  await classificationsApi.deleteClassificationApiClassificationsClassificationIdDelete(
+  await classificationsApi.deleteClassification(
     classificationId
   );
 };
@@ -101,7 +101,7 @@ export const getClassificationRules = async (
   activeOnly: boolean = false
 ): Promise<ClassificationRuleListResponse> => {
   const response =
-    await classificationsApi.listClassificationRulesApiClassificationRulesGet({
+    await classificationsApi.listClassificationRules({
       activeOnly,
     });
   return response.data as unknown as ClassificationRuleListResponse;
@@ -114,7 +114,7 @@ export const getClassificationRule = async (
   ruleId: number
 ): Promise<ClassificationRule> => {
   const response =
-    await classificationsApi.getClassificationRuleApiClassificationRulesRuleIdGet(
+    await classificationsApi.getClassificationRule(
       ruleId
     );
   return response.data as unknown as ClassificationRule;
@@ -127,7 +127,7 @@ export const createClassificationRule = async (
   data: ClassificationRuleCreate
 ): Promise<ClassificationRule> => {
   const response =
-    await classificationsApi.createClassificationRuleApiClassificationRulesPost(
+    await classificationsApi.createClassificationRule(
       data
     );
   return response.data as unknown as ClassificationRule;
@@ -141,7 +141,7 @@ export const updateClassificationRule = async (
   data: ClassificationRuleUpdate
 ): Promise<ClassificationRule> => {
   const response =
-    await classificationsApi.updateClassificationRuleApiClassificationRulesRuleIdPut(
+    await classificationsApi.updateClassificationRule(
       ruleId,
       data
     );
@@ -154,7 +154,7 @@ export const updateClassificationRule = async (
 export const deleteClassificationRule = async (
   ruleId: number
 ): Promise<void> => {
-  await classificationsApi.deleteClassificationRuleApiClassificationRulesRuleIdDelete(
+  await classificationsApi.deleteClassificationRule(
     ruleId
   );
 };
@@ -166,7 +166,7 @@ export const testClassificationRule = async (
   data: TestRuleRequest
 ): Promise<TestRuleResponse> => {
   const response =
-    await classificationsApi.testClassificationRuleApiClassificationRulesTestPost(
+    await classificationsApi.testClassificationRule(
       data
     );
   return response.data as unknown as TestRuleResponse;
@@ -184,7 +184,7 @@ export const classifyTransaction = async (
   data: ClassifyTransactionRequest
 ): Promise<Classification> => {
   const response =
-    await classificationsApi.classifyTransactionApiTransactionsTransactionIdClassifyPost(
+    await classificationsApi.classifyTransaction(
       transactionId,
       data
     );
@@ -198,7 +198,7 @@ export const bulkClassifyTransactions = async (
   data: BulkClassifyRequest
 ): Promise<BulkClassifyResponse> => {
   const response =
-    await classificationsApi.bulkClassifyTransactionsApiTransactionsClassifyBulkPost(
+    await classificationsApi.bulkClassifyTransactions(
       data
     );
   return response.data as unknown as BulkClassifyResponse;
@@ -211,7 +211,7 @@ export const autoClassifyTransactions = async (
   data: AutoClassifyRequest = {}
 ): Promise<AutoClassifyResponse> => {
   const response =
-    await classificationsApi.autoClassifyTransactionsApiTransactionsAutoClassifyPost(
+    await classificationsApi.autoClassifyTransactions(
       data
     );
   return response.data as unknown as AutoClassifyResponse;
@@ -224,7 +224,7 @@ export const applyClassificationRules = async (
   data: ApplyRulesRequest = {}
 ): Promise<ApplyRulesResponse> => {
   const response =
-    await classificationsApi.applyClassificationRulesApiClassificationRulesApplyPost(
+    await classificationsApi.applyClassificationRules(
       data
     );
   return response.data as unknown as ApplyRulesResponse;

@@ -23,7 +23,7 @@ export const categoriesApi = {
     parent_category_id?: number | null;
     search_text?: string;
   }): Promise<CategoriesResponse> => {
-    const response = await categoriesClient.listCategoriesApiCategoriesGet({
+    const response = await categoriesClient.listCategories({
       categoryType: params?.category_type,
       parentCategoryId: params?.parent_category_id,
       searchText: params?.search_text,
@@ -47,7 +47,7 @@ export const categoriesApi = {
    */
   getById: async (categoryId: number): Promise<Category> => {
     const response =
-      await categoriesClient.getCategoryApiCategoriesCategoryIdGet(categoryId);
+      await categoriesClient.getCategory(categoryId);
     return response.data as unknown as Category;
   },
 
@@ -58,7 +58,7 @@ export const categoriesApi = {
     categoryType?: "Income" | "Expense" | "Both" | "Transfer"
   ): Promise<CategoriesResponse> => {
     const response =
-      await categoriesClient.getRootCategoriesApiCategoriesRootGet({
+      await categoriesClient.getRootCategories({
         categoryType,
       });
     return response.data as unknown as CategoriesResponse;
@@ -69,7 +69,7 @@ export const categoriesApi = {
    */
   getChildren: async (categoryId: number): Promise<CategoriesResponse> => {
     const response =
-      await categoriesClient.getChildCategoriesApiCategoriesCategoryIdChildrenGet(
+      await categoriesClient.getChildCategories(
         categoryId
       );
     return response.data as unknown as CategoriesResponse;
@@ -79,7 +79,7 @@ export const categoriesApi = {
    * Create a new category
    */
   create: async (category: CategoryCreate): Promise<Category> => {
-    const response = await categoriesClient.createCategoryApiCategoriesPost(
+    const response = await categoriesClient.createCategory(
       category
     );
     return response.data as unknown as Category;
@@ -93,7 +93,7 @@ export const categoriesApi = {
     category: CategoryUpdate
   ): Promise<Category> => {
     const response =
-      await categoriesClient.updateCategoryApiCategoriesCategoryIdPut(
+      await categoriesClient.updateCategory(
         categoryId,
         category
       );
@@ -107,7 +107,7 @@ export const categoriesApi = {
     categoryId: number,
     force: boolean = false
   ): Promise<{ message: string }> => {
-    await categoriesClient.deleteCategoryApiCategoriesCategoryIdDelete(
+    await categoriesClient.deleteCategory(
       categoryId,
       { force }
     );
@@ -127,7 +127,7 @@ export const categoryRulesApi = {
     category_id?: number;
   }): Promise<CategoryRuleListResponse> => {
     const response =
-      await categoriesClient.listCategoryRulesApiCategoryRulesGet({
+      await categoriesClient.listCategoryRules({
         activeOnly: params?.active_only,
         categoryId: params?.category_id,
       });
@@ -139,7 +139,7 @@ export const categoryRulesApi = {
    */
   getById: async (ruleId: number): Promise<CategoryRule> => {
     const response =
-      await categoriesClient.getCategoryRuleApiCategoryRulesRuleIdGet(ruleId);
+      await categoriesClient.getCategoryRule(ruleId);
     return response.data as unknown as CategoryRule;
   },
 
@@ -148,7 +148,7 @@ export const categoryRulesApi = {
    */
   create: async (rule: CategoryRuleCreate): Promise<CategoryRule> => {
     const response =
-      await categoriesClient.createCategoryRuleApiCategoryRulesPost(rule);
+      await categoriesClient.createCategoryRule(rule);
     return response.data as unknown as CategoryRule;
   },
 
@@ -160,7 +160,7 @@ export const categoryRulesApi = {
     rule: CategoryRuleUpdate
   ): Promise<CategoryRule> => {
     const response =
-      await categoriesClient.updateCategoryRuleApiCategoryRulesRuleIdPut(
+      await categoriesClient.updateCategoryRule(
         ruleId,
         rule
       );
@@ -171,7 +171,7 @@ export const categoryRulesApi = {
    * Delete a category rule
    */
   delete: async (ruleId: number): Promise<{ message: string }> => {
-    await categoriesClient.deleteCategoryRuleApiCategoryRulesRuleIdDelete(
+    await categoriesClient.deleteCategoryRule(
       ruleId
     );
     return { message: "Rule deleted" };
@@ -184,7 +184,7 @@ export const categoryRulesApi = {
     request: TestCategoryRuleRequest
   ): Promise<TestCategoryRuleResponse> => {
     const response =
-      await categoriesClient.testCategoryRuleApiCategoryRulesTestPost(request);
+      await categoriesClient.testCategoryRule(request);
     return response.data as unknown as TestCategoryRuleResponse;
   },
 
@@ -195,7 +195,7 @@ export const categoryRulesApi = {
     request: ApplyCategoryRulesRequest
   ): Promise<ApplyCategoryRulesResponse> => {
     const response =
-      await categoriesClient.applyCategoryRulesApiCategoryRulesApplyPost(
+      await categoriesClient.applyCategoryRules(
         request
       );
     return response.data as unknown as ApplyCategoryRulesResponse;
