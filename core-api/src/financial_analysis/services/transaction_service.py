@@ -14,7 +14,6 @@ from ..database.models import (
     Tag, TransactionTag, Account
 )
 from ..utils.validators import DataValidator, ValidationError
-from .classification_service import ClassificationService
 
 
 class TransactionFilter:
@@ -429,11 +428,8 @@ class TransactionService:
 
         # Handle tags separately
         tag_names = updates.pop('tag_names', None)
-        # Optional flag to force re-apply rules
-        reapply_rules_flag = bool(updates.pop('reapply_rules', False))
-
-        # Track which fields are changing before applying
-        changed_fields = set(updates.keys())
+        # Remove deprecated reapply_rules flag (classification auto-apply removed in Phase 2)
+        updates.pop('reapply_rules', None)
 
         # Update fields
         for key, value in updates.items():
@@ -460,25 +456,6 @@ class TransactionService:
 
         self.db.commit()
         self.db.refresh(transaction)
-
-        # Auto re-apply classification rules if relevant fields changed
-        affecting_fields = {"description", "amount", "category_id", "source", "payment_method"}
-        should_reapply = reapply_rules_flag or (bool(changed_fields & affecting_fields) and (transaction.classification_id is None))
-        if should_reapply:
-            try:
-                cls_service = ClassificationService(self.db)
-                changed = cls_service.auto_classify_transaction(transaction)
-                if changed:
-                    # Ensure derived flags are persisted
-                    self.db.commit()
-                    self.db.refresh(transaction)
-            except Exception as exc:
-                logger.warning(
-                    "Auto-classification failed for transaction %s: %s",
-                    transaction.transaction_id,
-                    exc,
-                    exc_info=True,
-                )
 
         return transaction
 

@@ -12,8 +12,10 @@ import io
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from sqlalchemy import select
+
 from .analysis_service import AnalysisService, AnalysisMode, DateRange
-from ..database.models import Transaction, Category, Account, TransactionClassification, TransactionRelationship
+from ..database.models import Transaction, Category, Account, TransactionRelationship, Tag, TransactionTag
 
 
 class ReportFormat(str, Enum):
@@ -327,7 +329,7 @@ class ReportService:
                     "category": tx.category.category_name if tx.category else "Uncategorized",
                     "type": tx.transaction_type,
                     "amount": float(tx.amount),
-                    "classification": tx.classification.classification_name if tx.classification else "Standard",
+                    "classification": ", ".join(t.tag_name for t in tx.tags) if tx.tags else "Standard",
                     "source": tx.source
                 }
                 for tx in transactions
@@ -359,22 +361,20 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=365)
 
-        # Query CapEx transactions
-        # Join with classification and category
-        query = self.db.query(Transaction).join(
-            TransactionClassification,
-            Transaction.classification_id == TransactionClassification.classification_id
-        ).outerjoin(
+        # Query CapEx transactions - find transactions tagged 'capital-expense'
+        capex_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'capital-expense')
+            .subquery()
+        )
+        query = self.db.query(Transaction).outerjoin(
             Category,
             Transaction.category_id == Category.category_id
         ).filter(
             Transaction.transaction_date >= start_date,
-            Transaction.transaction_date <= end_date
-        ).filter(
-            # Match CapEx classifications by code or name
-            (TransactionClassification.classification_code.ilike('%CAPEX%')) |
-            (TransactionClassification.classification_code == 'CAPITAL_EXPENSE') |
-            (TransactionClassification.classification_name == 'Capital Expense')
+            Transaction.transaction_date <= end_date,
+            Transaction.transaction_id.in_(select(capex_subq))
         ).order_by(Transaction.transaction_date.desc())
 
         transactions = query.all()
@@ -412,7 +412,7 @@ class ReportService:
                 "description": tx.description,
                 "amount": float(tx.amount),
                 "category": tx.category.category_name if tx.category else "Uncategorized",
-                "classification": tx.classification.classification_name if tx.classification else "Unknown",
+                "classification": ", ".join(t.tag_name for t in tx.tags) if tx.tags else "capital-expense",
                 "notes": tx.notes
             }
             for tx in transactions
@@ -456,16 +456,16 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=30)
 
-        result = self.db.query(func.sum(func.abs(Transaction.amount))).join(
-            TransactionClassification,
-            Transaction.classification_id == TransactionClassification.classification_id
-        ).filter(
+        capex_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'capital-expense')
+            .subquery()
+        )
+        result = self.db.query(func.sum(func.abs(Transaction.amount))).filter(
             Transaction.transaction_date >= start_date,
-            Transaction.transaction_date <= end_date
-        ).filter(
-            (TransactionClassification.classification_code.ilike('%CAPEX%')) |
-            (TransactionClassification.classification_code == 'CAPITAL_EXPENSE') |
-            (TransactionClassification.classification_name == 'Capital Expense')
+            Transaction.transaction_date <= end_date,
+            Transaction.transaction_id.in_(select(capex_subq))
         ).scalar()
 
         return float(result) if result else 0.0
@@ -499,21 +499,20 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=90)
 
-        # Get REIMB_PAID classification
-        reimb_paid = self.db.query(TransactionClassification).filter(
-            TransactionClassification.classification_code == 'REIMB_PAID'
-        ).first()
+        # Find transactions tagged 'reimbursable'
+        reimbursable_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'reimbursable')
+            .subquery()
+        )
 
-        if not reimb_paid:
-            # Return empty report if classification doesn't exist
-            return self._empty_receivables_report(start_date, end_date)
-
-        # Query all REIMB_PAID transactions in the period
+        # Query all reimbursable transactions in the period
         expense_query = self.db.query(Transaction).outerjoin(
             Category,
             Transaction.category_id == Category.category_id
         ).filter(
-            Transaction.classification_id == reimb_paid.classification_id,
+            Transaction.transaction_id.in_(select(reimbursable_subq)),
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date
         ).order_by(Transaction.transaction_date.desc())
@@ -559,7 +558,7 @@ class ReportService:
                 "description": tx.description,
                 "amount": float(tx.amount),
                 "category": tx.category.category_name if tx.category else "Uncategorized",
-                "classification": tx.classification.classification_name if tx.classification else "Unknown",
+                "classification": ", ".join(t.tag_name for t in tx.tags) if tx.tags else "reimbursable",
                 "days_outstanding": days_since,
                 "is_reimbursed": is_reimbursed,
                 "reimbursement_id": reimbursement_links.get(tx.transaction_id),
@@ -664,16 +663,17 @@ class ReportService:
         if not start_date:
             start_date = end_date - timedelta(days=90)
 
-        reimb_paid = self.db.query(TransactionClassification).filter(
-            TransactionClassification.classification_code == 'REIMB_PAID'
-        ).first()
+        # Find transactions tagged 'reimbursable'
+        reimbursable_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'reimbursable')
+            .subquery()
+        )
 
-        if not reimb_paid:
-            return 0.0
-
-        # Get all REIMB_PAID expense IDs
+        # Get all reimbursable expense IDs
         expenses = self.db.query(Transaction.transaction_id, Transaction.amount).filter(
-            Transaction.classification_id == reimb_paid.classification_id,
+            Transaction.transaction_id.in_(select(reimbursable_subq)),
             Transaction.transaction_date >= start_date,
             Transaction.transaction_date <= end_date
         ).all()
