@@ -1,5 +1,5 @@
 import { analysisApi } from "./sdk";
-import { GetIncomeAnalysisApiAnalysisIncomeGetMode } from "@spearmint-finance/sdk";
+import { AnalysisModeEnum } from "@spearmint-finance/sdk";
 
 // Analysis API functions
 
@@ -107,13 +107,13 @@ export interface CashFlowTrendsResponse {
 // Helper to convert string mode to Enum
 const toModeEnum = (
   mode?: string
-): GetIncomeAnalysisApiAnalysisIncomeGetMode | undefined => {
+): AnalysisModeEnum | undefined => {
   if (mode === "analysis")
-    return GetIncomeAnalysisApiAnalysisIncomeGetMode.ANALYSIS;
+    return AnalysisModeEnum.ANALYSIS;
   if (mode === "complete")
-    return GetIncomeAnalysisApiAnalysisIncomeGetMode.COMPLETE;
+    return AnalysisModeEnum.COMPLETE;
   if (mode === "with_capital")
-    return GetIncomeAnalysisApiAnalysisIncomeGetMode.WITH_CAPITAL;
+    return AnalysisModeEnum.WITH_CAPITAL;
   return undefined;
 };
 
@@ -123,7 +123,7 @@ const toModeEnum = (
 export const getIncomeAnalysis = async (
   params?: AnalysisParams
 ): Promise<IncomeAnalysisResponse> => {
-  const { data } = await analysisApi.getIncomeAnalysisApiAnalysisIncomeGet({
+  const { data } = await analysisApi.getIncomeAnalysis({
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
@@ -160,7 +160,7 @@ export const getIncomeAnalysis = async (
 export const getExpenseAnalysis = async (
   params?: AnalysisParams & { top_n?: number }
 ): Promise<ExpenseAnalysisResponse> => {
-  const { data } = await analysisApi.getExpenseAnalysisApiAnalysisExpensesGet({
+  const { data } = await analysisApi.getExpenseAnalysis({
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
@@ -204,7 +204,7 @@ export const getExpenseAnalysis = async (
 export const getCashFlowAnalysis = async (
   params?: AnalysisParams
 ): Promise<CashFlowResponse> => {
-  const { data } = await analysisApi.getCashFlowAnalysisApiAnalysisCashflowGet({
+  const { data } = await analysisApi.getCashFlowAnalysis({
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
@@ -230,7 +230,7 @@ export const getCashFlowAnalysis = async (
 export const getFinancialHealth = async (
   params?: AnalysisParams
 ): Promise<FinancialHealthResponse> => {
-  const { data } = await analysisApi.getFinancialHealthApiAnalysisHealthGet({
+  const { data } = await analysisApi.getFinancialHealth({
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
@@ -255,7 +255,7 @@ export const getFinancialHealth = async (
 export const getFinancialSummary = async (
   params?: AnalysisParams & { top_n?: number; recent_count?: number }
 ): Promise<FinancialSummaryResponse> => {
-  const { data } = await analysisApi.getFinancialSummaryApiAnalysisSummaryGet({
+  const { data } = await analysisApi.getFinancialSummary({
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
@@ -313,7 +313,7 @@ export const getCashFlowTrends = async (
   }
 ): Promise<CashFlowTrendsResponse> => {
   const { data } =
-    await analysisApi.getCashFlowTrendsApiAnalysisCashflowTrendsGet({
+    await analysisApi.getCashFlowTrends({
       startDate: params?.start_date,
       endDate: params?.end_date,
       mode: toModeEnum(params?.mode),
@@ -362,7 +362,7 @@ export const getExpenseCategoryTrends = async (
   params: CategoryTrendsParams
 ): Promise<CategoryTrendsResponse> => {
   const { data } =
-    await analysisApi.getExpenseCategoryTrendsApiAnalysisExpensesCategoryTrendsGet(
+    await analysisApi.getExpenseCategoryTrends(
       {
         startDate: params.start_date,
         endDate: params.end_date,

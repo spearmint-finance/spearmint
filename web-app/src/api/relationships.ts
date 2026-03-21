@@ -29,7 +29,7 @@ export const detectDividendReinvestments = async (
   } = params;
 
   const response =
-    await relationshipsApi.detectDividendReinvestmentPairsApiRelationshipsDetectDividendReinvestmentsPost(
+    await relationshipsApi.detectDividendReinvestmentPairs(
       {
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
@@ -52,7 +52,7 @@ export const detectTransfers = async (
   } = params;
 
   const response =
-    await relationshipsApi.detectTransferPairsApiRelationshipsDetectTransfersPost(
+    await relationshipsApi.detectTransferPairs(
       {
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
@@ -75,7 +75,7 @@ export const detectCreditCardPairs = async (
   } = params;
 
   const response =
-    await relationshipsApi.detectCreditCardPairsApiRelationshipsDetectCreditCardsPost(
+    await relationshipsApi.detectCreditCardPairs(
       {
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
@@ -98,7 +98,7 @@ export const detectReimbursements = async (
   } = params;
 
   const response =
-    await relationshipsApi.detectReimbursementPairsApiRelationshipsDetectReimbursementsPost(
+    await relationshipsApi.detectReimbursementPairs(
       {
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
@@ -117,7 +117,7 @@ export const detectAllRelationships = async (
   const { auto_link = true } = params;
 
   const response =
-    await relationshipsApi.detectAllRelationshipsApiRelationshipsDetectAllPost({
+    await relationshipsApi.detectAllRelationships({
       autoLink: auto_link,
     });
   return response.data as unknown as DetectAllRelationshipsResponse;
