@@ -327,7 +327,7 @@ function TransactionForm({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         {mode === "create" ? "Add New Transaction" : "Edit Transaction"}
       </DialogTitle>
@@ -665,10 +665,10 @@ function TransactionForm({
                               label="Amount"
                               type="number"
                               size="small"
-                              value={split.amount}
+                              value={split.amount || ""}
                               onChange={(e) => {
                                 const updated = [...field.value];
-                                updated[idx] = { ...updated[idx], amount: parseFloat(e.target.value) || 0 };
+                                updated[idx] = { ...updated[idx], amount: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 };
                                 field.onChange(updated);
                               }}
                               inputProps={{ step: "0.01", min: "0" }}

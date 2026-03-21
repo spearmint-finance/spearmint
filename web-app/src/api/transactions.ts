@@ -180,56 +180,78 @@ export const getTransaction = async (id: number): Promise<Transaction> => {
 
 /**
  * Create a new transaction
+ * Uses direct fetch — the SDK schema strips fields it doesn't know about
+ * (entity_id, boolean properties), so we bypass it here.
  */
 export const createTransaction = async (
   data: TransactionCreate
 ): Promise<Transaction> => {
-  const response = await transactionsApi.createTransaction({
-    transactionDate: data.date,
+  const body: Record<string, unknown> = {
+    transaction_date: data.date,
     description: data.description,
     amount: data.amount,
-    transactionType: data.transaction_type,
-    categoryId: data.category_id,
-    accountId: data.account_id,
-    notes: data.notes,
-    tagNames: data.tag_names,
-    isCapitalExpense: data.is_capital_expense,
-    isTaxDeductible: data.is_tax_deductible,
-    isRecurring: data.is_recurring,
-    isReimbursable: data.is_reimbursable,
-    excludeFromIncome: data.exclude_from_income,
-    excludeFromExpenses: data.exclude_from_expenses,
-    entityId: data.entity_id,
-  } as any);
-  return transformTransaction(response.data);
+    transaction_type: data.transaction_type,
+    category_id: data.category_id,
+  };
+  if (data.account_id != null) body.account_id = data.account_id;
+  if (data.entity_id != null) body.entity_id = data.entity_id;
+  if (data.notes != null) body.notes = data.notes;
+  if (data.tag_names != null) body.tag_names = data.tag_names;
+  if (data.is_capital_expense != null) body.is_capital_expense = data.is_capital_expense;
+  if (data.is_tax_deductible != null) body.is_tax_deductible = data.is_tax_deductible;
+  if (data.is_recurring != null) body.is_recurring = data.is_recurring;
+  if (data.is_reimbursable != null) body.is_reimbursable = data.is_reimbursable;
+  if (data.exclude_from_income != null) body.exclude_from_income = data.exclude_from_income;
+  if (data.exclude_from_expenses != null) body.exclude_from_expenses = data.exclude_from_expenses;
+
+  const response = await fetch('/api/transactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || 'Failed to create transaction');
+  }
+  return transformTransaction(await response.json());
 };
 
 /**
  * Update an existing transaction
+ * Uses direct fetch — the SDK schema strips entity_id and boolean properties.
  */
 export const updateTransaction = async (
   id: number,
   data: TransactionUpdate
 ): Promise<Transaction> => {
-  const response =
-    await transactionsApi.updateTransaction(id, {
-      transactionDate: data.date,
-      description: data.description,
-      amount: data.amount,
-      transactionType: data.transaction_type,
-      categoryId: data.category_id,
-      accountId: data.account_id,
-      notes: data.notes,
-      tagNames: data.tag_names,
-      isCapitalExpense: data.is_capital_expense,
-      isTaxDeductible: data.is_tax_deductible,
-      isRecurring: data.is_recurring,
-      isReimbursable: data.is_reimbursable,
-      excludeFromIncome: data.exclude_from_income,
-      excludeFromExpenses: data.exclude_from_expenses,
-      entityId: data.entity_id,
-    } as any);
-  return transformTransaction(response.data);
+  const body: Record<string, unknown> = {};
+  if (data.date != null) body.transaction_date = data.date;
+  if (data.description != null) body.description = data.description;
+  if (data.amount != null) body.amount = data.amount;
+  if (data.transaction_type != null) body.transaction_type = data.transaction_type;
+  if (data.category_id != null) body.category_id = data.category_id;
+  if (data.account_id != null) body.account_id = data.account_id;
+  // Always include entity_id so clearing it (null) is persisted
+  body.entity_id = data.entity_id ?? null;
+  if (data.notes != null) body.notes = data.notes;
+  if (data.tag_names != null) body.tag_names = data.tag_names;
+  if (data.is_capital_expense != null) body.is_capital_expense = data.is_capital_expense;
+  if (data.is_tax_deductible != null) body.is_tax_deductible = data.is_tax_deductible;
+  if (data.is_recurring != null) body.is_recurring = data.is_recurring;
+  if (data.is_reimbursable != null) body.is_reimbursable = data.is_reimbursable;
+  if (data.exclude_from_income != null) body.exclude_from_income = data.exclude_from_income;
+  if (data.exclude_from_expenses != null) body.exclude_from_expenses = data.exclude_from_expenses;
+
+  const response = await fetch(`/api/transactions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || 'Failed to update transaction');
+  }
+  return transformTransaction(await response.json());
 };
 
 /**
