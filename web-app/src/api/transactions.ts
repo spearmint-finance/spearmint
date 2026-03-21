@@ -66,6 +66,18 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     backendTransaction.createdAt ?? backendTransaction.created_at;
   const updatedAt =
     backendTransaction.updatedAt ?? backendTransaction.updated_at;
+  const isCapitalExpense =
+    backendTransaction.isCapitalExpense ?? backendTransaction.is_capital_expense ?? false;
+  const isTaxDeductible =
+    backendTransaction.isTaxDeductible ?? backendTransaction.is_tax_deductible ?? false;
+  const isRecurring =
+    backendTransaction.isRecurring ?? backendTransaction.is_recurring ?? false;
+  const isReimbursable =
+    backendTransaction.isReimbursable ?? backendTransaction.is_reimbursable ?? false;
+  const excludeFromIncome =
+    backendTransaction.excludeFromIncome ?? backendTransaction.exclude_from_income ?? false;
+  const excludeFromExpenses =
+    backendTransaction.excludeFromExpenses ?? backendTransaction.exclude_from_expenses ?? false;
 
   // Handle nested category object (supports both camelCase and snake_case)
   // Normalize "nan" (from pandas NaN serialization during import) to undefined
@@ -99,6 +111,12 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     tags: backendTransaction.tags?.map(
       (tag: any) => tag.tagName ?? tag.tag_name
     ),
+    is_capital_expense: isCapitalExpense,
+    is_tax_deductible: isTaxDeductible,
+    is_recurring: isRecurring,
+    is_reimbursable: isReimbursable,
+    exclude_from_income: excludeFromIncome,
+    exclude_from_expenses: excludeFromExpenses,
     created_at: createdAt ? new Date(createdAt).toISOString() : "",
     updated_at: updatedAt ? new Date(updatedAt).toISOString() : "",
   };
@@ -196,6 +214,12 @@ export const createTransaction = async (
     accountId: data.account_id,
     notes: data.notes,
     tagNames: data.tag_names,
+    isCapitalExpense: data.is_capital_expense,
+    isTaxDeductible: data.is_tax_deductible,
+    isRecurring: data.is_recurring,
+    isReimbursable: data.is_reimbursable,
+    excludeFromIncome: data.exclude_from_income,
+    excludeFromExpenses: data.exclude_from_expenses,
   } as any);
   return transformTransaction(response.data);
 };
@@ -217,6 +241,12 @@ export const updateTransaction = async (
       accountId: data.account_id,
       notes: data.notes,
       tagNames: data.tag_names,
+      isCapitalExpense: data.is_capital_expense,
+      isTaxDeductible: data.is_tax_deductible,
+      isRecurring: data.is_recurring,
+      isReimbursable: data.is_reimbursable,
+      excludeFromIncome: data.exclude_from_income,
+      excludeFromExpenses: data.exclude_from_expenses,
     } as any);
   return transformTransaction(response.data);
 };

@@ -18,6 +18,12 @@ export interface Transaction {
   transfer_account_to?: string;
   notes?: string;
   tags?: string[];
+  is_capital_expense?: boolean;
+  is_tax_deductible?: boolean;
+  is_recurring?: boolean;
+  is_reimbursable?: boolean;
+  exclude_from_income?: boolean;
+  exclude_from_expenses?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -32,6 +38,12 @@ export interface TransactionCreate {
   balance?: number;
   notes?: string;
   tag_names?: string[];
+  is_capital_expense?: boolean;
+  is_tax_deductible?: boolean;
+  is_recurring?: boolean;
+  is_reimbursable?: boolean;
+  exclude_from_income?: boolean;
+  exclude_from_expenses?: boolean;
 }
 
 export interface TransactionUpdate {
@@ -44,6 +56,12 @@ export interface TransactionUpdate {
   account_id?: number;
   notes?: string;
   tag_names?: string[];
+  is_capital_expense?: boolean;
+  is_tax_deductible?: boolean;
+  is_recurring?: boolean;
+  is_reimbursable?: boolean;
+  exclude_from_income?: boolean;
+  exclude_from_expenses?: boolean;
 }
 
 export interface TransactionFilter {

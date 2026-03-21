@@ -5,9 +5,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_
 
-from sqlalchemy import select
-
-from ..database.models import Entity, Account, Transaction, Category, Tag, TransactionTag
+from ..database.models import Entity, Account, Transaction, Category
 
 
 class EntityService:
@@ -280,7 +278,7 @@ class EntityService:
             # - Everything else → operating
             if tx.category and tx.category.category_type == 'Transfer':
                 financing_items.append(item)
-            elif any(t.tag_name == 'capital-expense' for t in tx.tags):
+            elif tx.is_capital_expense:
                 investing_items.append(item)
             else:
                 operating_items.append(item)

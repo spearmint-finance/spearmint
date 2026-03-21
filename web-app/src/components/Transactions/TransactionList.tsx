@@ -82,7 +82,14 @@ function TransactionList() {
 
   // Column visibility state
   const [columnVisibilityModel, setColumnVisibilityModel] =
-    useState<GridColumnVisibilityModel>({});
+    useState<GridColumnVisibilityModel>({
+      is_capital_expense: false,
+      is_tax_deductible: false,
+      is_recurring: false,
+      is_reimbursable: false,
+      exclude_from_income: false,
+      exclude_from_expenses: false,
+    });
   // Grid API ref to control edit mode programmatically
   const apiRef = useGridApiRef();
 
@@ -406,13 +413,49 @@ function TransactionList() {
       },
       filterable: false,
     },
+    ...([
+      { field: "is_capital_expense", headerName: "CapEx" },
+      { field: "is_tax_deductible", headerName: "Tax Ded." },
+      { field: "is_recurring", headerName: "Recurring" },
+      { field: "is_reimbursable", headerName: "Reimb." },
+      { field: "exclude_from_income", headerName: "Excl. Income" },
+      { field: "exclude_from_expenses", headerName: "Excl. Expense" },
+    ].map((col) => ({
+      field: col.field,
+      headerName: col.headerName,
+      width: 90,
+      filterable: false,
+      sortable: false,
+      renderCell: (params: any) => (
+        <Checkbox
+          size="small"
+          checked={!!params.value}
+          onClick={(e) => e.stopPropagation()}
+          onChange={async (e) => {
+            e.stopPropagation();
+            try {
+              await updateTransaction.mutateAsync({
+                id: params.row.id,
+                data: { [col.field]: e.target.checked },
+              });
+              enqueueSnackbar("Transaction updated", { variant: "success" });
+            } catch {
+              enqueueSnackbar("Failed to update transaction", { variant: "error" });
+            }
+          }}
+        />
+      ),
+    })) as GridColDef[]),
   ];
 
   const handleCellClick = (params: any) => {
-    // Don't open detail dialog when clicking on editable cells
-    const isEditableCell =
-      params.field === "description" || params.field === "category_id";
-    if (!isEditableCell) {
+    // Don't open detail dialog when clicking on editable or boolean toggle cells
+    const nonClickableFields = [
+      "description", "category_id",
+      "is_capital_expense", "is_tax_deductible", "is_recurring",
+      "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
+    ];
+    if (!nonClickableFields.includes(params.field)) {
       setSelectedTransaction(params.row);
       setDetailDialogOpen(true);
     }
