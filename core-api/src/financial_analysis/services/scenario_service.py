@@ -13,7 +13,9 @@ from calendar import monthrange
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 
-from ..database.models import Transaction, TransactionClassification, TransactionSplit, Category
+from sqlalchemy import select
+
+from ..database.models import Transaction, TransactionSplit, Category, Tag, TransactionTag
 from ..api.schemas.scenario import (
     ScenarioPreviewRequest,
     ScenarioPreviewResponse,
@@ -88,21 +90,30 @@ class ScenarioService:
             # Transfers excluded via include_in_analysis=False
             Transaction.transaction_date >= lookback_start,
         )
-        # For income: exclude classifications marked exclude_from_income_calc
-        inc_q = base_q.filter(Transaction.transaction_type == "Income").outerjoin(
-            TransactionClassification,
-            Transaction.classification_id == TransactionClassification.classification_id,
-        ).filter(
-            (TransactionClassification.exclude_from_income_calc == False)
-            | (TransactionClassification.exclude_from_income_calc.is_(None))
+
+        # Tag-based exclusion subqueries
+        exclude_income_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'exclude-from-income')
+            .subquery()
         )
-        # For expenses: exclude classifications marked exclude_from_expense_calc
-        exp_q = base_q.filter(Transaction.transaction_type == "Expense").outerjoin(
-            TransactionClassification,
-            Transaction.classification_id == TransactionClassification.classification_id,
-        ).filter(
-            (TransactionClassification.exclude_from_expense_calc == False)
-            | (TransactionClassification.exclude_from_expense_calc.is_(None))
+        exclude_expense_subq = (
+            select(TransactionTag.transaction_id)
+            .join(Tag, TransactionTag.tag_id == Tag.tag_id)
+            .where(Tag.tag_name == 'exclude-from-expenses')
+            .subquery()
+        )
+
+        # For income: exclude transactions tagged exclude-from-income
+        inc_q = base_q.filter(
+            Transaction.transaction_type == "Income",
+            ~Transaction.transaction_id.in_(select(exclude_income_subq))
+        )
+        # For expenses: exclude transactions tagged exclude-from-expenses
+        exp_q = base_q.filter(
+            Transaction.transaction_type == "Expense",
+            ~Transaction.transaction_id.in_(select(exclude_expense_subq))
         )
 
         # Fetch transactions and any splits

@@ -22,7 +22,7 @@ from ..schemas.relationship import (
     RelatedTransactionInfo
 )
 from ..schemas.common import SuccessResponse
-from ...services.classification_service import ClassificationService
+from ...services.relationship_service import RelationshipService
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ def detect_transfer_pairs(
     Returns:
         TransferPairsResponse: Detected transfer pairs with confidence scores
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
     
     try:
         from decimal import Decimal
@@ -121,7 +121,7 @@ def detect_credit_card_pairs(
     Returns:
         CreditCardPairsResponse: Detected credit card pairs with confidence scores
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
     
     try:
         result = service.detect_credit_card_payments(
@@ -190,7 +190,7 @@ def detect_reimbursement_pairs(
     Returns:
         ReimbursementPairsResponse: Detected reimbursement pairs with confidence scores
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
     
     try:
         result = service.detect_reimbursement_pairs(
@@ -261,7 +261,7 @@ def detect_dividend_reinvestment_pairs(
     Returns:
         DividendReinvestmentPairsResponse: Detected dividend reinvestment pairs with confidence scores
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
 
     try:
         from decimal import Decimal
@@ -332,7 +332,7 @@ def detect_all_relationships(
     Returns:
         DetectAllRelationshipsResponse: Summary of all detected relationships
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
 
     try:
         result = service.detect_all_relationships(
@@ -509,7 +509,7 @@ def create_relationship(
     Returns:
         RelationshipResponse: Created relationship
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
 
     try:
         relationship = service.create_relationship(
@@ -554,7 +554,7 @@ def get_related_transactions(
     Returns:
         RelatedTransactionsResponse: Related transactions with relationship info
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
 
     try:
         related = service.get_related_transactions(transaction_id)
@@ -601,7 +601,7 @@ def delete_relationship(
     Returns:
         SuccessResponse: Success confirmation
     """
-    service = ClassificationService(db)
+    service = RelationshipService(db)
 
     try:
         success = service.delete_relationship(relationship_id)
