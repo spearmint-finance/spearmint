@@ -111,6 +111,16 @@ def ensure_database_tables():
                     "REFERENCES entities(entity_id)"
                 ))
 
+    # Migration: add entity_id to transactions
+    if inspector.has_table("transactions"):
+        columns = [c["name"] for c in inspector.get_columns("transactions")]
+        if "entity_id" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE transactions ADD COLUMN entity_id INTEGER "
+                    "REFERENCES entities(entity_id)"
+                ))
+
     # Migration: migrate account.entity_id data to account_entities join table
     if inspector.has_table("accounts") and inspector.has_table("account_entities"):
         columns = [c["name"] for c in inspector.get_columns("accounts")]

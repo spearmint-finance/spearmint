@@ -24,6 +24,7 @@ export interface Transaction {
   is_reimbursable?: boolean;
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
+  entity_id?: number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -44,6 +45,7 @@ export interface TransactionCreate {
   is_reimbursable?: boolean;
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
+  entity_id?: number | null;
 }
 
 export interface TransactionUpdate {
@@ -62,6 +64,7 @@ export interface TransactionUpdate {
   is_reimbursable?: boolean;
   exclude_from_income?: boolean;
   exclude_from_expenses?: boolean;
+  entity_id?: number | null;
 }
 
 export interface TransactionFilter {

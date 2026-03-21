@@ -14,6 +14,10 @@ import {
   Autocomplete,
   TextField,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Checkbox,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
@@ -26,6 +30,7 @@ import { useSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "../../types/transaction";
 import { useDeleteTransaction, useUpdateTransaction } from "../../hooks/useTransactions";
+import { useEntities } from "../../hooks/useEntities";
 import { getAccounts } from "../../api/accounts";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionForm from "./TransactionForm";
@@ -54,6 +59,7 @@ function TransactionDetail({
   const { enqueueSnackbar } = useSnackbar();
   const deleteMutation = useDeleteTransaction();
   const updateMutation = useUpdateTransaction();
+  const { data: entities = [] } = useEntities();
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
@@ -287,6 +293,39 @@ function TransactionDetail({
                   Notes
                 </Typography>
                 <Typography variant="body2">{transaction.notes}</Typography>
+              </Grid>
+            )}
+
+            {/* Entity Assignment */}
+            {entities.length > 0 && (
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Entity</InputLabel>
+                  <Select
+                    value={transaction.entity_id ?? ""}
+                    label="Entity"
+                    onChange={async (e) => {
+                      const newEntityId = e.target.value === "" ? null : Number(e.target.value);
+                      try {
+                        await updateMutation.mutateAsync({
+                          id: transaction.id,
+                          data: { entity_id: newEntityId },
+                        });
+                        enqueueSnackbar("Entity updated", { variant: "success" });
+                      } catch {
+                        enqueueSnackbar("Failed to update entity", { variant: "error" });
+                      }
+                    }}
+                    disabled={updateMutation.isPending}
+                  >
+                    <MenuItem value="">Inherit from account</MenuItem>
+                    {entities.map((entity) => (
+                      <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                        {entity.entity_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
             )}
 
