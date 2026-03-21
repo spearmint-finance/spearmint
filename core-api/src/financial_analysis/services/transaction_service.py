@@ -209,15 +209,24 @@ class TransactionService:
             conditions.append(Transaction.account_id == filters.account_id)
 
         if filters.entity_id:
-            # Filter by entity through the account_entities many-to-many table
+            # Show transactions explicitly assigned to this entity,
+            # OR inherited from account (entity_id IS NULL and account belongs to entity)
             from ..database.models import account_entities
-            query = query.join(
+            query = query.outerjoin(
                 Account,
                 Transaction.account_id == Account.account_id
-            ).join(
+            ).outerjoin(
                 account_entities,
                 Account.account_id == account_entities.c.account_id
-            ).filter(account_entities.c.entity_id == filters.entity_id)
+            ).filter(
+                or_(
+                    Transaction.entity_id == filters.entity_id,
+                    and_(
+                        Transaction.entity_id.is_(None),
+                        account_entities.c.entity_id == filters.entity_id
+                    )
+                )
+            )
 
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
@@ -319,13 +328,21 @@ class TransactionService:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
             from ..database.models import account_entities
-            query = query.join(
+            query = query.outerjoin(
                 Account,
                 Transaction.account_id == Account.account_id
-            ).join(
+            ).outerjoin(
                 account_entities,
                 Account.account_id == account_entities.c.account_id
-            ).filter(account_entities.c.entity_id == filters.entity_id)
+            ).filter(
+                or_(
+                    Transaction.entity_id == filters.entity_id,
+                    and_(
+                        Transaction.entity_id.is_(None),
+                        account_entities.c.entity_id == filters.entity_id
+                    )
+                )
+            )
         if filters.min_amount:
             conditions.append(Transaction.amount >= filters.min_amount)
         if filters.max_amount:
