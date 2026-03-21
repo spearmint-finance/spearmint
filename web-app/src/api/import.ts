@@ -30,6 +30,8 @@ export const importApi = {
       failed_rows: data.failedRows ?? data.failed_rows ?? 0,
       skipped_duplicates: data.skippedDuplicates ?? data.skipped_duplicates ?? 0,
       classified_rows: data.classifiedRows ?? data.classified_rows ?? 0,
+      accounts_created: data.accountsCreated ?? data.accounts_created ?? 0,
+      accounts_skipped: data.accountsSkipped ?? data.accounts_skipped ?? 0,
       errors: data.errors ?? [],
       warnings: data.warnings ?? [],
     };

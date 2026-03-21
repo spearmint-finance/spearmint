@@ -13,23 +13,25 @@ from sqlalchemy.orm import Session
 
 from ..database.models import (
     Transaction, Category,
-    Tag, TransactionTag, ImportHistory, ImportProfile, Account
+    Tag, TransactionTag, ImportHistory, ImportProfile, Account, AccountBalance
 )
 from ..utils.validators import DataValidator, DuplicateDetector, ValidationError
 
 
 class ImportResult:
     """Result of an import operation."""
-    
+
     def __init__(self):
         self.total_rows: int = 0
         self.successful_rows: int = 0
         self.failed_rows: int = 0
         self.classified_rows: int = 0
         self.skipped_duplicates: int = 0
+        self.accounts_created: int = 0
+        self.accounts_skipped: int = 0
         self.errors: List[Dict[str, Any]] = []
         self.warnings: List[str] = []
-    
+
     def add_error(self, row_number: int, field: str, message: str, value: Any = None):
         """Add an error to the result."""
         self.errors.append({
@@ -39,11 +41,11 @@ class ImportResult:
             'value': value
         })
         self.failed_rows += 1
-    
+
     def add_warning(self, message: str):
         """Add a warning to the result."""
         self.warnings.append(message)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary."""
         return {
@@ -52,6 +54,8 @@ class ImportResult:
             'failed_rows': self.failed_rows,
             'classified_rows': self.classified_rows,
             'skipped_duplicates': self.skipped_duplicates,
+            'accounts_created': self.accounts_created,
+            'accounts_skipped': self.accounts_skipped,
             'errors': self.errors,
             'warnings': self.warnings,
             'success_rate': (self.successful_rows / self.total_rows * 100) if self.total_rows > 0 else 0
@@ -60,7 +64,25 @@ class ImportResult:
 
 class ImportService:
     """Service for importing transaction data from Excel files."""
-    
+
+    # Mapping from Tiller/aggregator account types to Spearmint account types
+    TILLER_TYPE_MAP = {
+        'credit': 'credit_card',
+        'individual': 'brokerage',
+        'joint_tenants_with_rights_of_survivorship_jtwros': 'brokerage',
+        'uniform_transfer_to_minors_act_utma': 'brokerage',
+        'educational_savings_plan_529': 'investment',
+        'ira': 'ira',
+        'roth_ira': 'ira',
+        '401k': '401k',
+        '403b': '401k',
+        'checking': 'checking',
+        'savings': 'savings',
+        'money_market': 'savings',
+        'cd': 'savings',
+        'brokerage': 'brokerage',
+    }
+
     # Expected column mappings (case-insensitive)
     COLUMN_MAPPINGS = {
         'date': ['date', 'transaction date', 'trans_date', 'transaction_date', 'post date', 'posting date', 'posted date', 'date added', 'month'],
@@ -123,6 +145,9 @@ class ImportService:
                 if not profile:
                     result.add_warning(f"Import profile {profile_id} not found, using default mappings")
 
+            # Process Accounts sheet if present (auto-create accounts)
+            account_name_to_id = self._process_accounts_sheet(file_path, result)
+
             # Read Excel file (with optional skip_rows from profile)
             skip_rows = profile.skip_rows if profile else 0
             df = self._read_excel_file(file_path, skip_rows=skip_rows)
@@ -130,7 +155,7 @@ class ImportService:
 
             # Normalize column names (use profile mappings if available)
             df = self._normalize_columns(df, profile=profile)
-            
+
             # Handle import mode
             if mode == 'full':
                 self._clear_existing_data()
@@ -182,6 +207,22 @@ class ImportService:
 
                     # Extract tags
                     tags = transaction_data.pop('tags', [])
+
+                    # Link transaction to account if we have a mapping
+                    # Try the raw 'Account' column first (exact account name),
+                    # then fall back to the mapped 'source' field
+                    if account_name_to_id:
+                        acct_name = None
+                        raw_acct = row.get('Account') if 'Account' in df.columns else None
+                        if raw_acct is None:
+                            raw_acct = row.get('account') if 'account' in df.columns else None
+                        if raw_acct and not pd.isna(raw_acct):
+                            acct_name = str(raw_acct).strip()
+                        elif transaction_data.get('source'):
+                            acct_name = transaction_data['source']
+
+                        if acct_name and acct_name in account_name_to_id:
+                            transaction_data['account_id'] = account_name_to_id[acct_name]
 
                     # Create transaction
                     transaction = Transaction(**transaction_data)
@@ -468,6 +509,178 @@ class ImportService:
         )
         self.db.add(import_record)
         self.db.commit()
+
+    # ==================== Account Import Methods ====================
+
+    def _process_accounts_sheet(
+        self,
+        file_path: str,
+        result: ImportResult
+    ) -> Dict[str, int]:
+        """Process the Accounts sheet from a Tiller-style XLSX and create Account records.
+
+        Args:
+            file_path: Path to Excel file
+            result: ImportResult to update with account stats
+
+        Returns:
+            Dict mapping account name to account_id for transaction linking
+        """
+        account_name_to_id: Dict[str, int] = {}
+
+        try:
+            with pd.ExcelFile(file_path) as xl_file:
+                sheet_names_lower = {s.lower().strip(): s for s in xl_file.sheet_names}
+
+                if 'accounts' not in sheet_names_lower:
+                    logger.debug("No 'Accounts' sheet found, skipping account creation")
+                    return account_name_to_id
+
+                accounts_sheet = sheet_names_lower['accounts']
+                df = pd.read_excel(xl_file, sheet_name=accounts_sheet)
+
+        except Exception as e:
+            logger.warning("Failed to read Accounts sheet: %s", e)
+            result.add_warning(f"Could not read Accounts sheet: {e}")
+            return account_name_to_id
+
+        # Normalize column names for lookup
+        col_map = {col.lower().strip(): col for col in df.columns}
+        logger.debug("Accounts sheet columns (normalized): %s", list(col_map.keys()))
+
+        # Identify key columns — Tiller uses 'Account.1' for the clean name
+        # (the first 'Account' column is for overrides)
+        acct_name_col = col_map.get('account.1') or col_map.get('account')
+        acct_num_col = col_map.get('account #') or col_map.get('account_number')
+        balance_col = col_map.get('last balance') or col_map.get('balance')
+        institution_col = col_map.get('institution')
+        type_col = col_map.get('type')
+        class_col = col_map.get('class')
+        acct_id_ext_col = col_map.get('account id') or col_map.get('account_id')
+
+        if not acct_name_col:
+            logger.debug("No account name column found in Accounts sheet")
+            result.add_warning("Accounts sheet missing account name column")
+            return account_name_to_id
+
+        # Build a set of existing account names + last4 for duplicate detection
+        existing_accounts = self.db.query(Account).all()
+        existing_keys = set()
+        for acct in existing_accounts:
+            key = (acct.account_name, acct.account_number_last4 or '')
+            existing_keys.add(key)
+            account_name_to_id[acct.account_name] = acct.account_id
+
+        for idx, row in df.iterrows():
+            try:
+                name = row.get(acct_name_col)
+                if pd.isna(name) or not str(name).strip():
+                    continue
+
+                name = str(name).strip()
+                last4 = str(row.get(acct_num_col, '')).strip() if acct_num_col and not pd.isna(row.get(acct_num_col)) else ''
+                # Clean last4 — keep only last 4 chars if longer
+                if len(last4) > 4:
+                    last4 = last4[-4:]
+
+                # Skip if already exists
+                if (name, last4) in existing_keys:
+                    account_name_to_id.setdefault(name, None)
+                    # Find the existing account_id
+                    for acct in existing_accounts:
+                        if acct.account_name == name and (acct.account_number_last4 or '') == last4:
+                            account_name_to_id[name] = acct.account_id
+                            break
+                    result.accounts_skipped += 1
+                    continue
+
+                # Determine account type
+                tiller_type = str(row.get(type_col, '')).strip().lower() if type_col and not pd.isna(row.get(type_col)) else ''
+                acct_class = str(row.get(class_col, '')).strip().lower() if class_col and not pd.isna(row.get(class_col)) else ''
+                account_type = self._map_tiller_type(tiller_type, acct_class)
+
+                # Parse balance
+                balance = Decimal('0')
+                if balance_col and not pd.isna(row.get(balance_col)):
+                    try:
+                        balance = Decimal(str(row.get(balance_col)))
+                    except Exception:
+                        pass
+
+                # Institution
+                institution = None
+                if institution_col and not pd.isna(row.get(institution_col)):
+                    institution = str(row.get(institution_col)).strip()
+
+                # Account subtype (preserve original Tiller type)
+                subtype = str(row.get(type_col, '')).strip() if type_col and not pd.isna(row.get(type_col)) else None
+
+                # Determine capabilities
+                has_cash = account_type in ['checking', 'savings', 'brokerage']
+                has_investments = account_type in ['brokerage', 'investment', '401k', 'ira']
+
+                account = Account(
+                    account_name=name,
+                    account_type=account_type,
+                    account_subtype=subtype,
+                    institution_name=institution,
+                    account_number_last4=last4 if last4 else None,
+                    currency='USD',
+                    has_cash_component=has_cash,
+                    has_investment_component=has_investments,
+                    opening_balance=balance,
+                    opening_balance_date=datetime.now().date(),
+                )
+                self.db.add(account)
+                self.db.flush()
+
+                account_name_to_id[name] = account.account_id
+                existing_keys.add((name, last4))
+                result.accounts_created += 1
+
+                # Create balance snapshot
+                if balance != 0:
+                    bal_snapshot = AccountBalance(
+                        account_id=account.account_id,
+                        balance_date=datetime.now().date(),
+                        total_balance=balance,
+                        balance_type='statement',
+                    )
+                    self.db.add(bal_snapshot)
+
+                logger.debug("Created account: %s (%s) at %s — balance %s",
+                             name, account_type, institution, balance)
+
+            except Exception as e:
+                logger.warning("Failed to create account from row %d: %s", idx, e)
+                result.add_warning(f"Account row {idx}: {e}")
+
+        self.db.flush()
+        return account_name_to_id
+
+    def _map_tiller_type(self, tiller_type: str, acct_class: str) -> str:
+        """Map a Tiller account type string to a Spearmint account type.
+
+        Args:
+            tiller_type: Tiller type (e.g. 'CREDIT', 'INDIVIDUAL')
+            acct_class: Tiller class ('asset' or 'liability')
+
+        Returns:
+            Spearmint account type string
+        """
+        # Normalize
+        tiller_type = tiller_type.lower().replace(' ', '_')
+
+        if tiller_type in self.TILLER_TYPE_MAP:
+            return self.TILLER_TYPE_MAP[tiller_type]
+
+        # Fallback by class
+        if acct_class == 'liability':
+            return 'credit_card'
+        if acct_class == 'asset':
+            return 'savings'
+
+        return 'other'
 
     # ==================== Import Profile Methods ====================
 
