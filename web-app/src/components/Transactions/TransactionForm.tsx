@@ -70,7 +70,7 @@ function TransactionForm({
   // State for new category dialog
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<"Income" | "Expense" | "Both" | "Transfer">("Expense");
+  const [newCategoryType, setNewCategoryType] = useState<"Income" | "Expense" | "Transfer">("Expense");
 
   // Get today's date in local timezone (YYYY-MM-DD format)
   const getTodayDate = () => {
@@ -465,7 +465,7 @@ function TransactionForm({
               <FormLabel>Category Type</FormLabel>
               <RadioGroup
                 value={newCategoryType}
-                onChange={(e) => setNewCategoryType(e.target.value as "Income" | "Expense" | "Both" | "Transfer")}
+                onChange={(e) => setNewCategoryType(e.target.value as "Income" | "Expense" | "Transfer")}
               >
                 <FormControlLabel
                   value="Income"
@@ -476,11 +476,6 @@ function TransactionForm({
                   value="Expense"
                   control={<Radio />}
                   label="Expense"
-                />
-                <FormControlLabel
-                  value="Both"
-                  control={<Radio />}
-                  label="Both (can be used for either)"
                 />
                 <FormControlLabel
                   value="Transfer"
