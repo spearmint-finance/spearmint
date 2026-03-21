@@ -15,6 +15,7 @@ import {
   ShowChart as ShowChartIcon,
 } from '@mui/icons-material';
 import { NetWorth } from '../../types/account';
+import { formatCurrency } from '../../utils/formatters';
 
 interface NetWorthCardProps {
   netWorth: NetWorth;
@@ -22,14 +23,7 @@ interface NetWorthCardProps {
 }
 
 const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => {
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCompact = (amount: number) => formatCurrency(amount, "USD", 0);
 
   const assets = Number(netWorth.assets) || 0;
   const liabilities = Number(netWorth.liabilities) || 0;
@@ -68,7 +62,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => 
                   Net Worth
                 </Typography>
                 <Typography variant="h5" color="primary">
-                  {formatCurrency(netWorthValue)}
+                  {formatCompact(netWorthValue)}
                 </Typography>
                 {asOfDate && (
                   <Typography variant="caption" color="text.secondary">
@@ -90,7 +84,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => 
                   Total Assets
                 </Typography>
                 <Typography variant="h6" color="success.main">
-                  {formatCurrency(assets)}
+                  {formatCompact(assets)}
                 </Typography>
               </Box>
             </Box>
@@ -107,7 +101,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => 
                   Total Liabilities
                 </Typography>
                 <Typography variant="h6" color="error.main">
-                  {formatCurrency(liabilities)}
+                  {formatCompact(liabilities)}
                 </Typography>
               </Box>
             </Box>
@@ -122,13 +116,13 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => 
               <Box display="flex" alignItems="center" mb={1}>
                 <WalletIcon sx={{ mr: 1, fontSize: 16 }} />
                 <Typography variant="caption">
-                  Liquid: {formatCurrency(liquidAssets)} ({liquidPercentage.toFixed(1)}%)
+                  Liquid: {formatCompact(liquidAssets)} ({liquidPercentage.toFixed(1)}%)
                 </Typography>
               </Box>
               <Box display="flex" alignItems="center">
                 <ShowChartIcon sx={{ mr: 1, fontSize: 16 }} />
                 <Typography variant="caption">
-                  Invested: {formatCurrency(investments)} ({investmentPercentage.toFixed(1)}%)
+                  Invested: {formatCompact(investments)} ({investmentPercentage.toFixed(1)}%)
                 </Typography>
               </Box>
             </Box>
@@ -176,7 +170,7 @@ const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => 
                     {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
                   </Typography>
                   <Typography variant="body2">
-                    {formatCurrency(Number(amount) || 0)}
+                    {formatCompact(Number(amount) || 0)}
                   </Typography>
                 </Grid>
               ))}

@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Box, Typography } from '@mui/material';
 import { Balance } from '../../types/account';
+import { formatCurrency } from '../../utils/formatters';
 
 interface BalanceHistoryChartProps {
   balances: Balance[];
@@ -27,14 +28,7 @@ const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ balances }) =
       investments: balance.investment_value || 0,
     }));
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const formatCompact = (value: number) => formatCurrency(value, "USD", 0);
 
   const hasCashAndInvestments = balances.some(
     (b) => b.cash_balance !== null && b.investment_value !== null
@@ -49,8 +43,8 @@ const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ balances }) =
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
-          <YAxis tickFormatter={formatCurrency} />
-          <Tooltip formatter={(value: number) => formatCurrency(value)} />
+          <YAxis tickFormatter={formatCompact} />
+          <Tooltip formatter={(value: number) => formatCompact(value)} />
           <Legend />
 
           <Line
