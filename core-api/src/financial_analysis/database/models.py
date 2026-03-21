@@ -110,7 +110,7 @@ class Transaction(Base):
 
     # Constraints and Indexes
     __table_args__ = (
-        CheckConstraint("transaction_type IN ('Income', 'Expense', 'Transfer')", name='check_transaction_type'),
+        CheckConstraint("transaction_type IN ('Income', 'Expense')", name='check_transaction_type'),
         Index('idx_transaction_date', 'transaction_date'),
         Index('idx_transaction_type', 'transaction_type'),
         Index('idx_category_id', 'category_id'),
@@ -321,37 +321,39 @@ class Person(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utc_now)
 
-    # Relationships
-    splits = relationship("TransactionSplit", back_populates="person")
-
     def __repr__(self):
         return f"<Person(id={self.person_id}, name='{self.name}')>"
 
 
 class TransactionSplit(Base):
     """
-    Transaction splits for shared costs and per-person attribution.
+    Line-item splits of a transaction. Each split has its own amount,
+    category, entity, and description. All split amounts must sum to
+    the parent transaction amount.
     """
     __tablename__ = "transaction_splits"
 
     split_id = Column(Integer, primary_key=True, autoincrement=True)
     transaction_id = Column(Integer, ForeignKey('transactions.transaction_id', ondelete='CASCADE'), nullable=False)
-    person_id = Column(Integer, ForeignKey('persons.person_id'), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
+    amount = Column(Numeric(15, 2), nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=False)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+    description = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     # Relationships
     transaction = relationship("Transaction", back_populates="splits")
-    person = relationship("Person", back_populates="splits")
+    category = relationship("Category")
+    entity = relationship("Entity")
 
     __table_args__ = (
-        UniqueConstraint('transaction_id', 'person_id', name='uq_transaction_person_split'),
         Index('idx_split_transaction', 'transaction_id'),
-        Index('idx_split_person', 'person_id'),
     )
 
     def __repr__(self):
-        return f"<TransactionSplit(id={self.split_id}, tx_id={self.transaction_id}, person_id={self.person_id}, amount={self.amount})>"
+        return f"<TransactionSplit(id={self.split_id}, tx_id={self.transaction_id}, amount={self.amount})>"
 
 
 class Scenario(Base):
