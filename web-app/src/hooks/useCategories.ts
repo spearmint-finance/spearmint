@@ -31,6 +31,7 @@ export function useCategories(params?: {
   category_type?: "Income" | "Expense" | "Both" | "Transfer";
   parent_category_id?: number | null;
   search_text?: string;
+  entity_id?: number;
 }) {
   return useQuery({
     queryKey: categoryKeys.list(params),
