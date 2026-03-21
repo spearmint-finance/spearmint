@@ -50,8 +50,8 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { entities, selectedEntityId } = useEntityContext();
-  const [entityId, setEntityId] = useState<string>(
-    selectedEntityId != null ? String(selectedEntityId) : ""
+  const [entityIds, setEntityIds] = useState<number[]>(
+    selectedEntityId != null ? [selectedEntityId] : []
   );
 
   const createMutation = useMutation({
@@ -75,7 +75,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
       opening_balance_date: new Date().toISOString().split('T')[0],
       notes: '',
     });
-    setEntityId(selectedEntityId != null ? String(selectedEntityId) : "");
+    setEntityIds(selectedEntityId != null ? [selectedEntityId] : []);
     setErrors({});
     onClose();
   };
@@ -99,7 +99,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
     if (validateForm()) {
       const dataWithEntity = {
         ...formData,
-        entity_id: entityId ? Number(entityId) : undefined,
+        entity_ids: entityIds.length > 0 ? entityIds : undefined,
       };
       createMutation.mutate(dataWithEntity);
     }
@@ -261,15 +261,21 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
           {entities.length > 0 && (
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Entity</InputLabel>
+                <InputLabel>Entities</InputLabel>
                 <Select
-                  value={entityId}
-                  label="Entity"
-                  onChange={(e) => setEntityId(e.target.value)}
+                  multiple
+                  value={entityIds}
+                  label="Entities"
+                  onChange={(e) => setEntityIds(e.target.value as number[])}
+                  renderValue={(selected) =>
+                    (selected as number[])
+                      .map((id) => entities.find((ent) => ent.entity_id === id)?.entity_name)
+                      .filter(Boolean)
+                      .join(', ')
+                  }
                 >
-                  <MenuItem value="">No entity</MenuItem>
                   {entities.map((entity) => (
-                    <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                    <MenuItem key={entity.entity_id} value={entity.entity_id}>
                       {entity.entity_name} ({ENTITY_TYPE_LABELS[entity.entity_type] || entity.entity_type})
                     </MenuItem>
                   ))}

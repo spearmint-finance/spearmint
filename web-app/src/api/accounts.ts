@@ -72,7 +72,7 @@ const transformAccount = (backendAccount: any): Account => {
     has_investment_component: hasInvestmentComponent ?? false,
     opening_balance: parseFloat(openingBalance) || 0,
     opening_balance_date: openingBalanceDate,
-    entity_id: backendAccount.entityId ?? backendAccount.entity_id,
+    entity_ids: backendAccount.entityIds ?? backendAccount.entity_ids ?? [],
     notes: backendAccount.notes,
     created_at: createdAt,
     updated_at: updatedAt,
@@ -125,7 +125,7 @@ export const createAccount = async (
     currency: account.currency || undefined,
     openingBalance: account.opening_balance,
     openingBalanceDate: account.opening_balance_date,
-    entityId: account.entity_id,
+    entityIds: account.entity_ids,
     notes: account.notes || undefined,
   };
   const response = await accountsApi.createAccount(sdkPayload as any);
