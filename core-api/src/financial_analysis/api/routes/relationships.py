@@ -74,7 +74,6 @@ def detect_transfer_pairs(
                     description=tx1.description,
                     source=tx1.source,
                     category_name=tx1.category.category_name if tx1.category else None,
-                    classification_name=tx1.classification.classification_name if tx1.classification else None
                 ),
                 transaction_2=TransactionSummary(
                     transaction_id=tx2.transaction_id,
@@ -84,7 +83,6 @@ def detect_transfer_pairs(
                     description=tx2.description,
                     source=tx2.source,
                     category_name=tx2.category.category_name if tx2.category else None,
-                    classification_name=tx2.classification.classification_name if tx2.classification else None
                 ),
                 confidence=pair['confidence'],
                 amount_difference=pair['amount_difference'],
@@ -144,7 +142,6 @@ def detect_credit_card_pairs(
                     description=payment.description,
                     source=payment.source,
                     category_name=payment.category.category_name if payment.category else None,
-                    classification_name=payment.classification.classification_name if payment.classification else None
                 ),
                 receipt=TransactionSummary(
                     transaction_id=receipt.transaction_id,
@@ -154,7 +151,6 @@ def detect_credit_card_pairs(
                     description=receipt.description,
                     source=receipt.source,
                     category_name=receipt.category.category_name if receipt.category else None,
-                    classification_name=receipt.classification.classification_name if receipt.classification else None
                 ),
                 confidence=pair['confidence'],
                 date_difference_days=pair['date_difference_days'],
@@ -213,7 +209,6 @@ def detect_reimbursement_pairs(
                     description=expense.description,
                     source=expense.source,
                     category_name=expense.category.category_name if expense.category else None,
-                    classification_name=expense.classification.classification_name if expense.classification else None
                 ),
                 reimbursement=TransactionSummary(
                     transaction_id=reimbursement.transaction_id,
@@ -223,7 +218,6 @@ def detect_reimbursement_pairs(
                     description=reimbursement.description,
                     source=reimbursement.source,
                     category_name=reimbursement.category.category_name if reimbursement.category else None,
-                    classification_name=reimbursement.classification.classification_name if reimbursement.classification else None
                 ),
                 confidence=pair['confidence'],
                 date_difference_days=pair['date_difference_days'],
@@ -286,7 +280,6 @@ def detect_dividend_reinvestment_pairs(
                     description=dividend.description,
                     source=dividend.source,
                     category_name=dividend.category.category_name if dividend.category else None,
-                    classification_name=dividend.classification.classification_name if dividend.classification else None
                 ),
                 reinvestment=TransactionSummary(
                     transaction_id=reinvestment.transaction_id,
@@ -296,7 +289,6 @@ def detect_dividend_reinvestment_pairs(
                     description=reinvestment.description,
                     source=reinvestment.source,
                     category_name=reinvestment.category.category_name if reinvestment.category else None,
-                    classification_name=reinvestment.classification.classification_name if reinvestment.classification else None
                 ),
                 confidence=pair['confidence'],
                 amount_difference=pair['amount_difference'],
@@ -354,7 +346,6 @@ def detect_all_relationships(
                     description=tx1.description,
                     source=tx1.source,
                     category_name=tx1.category.category_name if tx1.category else None,
-                    classification_name=tx1.classification.classification_name if tx1.classification else None
                 ),
                 transaction_2=TransactionSummary(
                     transaction_id=tx2.transaction_id,
@@ -364,7 +355,6 @@ def detect_all_relationships(
                     description=tx2.description,
                     source=tx2.source,
                     category_name=tx2.category.category_name if tx2.category else None,
-                    classification_name=tx2.classification.classification_name if tx2.classification else None
                 ),
                 confidence=pair['confidence'],
                 amount_difference=pair['amount_difference'],
@@ -386,7 +376,6 @@ def detect_all_relationships(
                     description=payment.description,
                     source=payment.source,
                     category_name=payment.category.category_name if payment.category else None,
-                    classification_name=payment.classification.classification_name if payment.classification else None
                 ),
                 receipt=TransactionSummary(
                     transaction_id=receipt.transaction_id,
@@ -396,7 +385,6 @@ def detect_all_relationships(
                     description=receipt.description,
                     source=receipt.source,
                     category_name=receipt.category.category_name if receipt.category else None,
-                    classification_name=receipt.classification.classification_name if receipt.classification else None
                 ),
                 confidence=pair['confidence'],
                 date_difference_days=pair['date_difference_days'],
@@ -417,7 +405,6 @@ def detect_all_relationships(
                     description=expense.description,
                     source=expense.source,
                     category_name=expense.category.category_name if expense.category else None,
-                    classification_name=expense.classification.classification_name if expense.classification else None
                 ),
                 reimbursement=TransactionSummary(
                     transaction_id=reimbursement.transaction_id,
@@ -427,7 +414,6 @@ def detect_all_relationships(
                     description=reimbursement.description,
                     source=reimbursement.source,
                     category_name=reimbursement.category.category_name if reimbursement.category else None,
-                    classification_name=reimbursement.classification.classification_name if reimbursement.classification else None
                 ),
                 confidence=pair['confidence'],
                 date_difference_days=pair['date_difference_days'],
@@ -448,7 +434,6 @@ def detect_all_relationships(
                     description=dividend.description,
                     source=dividend.source,
                     category_name=dividend.category.category_name if dividend.category else None,
-                    classification_name=dividend.classification.classification_name if dividend.classification else None
                 ),
                 reinvestment=TransactionSummary(
                     transaction_id=reinvestment.transaction_id,
@@ -458,7 +443,6 @@ def detect_all_relationships(
                     description=reinvestment.description,
                     source=reinvestment.source,
                     category_name=reinvestment.category.category_name if reinvestment.category else None,
-                    classification_name=reinvestment.classification.classification_name if reinvestment.classification else None
                 ),
                 confidence=pair['confidence'],
                 amount_difference=pair['amount_difference'],
@@ -571,7 +555,6 @@ def get_related_transactions(
                     description=tx.description,
                     source=tx.source,
                     category_name=tx.category.category_name if tx.category else None,
-                    classification_name=tx.classification.classification_name if tx.classification else None
                 ),
                 relationship_type=rel['relationship_type'],
                 relationship_description=rel['relationship_description']

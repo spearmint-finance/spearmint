@@ -16,7 +16,7 @@ from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sqlalchemy.orm import Session
 
-from ..database.models import Transaction, TransactionClassification
+from ..database.models import Transaction
 from .analysis_service import AnalysisService, AnalysisMode, DateRange
 
 

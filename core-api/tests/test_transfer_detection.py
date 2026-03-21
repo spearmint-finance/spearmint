@@ -10,8 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
 from financial_analysis.services.import_service import ImportService
-from financial_analysis.database.models import Category, Transaction, TransactionClassification
-from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.database.models import Category, Transaction
 
 
 @pytest.fixture
@@ -21,9 +20,6 @@ def db_session():
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
-
-    # Seed classifications
-    seed_classifications(session)
 
     yield session
 

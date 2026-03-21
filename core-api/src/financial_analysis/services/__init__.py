@@ -3,7 +3,6 @@
 from .import_service import ImportService, ImportResult
 from .transaction_service import TransactionService, TransactionFilter
 from .category_service import CategoryService
-from .classification_service import ClassificationService
 from .relationship_service import RelationshipService
 
 __all__ = [
@@ -12,7 +11,6 @@ __all__ = [
     'TransactionService',
     'TransactionFilter',
     'CategoryService',
-    'ClassificationService',
     'RelationshipService',
 ]
 

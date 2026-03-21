@@ -18,68 +18,6 @@ class FixResult(BaseModel):
     rows_affected: int
 
 @router.post(
-    "/fix/classifications",
-    response_model=FixResult,
-    summary="Fix System Classifications",
-    description="""
-    Repair incorrect system classifications.
-    - Fixes 'Insurance Reimbursement' cash flow settings
-    - Removes duplicate/legacy classifications ('STANDARD', 'REIMB_RECEIVED')
-    """
-)
-def fix_classifications(db: Session = Depends(get_db)):
-    """Run the classification fix logic."""
-    total_affected = 0
-    details = {}
-
-    try:
-        # 1. Fix Insurance Reimbursement
-        result = db.execute(text("""
-            UPDATE transaction_classifications
-            SET exclude_from_cashflow_calc = 0
-            WHERE classification_code = 'INSURANCE_REIMBURSEMENT'
-        """))
-        details['insurance_reimbursement_updated'] = result.rowcount
-        total_affected += result.rowcount
-
-        # 2. Delete duplicate "Standard Transaction"
-        result = db.execute(text("""
-            DELETE FROM transaction_classifications
-            WHERE classification_code = 'STANDARD'
-        """))
-        details['legacy_standard_deleted'] = result.rowcount
-        total_affected += result.rowcount
-
-        # 3. Delete old "Reimbursement Received"
-        result = db.execute(text("""
-            DELETE FROM transaction_classifications
-            WHERE classification_code = 'REIMB_RECEIVED'
-        """))
-        details['legacy_reimb_received_deleted'] = result.rowcount
-        total_affected += result.rowcount
-
-        # 4. Delete old "Reimbursement Paid"
-        result = db.execute(text("""
-            DELETE FROM transaction_classifications
-            WHERE classification_code = 'REIMB_PAID'
-        """))
-        details['legacy_reimb_paid_deleted'] = result.rowcount
-        total_affected += result.rowcount
-
-        db.commit()
-
-        return FixResult(
-            task_name="fix_classifications",
-            status="success",
-            details=details,
-            rows_affected=total_affected
-        )
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post(
     "/fix/transfers",
     response_model=FixResult,
     summary="Fix Transfer Links",

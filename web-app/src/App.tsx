@@ -9,7 +9,6 @@ import AnalysisPage from "./components/Analysis/AnalysisPage";
 import IncomeDeepDivePage from "./components/Analysis/Income/IncomeDeepDivePage";
 import ExpenseDeepDivePage from "./components/Analysis/Expenses/ExpenseDeepDivePage";
 import ProjectionsPage from "./components/Projections/ProjectionsPage";
-import ClassificationsPage from "./components/Classifications/ClassificationsPage";
 import ImportPage from "./components/Import/ImportPage";
 import SettingsPage from "./components/Settings/SettingsPage";
 import ScenarioBuilder from "./components/Scenarios/ScenarioBuilder";
@@ -32,7 +31,6 @@ function App() {
           <Route path="scenarios" element={<ScenarioBuilder />} />
           <Route path="projections" element={<ProjectionsPage />} />
           <Route path="reports" element={<ReportsPage />} />
-          <Route path="classifications" element={<ClassificationsPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

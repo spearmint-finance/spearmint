@@ -22,7 +22,6 @@ import {
   Badge,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
-import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 
 import {
   DataGrid,
@@ -30,25 +29,20 @@ import {
   GridPaginationModel,
   GridColumnVisibilityModel,
   GridRowModel,
-  GridRowModes,
   GridRowModesModel,
   GridEventListener,
-  GridRowEditStopReasons,
-  GridFilterModel,
   useGridApiRef,
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
-import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import DownloadIcon from "@mui/icons-material/Download";
 import {
   useTransactions,
   useUpdateTransaction,
 } from "../../hooks/useTransactions";
 import { useCategories } from "../../hooks/useCategories";
-import { useClassifications } from "../../hooks/useClassifications";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionDetail from "./TransactionDetail";
 import TransactionForm from "./TransactionForm";
@@ -98,7 +92,6 @@ function TransactionList() {
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
   const { data: categoriesData } = useCategories();
-  const { data: classificationsData } = useClassifications();
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
@@ -130,17 +123,12 @@ function TransactionList() {
     end_date: "",
     transaction_type: "",
     category_id: "",
-    classification_id: "",
     account_id: initialAccountId,
     include_in_analysis: "",
     is_transfer: "",
     include_capital_expenses: true,
     include_transfers: true,
   });
-
-  // State for dividend reinvestment filter
-  const [showDividendReinvestments, setShowDividendReinvestments] =
-    useState(true);
 
   // Fetch transactions with filters
   const { data, isLoading, error, refetch } = useTransactions({
@@ -149,9 +137,6 @@ function TransactionList() {
     end_date: filters.end_date || undefined,
     transaction_type: filters.transaction_type || undefined,
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
-    classification_id: filters.classification_id
-      ? Number(filters.classification_id)
-      : undefined,
     account_id: filters.account_id ? Number(filters.account_id) : undefined,
     include_in_analysis: filters.include_in_analysis
       ? filters.include_in_analysis === "true"
@@ -287,9 +272,6 @@ function TransactionList() {
       filterable: false,
       renderCell: (params) => {
         const hasRelationship = params.row.related_transaction_id;
-        const isDividendReinvestment =
-          params.row.classification_name === "Dividend Reinvestment" ||
-          params.row.classification_name?.includes("Investment Distribution");
 
         return (
           <Box
@@ -300,8 +282,8 @@ function TransactionList() {
               width: "100%",
             }}
           >
-            {hasRelationship && isDividendReinvestment && (
-              <Tooltip title="Part of dividend reinvestment pair - Click row to view related transaction">
+            {hasRelationship && (
+              <Tooltip title="Part of a linked transaction pair - Click row to view related transaction">
                 <LinkIcon fontSize="small" color="primary" />
               </Tooltip>
             )}
@@ -395,117 +377,6 @@ function TransactionList() {
       },
     },
     {
-      field: "classification_name",
-      headerName: "Classification",
-      width: 180,
-      filterable: false,
-      renderCell: (params) => {
-        const classificationName = params.value;
-
-        const onReapply = async (e: any) => {
-          e.stopPropagation();
-          try {
-            await updateTransaction.mutateAsync({
-              id: params.row.id,
-              data: { reapply_rules: true },
-            });
-            enqueueSnackbar("Classification rules re-applied", {
-              variant: "success",
-            });
-          } catch (err) {
-            enqueueSnackbar("Failed to re-apply rules", { variant: "error" });
-          }
-        };
-
-        if (!classificationName) {
-          return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Tooltip title="No classification rule has been applied to this transaction">
-                <Chip
-                  label="Unclassified"
-                  size="small"
-                  variant="outlined"
-                  color="default"
-                />
-              </Tooltip>
-              <Tooltip title="Reapply rules">
-                <IconButton
-                  size="small"
-                  aria-label="Reapply rules"
-                  onClick={onReapply}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  sx={{ p: 0.5 }}
-                >
-                  <AutorenewRoundedIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          );
-        }
-
-        // Color code and tooltips based on classification type
-        let color: "default" | "primary" | "secondary" | "info" | "warning" =
-          "primary";
-        let tooltip = "Classification applied via rules";
-        const hasRelationship = params.row.related_transaction_id;
-
-        if (classificationName.includes("Dividend Reinvestment")) {
-          color = "secondary";
-          tooltip = hasRelationship
-            ? "Dividend reinvestment - linked to dividend income"
-            : "Dividend reinvestment - excluded from expense calculations";
-        } else if (classificationName.includes("Investment Distribution")) {
-          color = "success";
-          tooltip = hasRelationship
-            ? "Dividend income - linked to reinvestment"
-            : "Dividend or investment distribution income";
-        } else if (classificationName.includes("Transfer")) {
-          color = "info";
-          tooltip = "Transfer between accounts - may be excluded from analysis";
-        } else if (
-          classificationName.includes("Refund") ||
-          classificationName.includes("Reimbursement")
-        ) {
-          color = "warning";
-          tooltip =
-            "Refund or reimbursement - handled specially in calculations";
-        } else if (classificationName.includes("Regular")) {
-          color = "default";
-          tooltip = "Regular transaction - included in standard analysis";
-        } else if (classificationName.includes("Loan")) {
-          color = "secondary";
-          tooltip = "Loan-related transaction";
-        } else if (classificationName.includes("Credit Card")) {
-          color = "info";
-          tooltip = "Credit card transaction";
-        }
-
-        return (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Tooltip title={tooltip}>
-              <Chip
-                label={classificationName}
-                size="small"
-                color={color}
-                variant="filled"
-              />
-            </Tooltip>
-            <Tooltip title="Reapply rules">
-              <IconButton
-                size="small"
-                aria-label="Reapply rules"
-                onClick={onReapply}
-                onMouseDown={(e) => e.stopPropagation()}
-                sx={{ p: 0.5 }}
-              >
-                <AutorenewRoundedIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        );
-      },
-    },
-    {
       field: "transaction_type",
       headerName: "Type",
       width: 120,
@@ -593,23 +464,7 @@ function TransactionList() {
     }
   };
 
-  // Filter transactions based on dividend reinvestment visibility
-  const filteredTransactions = ((data as any)?.transactions || []).filter(
-    (transaction: Transaction) => {
-      if (!showDividendReinvestments) {
-        const isDividendReinvestment =
-          transaction.classification_name === "Dividend Reinvestment" ||
-          transaction.classification_name?.includes("Investment Distribution");
-        const hasRelationship = transaction.related_transaction_id;
-
-        // Hide transactions that are part of dividend reinvestment pairs
-        if (isDividendReinvestment && hasRelationship) {
-          return false;
-        }
-      }
-      return true;
-    }
-  );
+  const filteredTransactions = (data as any)?.transactions || [];
 
   // Count active advanced filters (excludes search and default-on checkboxes)
   const activeFilterCount = [
@@ -617,7 +472,6 @@ function TransactionList() {
     filters.end_date,
     filters.transaction_type,
     filters.category_id,
-    filters.classification_id,
     filters.account_id,
     filters.include_in_analysis,
     filters.is_transfer,
@@ -636,9 +490,6 @@ function TransactionList() {
         transaction_type: filters.transaction_type || undefined,
         category_id: filters.category_id
           ? Number(filters.category_id)
-          : undefined,
-        classification_id: filters.classification_id
-          ? Number(filters.classification_id)
           : undefined,
         account_id: filters.account_id
           ? Number(filters.account_id)
@@ -680,7 +531,6 @@ function TransactionList() {
         "Type",
         "Category",
         "Account",
-        "Classification",
         "Transfer",
         "Notes",
         "Tags",
@@ -692,7 +542,6 @@ function TransactionList() {
         tx.transaction_type,
         tx.category_name || "",
         getAccountName(tx.account_id),
-        tx.classification_name || "",
         tx.is_transfer ? "Yes" : "No",
         `"${(tx.notes || "").replace(/"/g, '""')}"`,
         `"${(tx.tags || []).join(", ")}"`,
@@ -828,7 +677,6 @@ function TransactionList() {
                       end_date: "",
                       transaction_type: "",
                       category_id: "",
-                      classification_id: "",
                       account_id: "",
                       include_in_analysis: "",
                       is_transfer: "",
@@ -987,17 +835,6 @@ function TransactionList() {
             const categoryName = params.row.category_name;
             const isUncategorized = !categoryName;
 
-            const hasRelationship = params.row.related_transaction_id;
-            const isDividendReinvestment =
-              params.row.classification_name === "Dividend Reinvestment" ||
-              params.row.classification_name?.includes(
-                "Investment Distribution"
-              );
-
-            if (hasRelationship && isDividendReinvestment) {
-              return "dividend-reinvestment-row";
-            }
-
             return isUncategorized ? "uncategorized-row" : "";
           }}
           sx={{
@@ -1025,12 +862,6 @@ function TransactionList() {
               backgroundColor: "warning.lighter",
               "&:hover": {
                 backgroundColor: "warning.light",
-              },
-            },
-            "& .dividend-reinvestment-row": {
-              backgroundColor: "info.lighter",
-              "&:hover": {
-                backgroundColor: "info.light",
               },
             },
             "& .MuiDataGrid-footerContainer": {
@@ -1217,31 +1048,6 @@ function TransactionList() {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth data-testid="filter-classification">
-                <InputLabel>Classification</InputLabel>
-                <Select
-                  value={filters.classification_id}
-                  label="Classification"
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      classification_id: e.target.value,
-                    })
-                  }
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {classificationsData?.classifications?.map((cls) => (
-                    <MenuItem
-                      key={cls.classification_id}
-                      value={cls.classification_id}
-                    >
-                      {cls.classification_name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
               <FormControl fullWidth data-testid="filter-account">
                 <InputLabel>Account</InputLabel>
                 <Select
@@ -1337,17 +1143,6 @@ function TransactionList() {
                     />
                   }
                   label="Include Transfers"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={showDividendReinvestments}
-                      onChange={(e) =>
-                        setShowDividendReinvestments(e.target.checked)
-                      }
-                    />
-                  }
-                  label="Show Dividend Reinvestment Pairs (highlighted in blue)"
                 />
               </Box>
             </Grid>

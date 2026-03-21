@@ -12,17 +12,14 @@ from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
 from financial_analysis.database.models import (
-    TransactionClassification,
     Category,
     Transaction,
     TransactionRelationship,
-    ClassificationRule,
     Tag,
     TransactionTag,
     ImportHistory,
     Budget
 )
-from financial_analysis.database.seed_data import seed_classifications
 
 
 @pytest.fixture
@@ -31,41 +28,13 @@ def db_session():
     # Use in-memory SQLite database for testing
     engine = create_engine("sqlite:///:memory:", echo=False)
     Base.metadata.create_all(engine)
-    
+
     Session = sessionmaker(bind=engine)
     session = Session()
-    
-    # Seed classifications for tests
-    seed_classifications(session)
-    
+
     yield session
-    
+
     session.close()
-
-
-def test_transaction_classification_creation(db_session):
-    """Test creating a transaction classification."""
-    classification = TransactionClassification(
-        classification_name="Test Classification",
-        classification_code="TEST",
-        description="Test description",
-        exclude_from_income_calc=False,
-        exclude_from_expense_calc=True,
-        exclude_from_cashflow_calc=False,
-        is_system_classification=False
-    )
-    
-    db_session.add(classification)
-    db_session.commit()
-    
-    # Verify
-    result = db_session.query(TransactionClassification).filter_by(
-        classification_code="TEST"
-    ).first()
-    
-    assert result is not None
-    assert result.classification_name == "Test Classification"
-    assert result.exclude_from_expense_calc is True
 
 
 def test_category_hierarchy(db_session):
@@ -78,7 +47,7 @@ def test_category_hierarchy(db_session):
     )
     db_session.add(parent)
     db_session.commit()
-    
+
     # Create child category
     child = Category(
         category_name="Child Category",
@@ -88,7 +57,7 @@ def test_category_hierarchy(db_session):
     )
     db_session.add(child)
     db_session.commit()
-    
+
     # Verify relationship
     assert child.parent_category.category_id == parent.category_id
     assert len(parent.subcategories) == 1
@@ -104,12 +73,7 @@ def test_transaction_creation(db_session):
     )
     db_session.add(category)
     db_session.commit()
-    
-    # Get classification
-    classification = db_session.query(TransactionClassification).filter_by(
-        classification_code="STANDARD"
-    ).first()
-    
+
     # Create transaction
     transaction = Transaction(
         transaction_date=date(2025, 1, 15),
@@ -119,19 +83,17 @@ def test_transaction_creation(db_session):
         source="Whole Foods",
         description="Weekly groceries",
         payment_method="Credit Card",
-        classification_id=classification.classification_id,
         include_in_analysis=True
     )
-    
+
     db_session.add(transaction)
     db_session.commit()
-    
+
     # Verify
     result = db_session.query(Transaction).first()
     assert result is not None
     assert result.amount == Decimal("125.50")
     assert result.category.category_name == "Groceries"
-    assert result.classification.classification_code == "STANDARD"
 
 
 def test_transaction_relationship(db_session):
@@ -140,12 +102,7 @@ def test_transaction_relationship(db_session):
     category = Category(category_name="Transfer", category_type="Transfer")
     db_session.add(category)
     db_session.commit()
-    
-    # Get transfer classification
-    classification = db_session.query(TransactionClassification).filter_by(
-        classification_code="TRANSFER"
-    ).first()
-    
+
     # Create two transactions
     tx1 = Transaction(
         transaction_date=date(2025, 1, 15),
@@ -153,7 +110,6 @@ def test_transaction_relationship(db_session):
         transaction_type="Expense",
         category_id=category.category_id,
         description="Transfer from Checking",
-        classification_id=classification.classification_id,
         transfer_account_from="Checking",
         transfer_account_to="Savings"
     )
@@ -164,14 +120,13 @@ def test_transaction_relationship(db_session):
         transaction_type="Income",
         category_id=category.category_id,
         description="Transfer to Savings",
-        classification_id=classification.classification_id,
         transfer_account_from="Checking",
         transfer_account_to="Savings"
     )
-    
+
     db_session.add_all([tx1, tx2])
     db_session.commit()
-    
+
     # Create relationship
     relationship = TransactionRelationship(
         transaction_id_1=tx1.transaction_id,
@@ -179,44 +134,14 @@ def test_transaction_relationship(db_session):
         relationship_type="transfer_pair",
         description="Internal transfer between accounts"
     )
-    
+
     db_session.add(relationship)
     db_session.commit()
-    
+
     # Verify
     result = db_session.query(TransactionRelationship).first()
     assert result is not None
     assert result.relationship_type == "transfer_pair"
-
-
-def test_classification_rule(db_session):
-    """Test creating a classification rule."""
-    # Get classification
-    classification = db_session.query(TransactionClassification).filter_by(
-        classification_code="CC_PAYMENT"
-    ).first()
-    
-    # Create rule
-    rule = ClassificationRule(
-        rule_name="Detect Credit Card Payments",
-        rule_priority=10,
-        classification_id=classification.classification_id,
-        description_pattern="%credit card%",
-        is_active=True,
-        set_include_in_analysis=False
-    )
-    
-    db_session.add(rule)
-    db_session.commit()
-    
-    # Verify
-    result = db_session.query(ClassificationRule).filter_by(
-        rule_name="Detect Credit Card Payments"
-    ).first()
-    
-    assert result is not None
-    assert result.rule_priority == 10
-    assert result.classification.classification_code == "CC_PAYMENT"
 
 
 def test_tags_and_transaction_tags(db_session):
@@ -225,7 +150,7 @@ def test_tags_and_transaction_tags(db_session):
     category = Category(category_name="Dining", category_type="Expense")
     db_session.add(category)
     db_session.commit()
-    
+
     transaction = Transaction(
         transaction_date=date(2025, 1, 15),
         amount=Decimal("45.00"),
@@ -235,18 +160,18 @@ def test_tags_and_transaction_tags(db_session):
     )
     db_session.add(transaction)
     db_session.commit()
-    
+
     # Create tags
     tag1 = Tag(tag_name="business")
     tag2 = Tag(tag_name="deductible")
     db_session.add_all([tag1, tag2])
     db_session.commit()
-    
+
     # Associate tags with transaction
     transaction.tags.append(tag1)
     transaction.tags.append(tag2)
     db_session.commit()
-    
+
     # Verify
     result = db_session.query(Transaction).first()
     assert len(result.tags) == 2
@@ -265,10 +190,10 @@ def test_import_history(db_session):
         classified_rows=90,
         import_mode="append"
     )
-    
+
     db_session.add(import_record)
     db_session.commit()
-    
+
     # Verify
     result = db_session.query(ImportHistory).first()
     assert result is not None
@@ -283,7 +208,7 @@ def test_budget(db_session):
     category = Category(category_name="Groceries", category_type="Expense")
     db_session.add(category)
     db_session.commit()
-    
+
     # Create budget
     budget = Budget(
         category_id=category.category_id,
@@ -292,42 +217,12 @@ def test_budget(db_session):
         start_date=date(2025, 1, 1),
         end_date=date(2025, 12, 31)
     )
-    
+
     db_session.add(budget)
     db_session.commit()
-    
+
     # Verify
     result = db_session.query(Budget).first()
     assert result is not None
     assert result.budget_amount == Decimal("500.00")
     assert result.period_type == "Monthly"
-
-
-def test_seeded_classifications(db_session):
-    """Test that all 12 default classifications were seeded."""
-    classifications = db_session.query(TransactionClassification).all()
-
-    # Should have 12 default classifications
-    assert len(classifications) == 12
-
-    # Verify specific classifications exist
-    codes = [c.classification_code for c in classifications]
-    expected_codes = [
-        "STANDARD", "TRANSFER", "CC_PAYMENT", "CC_RECEIPT",
-        "REIMB_PAID", "REIMB_RECEIVED", "REFUND",
-        "LOAN_DISB", "LOAN_PRINCIPAL", "LOAN_INTEREST",
-        "CAPITAL_EXPENSE", "REINVESTMENT"
-    ]
-    
-    for code in expected_codes:
-        assert code in codes
-    
-    # Verify exclusion flags for TRANSFER
-    transfer = db_session.query(TransactionClassification).filter_by(
-        classification_code="TRANSFER"
-    ).first()
-    
-    assert transfer.exclude_from_income_calc is True
-    assert transfer.exclude_from_expense_calc is True
-    assert transfer.exclude_from_cashflow_calc is True
-

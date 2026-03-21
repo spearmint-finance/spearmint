@@ -9,8 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
-from financial_analysis.database.models import Transaction, Category, TransactionClassification, TransactionRelationship, Tag, TransactionTag
-from financial_analysis.database.seed_data import seed_classifications
+from financial_analysis.database.models import Transaction, Category, TransactionRelationship, Tag, TransactionTag
 from financial_analysis.services.report_service import ReportService, AnalysisMode
 
 
@@ -22,9 +21,6 @@ def db_session():
     
     Session = sessionmaker(bind=engine)
     session = Session()
-    
-    # Seed classifications
-    seed_classifications(session)
     
     yield session
     
@@ -42,11 +38,6 @@ def sample_data(db_session):
     db_session.add_all([income_cat, expense_cat1, expense_cat2])
     db_session.commit()
     
-    # Get standard classification
-    standard_class = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'STANDARD'
-    ).first()
-    
     # Create transactions for last 30 days
     base_date = date.today() - timedelta(days=30)
     
@@ -59,7 +50,6 @@ def sample_data(db_session):
             category_id=income_cat.category_id,
             description=f'Salary payment {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         db_session.add(tx)
     
@@ -72,7 +62,6 @@ def sample_data(db_session):
             category_id=expense_cat1.category_id,
             description=f'Grocery shopping {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         db_session.add(tx)
     
@@ -85,7 +74,6 @@ def sample_data(db_session):
             category_id=expense_cat2.category_id,
             description=f'Utility bill {i}',
             source='Test Source',
-            classification_id=standard_class.classification_id
         )
         db_session.add(tx)
     
@@ -224,7 +212,7 @@ def test_generate_reconciliation_report(db_session, sample_data):
         assert 'category' in tx
         assert 'type' in tx
         assert 'amount' in tx
-        assert 'classification' in tx
+        # classification field removed
         assert 'source' in tx
 
 
@@ -301,25 +289,6 @@ def capex_data(db_session):
     db_session.add_all([vehicle_cat, equipment_cat])
     db_session.commit()
 
-    # Get Capital Expense classification
-    capex_class = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'CAPITAL_EXPENSE'
-    ).first()
-
-    if not capex_class:
-        # Create if doesn't exist
-        capex_class = TransactionClassification(
-            classification_name="Capital Expense",
-            classification_code="CAPITAL_EXPENSE",
-            description="Capital expenditure",
-            exclude_from_income_calc=True,
-            exclude_from_expense_calc=True,
-            exclude_from_cashflow_calc=True,
-            is_system_classification=True
-        )
-        db_session.add(capex_class)
-        db_session.commit()
-
     # Create CapEx transactions
     base_date = date.today() - timedelta(days=180)
 
@@ -331,7 +300,6 @@ def capex_data(db_session):
         category_id=vehicle_cat.category_id,
         description='Used Toyota Camry',
         source='Test Source',
-        classification_id=capex_class.classification_id,
         notes='Company vehicle purchase'
     )
     db_session.add(tx1)
@@ -344,7 +312,6 @@ def capex_data(db_session):
         category_id=equipment_cat.category_id,
         description='MacBook Pro',
         source='Test Source',
-        classification_id=capex_class.classification_id,
         notes='Work laptop'
     )
     db_session.add(tx2)
@@ -356,7 +323,6 @@ def capex_data(db_session):
         category_id=equipment_cat.category_id,
         description='Office Furniture',
         source='Test Source',
-        classification_id=capex_class.classification_id,
         notes='Desk and chair'
     )
     db_session.add(tx3)
@@ -437,7 +403,7 @@ def test_generate_capex_report(db_session, capex_data):
         assert 'description' in tx
         assert 'amount' in tx
         assert 'category' in tx
-        assert 'classification' in tx
+        # classification field removed
 
 
 def test_get_total_capex(db_session, capex_data):
@@ -535,7 +501,7 @@ def test_export_to_csv_capex(db_session, capex_data):
     assert 'description' in csv_output
     assert 'amount' in csv_output
     assert 'category' in csv_output
-    assert 'classification' in csv_output
+    # classification field removed
 
     # Check that we have data rows (header + transactions)
     lines = csv_output.strip().split('\n')
@@ -555,13 +521,7 @@ def receivables_data(db_session):
     db_session.add(expense_cat)
     db_session.commit()
 
-    # Get reimbursement classifications
-    reimb_paid = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'REIMB_PAID'
-    ).first()
-    reimb_received = db_session.query(TransactionClassification).filter(
-        TransactionClassification.classification_code == 'REIMB_RECEIVED'
-    ).first()
+
 
     today = date.today()
     start_date = today - timedelta(days=60)
@@ -574,7 +534,6 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Client dinner - Chicago trip',
         category_id=expense_cat.category_id,
-        classification_id=reimb_paid.classification_id
     )
     expense2 = Transaction(
         transaction_date=today - timedelta(days=20),
@@ -582,7 +541,6 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Hotel for conference',
         category_id=expense_cat.category_id,
-        classification_id=reimb_paid.classification_id
     )
     expense3 = Transaction(
         transaction_date=today - timedelta(days=10),
@@ -590,7 +548,6 @@ def receivables_data(db_session):
         transaction_type='Expense',
         description='Office supplies',
         category_id=expense_cat.category_id,
-        classification_id=reimb_paid.classification_id
     )
     db_session.add_all([expense1, expense2, expense3])
     db_session.commit()
@@ -613,7 +570,6 @@ def receivables_data(db_session):
         transaction_type='Income',
         description='Expense reimbursement - Chicago trip',
         category_id=expense_cat.category_id,
-        classification_id=reimb_received.classification_id
     )
     db_session.add(reimbursement1)
     db_session.commit()
@@ -636,8 +592,6 @@ def receivables_data(db_session):
         'expense3': expense3,  # Outstanding
         'reimbursement1': reimbursement1,
         'category': expense_cat,
-        'reimb_paid': reimb_paid,
-        'reimb_received': reimb_received,
         'outstanding_count': 2,  # expense2 and expense3
         'reimbursed_count': 1,   # expense1
         'total_outstanding': Decimal('425.00'),  # 350 + 75

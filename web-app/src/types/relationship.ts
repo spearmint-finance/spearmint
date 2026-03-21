@@ -10,7 +10,6 @@ export interface TransactionSummary {
   description?: string;
   source?: string;
   category_name?: string;
-  classification_name?: string;
 }
 
 export interface DividendReinvestmentPairDetection {

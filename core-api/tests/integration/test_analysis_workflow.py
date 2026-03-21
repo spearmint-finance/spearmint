@@ -29,42 +29,6 @@ class TestAnalysisWorkflow:
 
     def test_income_analysis_workflow(self, client, sample_transactions, test_db_session):
         """Test complete income analysis workflow."""
-        # Debug: Check transactions were created
-        print(f"\n=== Sample Transactions Created ===")
-        for txn in sample_transactions:
-            print(f"ID: {txn.transaction_id}, Type: {txn.transaction_type}, Amount: {txn.amount}, "
-                  f"Classification: {txn.classification_id}, Include: {txn.include_in_analysis}")
-
-        # Debug: Check classifications
-        from financial_analysis.database.models import TransactionClassification
-        classifications = test_db_session.query(TransactionClassification).all()
-        print(f"\n=== Classifications in DB ===")
-        for c in classifications:
-            print(f"ID: {c.classification_id}, Code: {c.classification_code}, "
-                  f"Exclude Income: {c.exclude_from_income_calc}")
-
-        # Debug: Direct query to see what the analysis service would get
-        from financial_analysis.database.models import Transaction
-        from sqlalchemy import or_
-        query = test_db_session.query(Transaction).filter(
-            Transaction.transaction_type == 'Income'
-        ).filter(Transaction.include_in_analysis == True)
-        query = query.outerjoin(
-            TransactionClassification,
-            Transaction.classification_id == TransactionClassification.classification_id
-        )
-        query = query.filter(
-            or_(
-                TransactionClassification.exclude_from_income_calc == False,
-                TransactionClassification.exclude_from_income_calc == None
-            )
-        )
-        direct_results = query.all()
-        print(f"\n=== Direct Query Results ===")
-        print(f"Found {len(direct_results)} income transactions")
-        for txn in direct_results:
-            print(f"  ID: {txn.transaction_id}, Amount: {txn.amount}")
-
         # Get income analysis
         response = client.get("/api/analysis/income", params={"mode": "analysis"})
 

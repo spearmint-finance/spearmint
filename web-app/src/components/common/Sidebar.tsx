@@ -22,7 +22,6 @@ import logo from "../../assets/logo.jpg";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import CategoryIcon from "@mui/icons-material/Category";
 import SettingsIcon from "@mui/icons-material/Settings";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import PsychologyIcon from "@mui/icons-material/Psychology";
@@ -44,7 +43,6 @@ const menuItems = [
   { text: "Reports", icon: <AssessmentIcon />, path: "/reports" },
   { text: "Scenarios", icon: <PsychologyIcon />, path: "/scenarios" },
   { text: "Projections", icon: <TrendingUpIcon />, path: "/projections" },
-  { text: "Classifications", icon: <CategoryIcon />, path: "/classifications" },
   { text: "Import", icon: <UploadFileIcon />, path: "/import" },
 ];
 
