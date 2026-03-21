@@ -150,6 +150,41 @@ def ensure_database_tables():
                     "WHERE transaction_type = 'Transfer'"
                 ))
 
+    # Migration: update categories CHECK constraint to include 'Transfer' type
+    # SQLite can't ALTER constraints, so we recreate the table if needed.
+    if inspector.has_table("categories"):
+        result = engine.connect().execute(text(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='categories'"
+        )).fetchone()
+        if result and "'Transfer'" not in result[0]:
+            with engine.begin() as conn:
+                conn.execute(text("PRAGMA foreign_keys = OFF"))
+                conn.execute(text("""
+                    CREATE TABLE categories_new (
+                        category_id INTEGER NOT NULL,
+                        category_name VARCHAR(100) NOT NULL,
+                        category_type VARCHAR(10) NOT NULL,
+                        parent_category_id INTEGER,
+                        description TEXT,
+                        is_transfer_category BOOLEAN,
+                        is_fixed_obligation BOOLEAN,
+                        created_at DATETIME,
+                        entity_id INTEGER REFERENCES entities(entity_id),
+                        PRIMARY KEY (category_id),
+                        CONSTRAINT check_category_type CHECK (category_type IN ('Income', 'Expense', 'Transfer', 'Both')),
+                        UNIQUE (category_name),
+                        FOREIGN KEY(parent_category_id) REFERENCES categories_new (category_id)
+                    )
+                """))
+                conn.execute(text(
+                    "INSERT INTO categories_new SELECT category_id, category_name, category_type, "
+                    "parent_category_id, description, is_transfer_category, is_fixed_obligation, "
+                    "created_at, entity_id FROM categories"
+                ))
+                conn.execute(text("DROP TABLE categories"))
+                conn.execute(text("ALTER TABLE categories_new RENAME TO categories"))
+                conn.execute(text("PRAGMA foreign_keys = ON"))
+
     # Migration: migrate account.entity_id data to account_entities join table
     if inspector.has_table("accounts") and inspector.has_table("account_entities"):
         columns = [c["name"] for c in inspector.get_columns("accounts")]
