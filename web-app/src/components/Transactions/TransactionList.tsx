@@ -44,7 +44,6 @@ import {
 } from "../../hooks/useTransactions";
 import { useCategories } from "../../hooks/useCategories";
 import { formatCurrency, formatDate } from "../../utils/formatters";
-import TransactionDetail from "./TransactionDetail";
 import TransactionForm from "./TransactionForm";
 import type { Transaction } from "../../types/transaction";
 import { useSnackbar } from "notistack";
@@ -55,11 +54,13 @@ import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
 import { useEntityContext } from "../../contexts/EntityContext";
+import { useEntities } from "../../hooks/useEntities";
 
 function TransactionList() {
   const [searchParams] = useSearchParams();
   const initialAccountId = searchParams.get("account_id") || "";
   const { selectedEntityId } = useEntityContext();
+  const { data: entitiesData = [] } = useEntities();
 
   // State for filters
   const [searchInput, setSearchInput] = useState(""); // Local input value
@@ -406,14 +407,44 @@ function TransactionList() {
             (a) => a.account_id === row.account_id
           );
           if (account) {
-            const parts = [account.institution_name, account.account_name].filter(Boolean);
-            return parts.join(" - ") || account.account_name;
+            return account.institution_name
+              ? `${account.account_name} (${account.institution_name})`
+              : account.account_name;
           }
         }
         return row.source || "-";
       },
       filterable: false,
     },
+    {
+      field: "entity_id",
+      headerName: "Entity",
+      width: 140,
+      filterable: false,
+      sortable: false,
+      valueGetter: (_value, row) => {
+        if (row.entity_id) {
+          const entity = entitiesData.find((e) => e.entity_id === row.entity_id);
+          return entity?.entity_name || "-";
+        }
+        // Inherit from account
+        if (row.account_id && accountsData) {
+          const account = accountsData.find((a) => a.account_id === row.account_id);
+          if (account && account.entity_ids.length > 0) {
+            return account.entity_ids
+              .map((eid) => entitiesData.find((e) => e.entity_id === eid)?.entity_name)
+              .filter(Boolean)
+              .join(", ");
+          }
+        }
+        return "-";
+      },
+      renderCell: (params) => (
+        <Typography variant="body2" color={params.row.entity_id ? "text.primary" : "text.secondary"} noWrap>
+          {params.value}
+        </Typography>
+      ),
+    } as GridColDef,
     ...([
       { field: "is_capital_expense", headerName: "CapEx" },
       { field: "is_tax_deductible", headerName: "Tax Ded." },
@@ -868,14 +899,15 @@ function TransactionList() {
         />
       </Paper>
 
-      {/* Transaction Detail Dialog */}
-      <TransactionDetail
+      {/* Edit Transaction Dialog (opens when clicking a row) */}
+      <TransactionForm
         open={detailDialogOpen}
         onClose={() => {
           setDetailDialogOpen(false);
           setSelectedTransaction(null);
         }}
         transaction={selectedTransaction}
+        mode="edit"
       />
 
       {/* Create Transaction Dialog */}

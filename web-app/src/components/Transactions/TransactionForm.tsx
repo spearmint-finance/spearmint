@@ -35,6 +35,7 @@ import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "../../api/accounts";
 import { useEntityContext } from "../../contexts/EntityContext";
+import { useEntities } from "../../hooks/useEntities";
 
 interface TransactionFormProps {
   open: boolean;
@@ -57,9 +58,10 @@ interface FormData {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense";
+  transaction_type: "Income" | "Expense" | "Transfer";
   category_id: number; // Required field
   account_id: string; // Empty string = no account selected
+  entity_id: string; // Empty string = inherit from account
   notes?: string;
   tags: string[];
 }
@@ -75,6 +77,7 @@ function TransactionForm({
   const updateMutation = useUpdateTransaction();
   const createCategoryMutation = useCreateCategory();
   const { selectedEntityId } = useEntityContext();
+  const { data: entitiesData = [] } = useEntities();
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } =
     useCategories({ entity_id: selectedEntityId ?? undefined });
   const { data: accountsData } = useQuery({
@@ -111,6 +114,7 @@ function TransactionForm({
       transaction_type: "Expense",
       category_id: "" as any, // Empty string for unselected state
       account_id: "",
+      entity_id: "",
       notes: "",
       tags: [],
     },
@@ -126,9 +130,10 @@ function TransactionForm({
         date: transaction.date,
         description: transaction.description,
         amount: Math.abs(transaction.amount),
-        transaction_type: transaction.transaction_type,
+        transaction_type: transaction.is_transfer ? "Transfer" : transaction.transaction_type,
         category_id: transaction.category_id,
         account_id: transaction.account_id ? String(transaction.account_id) : "",
+        entity_id: transaction.entity_id ? String(transaction.entity_id) : "",
         notes: transaction.notes || "",
         tags: transaction.tags || [],
       });
@@ -140,6 +145,7 @@ function TransactionForm({
         transaction_type: "Expense",
         category_id: "" as any, // Empty string for unselected state
         account_id: "",
+        entity_id: selectedEntityId ? String(selectedEntityId) : "",
         notes: "",
         tags: [],
       });
@@ -163,15 +169,20 @@ function TransactionForm({
       }
 
       const accountId = data.account_id ? parseInt(data.account_id, 10) : undefined;
+      const entityId = data.entity_id ? parseInt(data.entity_id, 10) : null;
+
+      // Map Transfer to Expense for the API (transfers are identified by category_type)
+      const apiTransactionType = data.transaction_type === "Transfer" ? "Expense" : data.transaction_type;
 
       if (mode === "create") {
         const createData: TransactionCreate = {
           date: data.date,
           description: data.description,
           amount: data.amount,
-          transaction_type: data.transaction_type,
+          transaction_type: apiTransactionType as "Income" | "Expense",
           category_id: categoryId,
           account_id: accountId,
+          entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags.length > 0 ? data.tags : undefined,
         };
@@ -184,9 +195,10 @@ function TransactionForm({
           date: data.date,
           description: data.description,
           amount: data.amount,
-          transaction_type: data.transaction_type,
+          transaction_type: apiTransactionType as "Income" | "Expense",
           category_id: categoryId,
           account_id: accountId,
+          entity_id: entityId,
           notes: data.notes,
           tag_names: data.tags,
         };
@@ -279,13 +291,18 @@ function TransactionForm({
                     <RadioGroup {...field} row>
                       <FormControlLabel
                         value="Income"
-                        control={<Radio />}
+                        control={<Radio size="small" />}
                         label="Income"
                       />
                       <FormControlLabel
                         value="Expense"
-                        control={<Radio />}
+                        control={<Radio size="small" />}
                         label="Expense"
+                      />
+                      <FormControlLabel
+                        value="Transfer"
+                        control={<Radio size="small" />}
+                        label="Transfer"
                       />
                     </RadioGroup>
                   )}
@@ -380,7 +397,15 @@ function TransactionForm({
                       </MenuItem>
                     ) : (
                       [
-                        ...(categoriesData?.categories.map((category) => (
+                        ...(categoriesData?.categories
+                          .filter((category) => {
+                            // Filter categories by selected transaction type
+                            if (transactionType === "Transfer") return category.category_type === "Transfer";
+                            if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both";
+                            if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both";
+                            return true;
+                          })
+                          .map((category) => (
                           <MenuItem
                             key={category.category_id}
                             value={category.category_id}
@@ -433,6 +458,37 @@ function TransactionForm({
                 )}
               />
             </Grid>
+
+            {/* Entity (optional) */}
+            {entitiesData.length > 0 && (
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="entity_id"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Entity"
+                      select
+                      fullWidth
+                      value={field.value || ""}
+                    >
+                      <MenuItem value="">
+                        <em>Inherit from account</em>
+                      </MenuItem>
+                      {entitiesData.map((entity) => (
+                        <MenuItem
+                          key={entity.entity_id}
+                          value={String(entity.entity_id)}
+                        >
+                          {entity.entity_name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
+              </Grid>
+            )}
 
             {/* Notes */}
             <Grid item xs={12}>
