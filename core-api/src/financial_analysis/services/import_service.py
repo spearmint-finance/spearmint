@@ -1,6 +1,7 @@
 """Data import service for Excel files."""
 
 import logging
+import re
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -578,10 +579,10 @@ class ImportService:
                     continue
 
                 name = str(name).strip()
-                last4 = str(row.get(acct_num_col, '')).strip() if acct_num_col and not pd.isna(row.get(acct_num_col)) else ''
-                # Clean last4 — keep only last 4 chars if longer
-                if len(last4) > 4:
-                    last4 = last4[-4:]
+                raw_num = str(row.get(acct_num_col, '')).strip() if acct_num_col and not pd.isna(row.get(acct_num_col)) else ''
+                # Extract only digits, then take last 4 (must be exactly 4 for schema)
+                digits = re.sub(r'[^0-9]', '', raw_num)
+                last4 = digits[-4:] if len(digits) >= 4 else ''
 
                 # Skip if already exists
                 if (name, last4) in existing_keys:
