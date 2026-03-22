@@ -230,6 +230,7 @@ def list_transactions(
                 # Override display values with split portion
                 tx.amount = split_total if tx.amount >= 0 else -abs(split_total)
                 tx.entity_id = entity_id
+                tx.split_portion = True
                 # Use the first matching split's category if available
                 if matching_splits[0].category_id:
                     tx.category_id = matching_splits[0].category_id
