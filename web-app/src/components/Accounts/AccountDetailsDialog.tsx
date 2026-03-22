@@ -571,7 +571,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                           holding.current_value || 0
                         )}`}
                       />
-                      {holding.gain_loss_percent !== undefined && (
+                      {holding.gain_loss_percent != null && (
                         <Chip
                           label={`${holding.gain_loss_percent > 0 ? '+' : ''}${holding.gain_loss_percent.toFixed(
                             1
