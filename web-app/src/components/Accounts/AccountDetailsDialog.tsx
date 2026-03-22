@@ -25,6 +25,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -107,6 +109,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     account_number_last4: account.account_number_last4 || '',
     notes: account.notes || '',
     entity_ids: account.entity_ids || [],
+    is_active: account.is_active,
   });
 
   // Fetch balance history
@@ -181,6 +184,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       account_number_last4: account.account_number_last4 || '',
       notes: account.notes || '',
       entity_ids: account.entity_ids || [],
+      is_active: account.is_active,
     });
     setIsEditing(true);
   };
@@ -197,6 +201,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       account_number_last4: editForm.account_number_last4 || undefined,
       notes: editForm.notes.trim() || undefined,
       entity_ids: editForm.entity_ids,
+      is_active: editForm.is_active,
     };
     updateAccountMutation.mutate(update);
   };
@@ -224,6 +229,14 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
               color="primary"
               variant="outlined"
             />
+            {!account.is_active && (
+              <Chip
+                label="Inactive"
+                size="small"
+                color="warning"
+                sx={{ ml: 1 }}
+              />
+            )}
           </Box>
           <Box>
             {isEditing ? (
@@ -384,6 +397,17 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={editForm.is_active}
+                      onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
+                    />
+                  }
+                  label={editForm.is_active ? "Active" : "Inactive"}
+                />
+              </Grid>
               {updateAccountMutation.isError && (
                 <Grid item xs={12}>
                   <Alert severity="error">Failed to update account. Please try again.</Alert>
@@ -413,6 +437,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     <ListItemText
                       primary="Opening Balance"
                       secondary={formatCurrency(account.opening_balance)}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText
+                      primary="Status"
+                      secondary={account.is_active ? "Active" : "Inactive"}
                     />
                   </ListItem>
                   {account.entity_ids.length > 0 && (
