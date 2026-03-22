@@ -78,7 +78,8 @@ These are the items that should be worked on NOW, in priority order:
 | 5 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
 | 6 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
 | 7 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
-| 8 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
+| 8 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
+| 9 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
@@ -94,10 +95,12 @@ These are the items that should be worked on NOW, in priority order:
 - Transaction splits: full form, "Split Evenly", inline entity selector, grid indicator, amount validation
 - Transaction relationships: auto-detection for transfers, CC payments, reimbursements, dividend reinvestments
 - Entity system: CRUD, M2M account-entity, direct + inherited entity assignment on transactions, bulk entity assign
-- Category management: entity-scoped categories, search, type filter, entity filter, inline editor
+- Category management: entity-scoped categories with hierarchy, search, type filter, entity filter, inline editor, transaction count per category, snackbar feedback, duplicate name validation
 - Accessibility improvements (aria labels, confirmation dialogs)
 - Date range validation, batch clear validation, error feedback
 - Debug logging cleanup (print → proper logging)
+- Searchable category filter with Autocomplete on transactions page
+- Enhanced "Create New Category" dialog with parent and entity info
 
 ### Dashboard Team (8 iterations)
 - Category pie chart with responsive layout
