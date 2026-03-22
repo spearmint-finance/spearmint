@@ -13,6 +13,7 @@
 | [authentication-authorization.md](authentication-authorization.md) | Authentication & authorization | Accounts / Platform team | Draft | G1 |
 
 | [multi-currency-display.md](multi-currency-display.md) | Multi-currency display support | Accounts team | Draft | G1/G2 |
+| [account-reconciliation.md](account-reconciliation.md) | Account reconciliation | Accounts team | Draft | G2 |
 
 ## PRDs Needed
 
