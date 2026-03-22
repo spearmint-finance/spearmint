@@ -88,7 +88,8 @@ function TransactionDetail({
       setDeleteConfirmOpen(false);
       onClose();
     } catch (error) {
-      enqueueSnackbar("Failed to delete transaction", { variant: "error" });
+      const detail = error instanceof Error ? error.message : '';
+      enqueueSnackbar(detail ? `Failed to delete: ${detail}` : "Failed to delete transaction", { variant: "error" });
     }
   };
 
