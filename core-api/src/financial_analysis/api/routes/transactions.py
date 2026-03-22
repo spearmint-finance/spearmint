@@ -89,15 +89,18 @@ def bulk_update_transactions(
         raise HTTPException(status_code=400, detail="updates is required")
 
     updated_count = 0
+    failed = []
     for tid in transaction_ids:
         try:
             result = service.update_transaction(tid, **field_updates)
             if result:
                 updated_count += 1
-        except Exception:
-            pass  # Skip failures in bulk operations
+            else:
+                failed.append({"id": tid, "error": "Transaction not found"})
+        except Exception as e:
+            failed.append({"id": tid, "error": str(e)})
 
-    return {"updated": updated_count, "total": len(transaction_ids)}
+    return {"updated": updated_count, "total": len(transaction_ids), "failed": failed}
 
 
 @router.get("/transactions/{transaction_id}", response_model=TransactionResponse)
