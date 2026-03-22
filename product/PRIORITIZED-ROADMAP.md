@@ -53,6 +53,9 @@ G1 is complete when:
 | P1 | Confidence-based forecasting (upper/lower bounds) | Dashboard team | [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md) |
 | P2 | Budget management (envelopes, drag-and-drop reallocation) | Accounts team | [budget-management-ui.md](feature-planning/budget-management-ui.md) |
 | P2 | Budget advisor agent (A2A) | Product team | [budget-advisor-agent.md](feature-planning/budget-advisor-agent.md) |
+| P2 | Account reconciliation | Accounts team | [account-reconciliation.md](feature-planning/account-reconciliation.md) |
+| P2 | AI assistant completion (4 stub endpoints) | Accounts/Platform team | — (directive #227) |
+| P3 | Mobile responsive design | Accounts + Dashboard | — (directive #229) |
 | P3 | Bank data aggregation (Plaid) | Accounts team | [bank-data-aggregation.md](feature-planning/bank-data-aggregation.md) |
 
 ---
