@@ -25,6 +25,7 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
   Rule as RuleIcon,
@@ -253,18 +254,28 @@ export default function CategoryManagement() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 80,
+      width: 110,
       sortable: false,
       filterable: false,
       renderCell: (params: GridRenderCellParams) => (
-        <IconButton
-          size="small"
-          onClick={() => handleOpenDeleteDialog(params.row as Category)}
-          title="Delete category"
-          color="error"
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
+        <Box display="flex" gap={0.5}>
+          <IconButton
+            size="small"
+            onClick={() => handleOpenDialog(params.row as Category)}
+            title="Edit category"
+            color="primary"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => handleOpenDeleteDialog(params.row as Category)}
+            title="Delete category"
+            color="error"
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
       ),
     },
   ];
@@ -279,6 +290,7 @@ export default function CategoryManagement() {
           category_type: newRow.category_type,
           parent_category_id: newRow.parent_category_id,
           description: newRow.description,
+          entity_id: newRow.entity_id ?? null,
         },
       });
       return newRow;
