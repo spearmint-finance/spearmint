@@ -5,7 +5,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi } from "../api/categories";
 import type {
-  Category,
   CategoryCreate,
   CategoryUpdate,
 } from "../types/settings";
@@ -130,6 +129,28 @@ export function useDeleteCategory() {
     onSuccess: () => {
       // Invalidate all category queries to refetch
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+/**
+ * Hook to merge one category into another
+ */
+export function useMergeCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      sourceCategoryId,
+      targetCategoryId,
+    }: {
+      sourceCategoryId: number;
+      targetCategoryId: number;
+    }) => categoriesApi.merge(sourceCategoryId, targetCategoryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      // Also invalidate transactions since categories changed
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }

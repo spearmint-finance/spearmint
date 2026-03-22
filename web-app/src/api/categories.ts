@@ -14,6 +14,12 @@ import type {
   ApplyCategoryRulesResponse,
 } from "../types/settings";
 
+const baseUrl =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined"
+    ? window.location.origin
+    : "http://localhost:8080");
+
 export const categoriesApi = {
   /**
    * Get all categories with optional filters
@@ -120,6 +126,36 @@ export const categoriesApi = {
       { force }
     );
     return { message: "Category deleted" };
+  },
+
+  /**
+   * Merge source category into target. Reassigns all transactions, splits,
+   * rules, budgets, and children, then deletes the source.
+   */
+  merge: async (
+    sourceCategoryId: number,
+    targetCategoryId: number
+  ): Promise<{
+    message: string;
+    transactions: number;
+    splits: number;
+    rules: number;
+    budgets: number;
+    children: number;
+  }> => {
+    const response = await fetch(
+      `${baseUrl}/api/categories/${sourceCategoryId}/merge`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_category_id: targetCategoryId }),
+      }
+    );
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: "Merge failed" }));
+      throw new Error(err.detail || "Failed to merge category");
+    }
+    return response.json();
   },
 };
 
