@@ -239,13 +239,19 @@ class TransactionService:
 
         if filters.entity_id:
             # Show transactions explicitly assigned to this entity,
-            # OR inherited from account (entity_id IS NULL and account belongs to entity).
-            # Use EXISTS to avoid duplicate rows from the join.
-            from ..database.models import account_entities
+            # OR inherited from account (entity_id IS NULL and account belongs to entity),
+            # OR that have splits assigned to this entity.
+            from ..database.models import account_entities, TransactionSplit
             account_has_entity = exists().where(
                 and_(
                     account_entities.c.account_id == Transaction.account_id,
                     account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            split_has_entity = exists().where(
+                and_(
+                    TransactionSplit.transaction_id == Transaction.transaction_id,
+                    TransactionSplit.entity_id == filters.entity_id
                 )
             )
             conditions.append(
@@ -254,7 +260,8 @@ class TransactionService:
                     and_(
                         Transaction.entity_id.is_(None),
                         account_has_entity
-                    )
+                    ),
+                    split_has_entity
                 )
             )
 
@@ -357,11 +364,17 @@ class TransactionService:
         if filters.account_id:
             conditions.append(Transaction.account_id == filters.account_id)
         if filters.entity_id:
-            from ..database.models import account_entities
+            from ..database.models import account_entities, TransactionSplit
             account_has_entity = exists().where(
                 and_(
                     account_entities.c.account_id == Transaction.account_id,
                     account_entities.c.entity_id == filters.entity_id
+                )
+            )
+            split_has_entity = exists().where(
+                and_(
+                    TransactionSplit.transaction_id == Transaction.transaction_id,
+                    TransactionSplit.entity_id == filters.entity_id
                 )
             )
             conditions.append(
@@ -370,7 +383,8 @@ class TransactionService:
                     and_(
                         Transaction.entity_id.is_(None),
                         account_has_entity
-                    )
+                    ),
+                    split_has_entity
                 )
             )
         if filters.min_amount:
