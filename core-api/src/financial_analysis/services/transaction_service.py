@@ -154,6 +154,7 @@ class TransactionService:
 
         # Add splits if provided
         if splits:
+            self._validate_split_amounts(splits, amount)
             for s in splits:
                 from ..database.models import TransactionSplit
                 split = TransactionSplit(
@@ -484,6 +485,10 @@ class TransactionService:
 
         # Replace splits if provided (None = no change, [] = remove all)
         if splits is not None:
+            if splits:
+                # Use updated amount if provided, otherwise use existing
+                tx_amount = Decimal(str(updates.get('amount', transaction.amount)))
+                self._validate_split_amounts(splits, tx_amount)
             from ..database.models import TransactionSplit
             self.db.query(TransactionSplit).filter(
                 TransactionSplit.transaction_id == transaction_id
@@ -528,6 +533,19 @@ class TransactionService:
         self.db.commit()
 
         return True
+
+    @staticmethod
+    def _validate_split_amounts(splits, transaction_amount: Decimal):
+        """Validate that split amounts sum to the transaction amount."""
+        split_sum = sum(
+            Decimal(str(s.amount if hasattr(s, 'amount') else s['amount']))
+            for s in splits
+        )
+        tx_amount = Decimal(str(transaction_amount))
+        if abs(split_sum - tx_amount) > Decimal('0.01'):
+            raise ValidationError(
+                f"Split amounts sum to {split_sum} but transaction amount is {tx_amount}"
+            )
 
     def _add_tags(self, transaction: Transaction, tag_names: List[str]):
         """Add tags to transaction."""
