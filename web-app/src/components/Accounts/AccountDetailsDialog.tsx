@@ -52,6 +52,7 @@ import {
   getPortfolioSummary,
   getReconciliations,
   createReconciliation,
+  addHolding,
   addBalanceSnapshot,
   updateAccount,
   deleteAccount,
@@ -107,6 +108,14 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const [showReconForm, setShowReconForm] = useState(false);
   const [reconDate, setReconDate] = useState(new Date().toISOString().split('T')[0]);
   const [reconBalance, setReconBalance] = useState('');
+  const [showHoldingForm, setShowHoldingForm] = useState(false);
+  const [holdingForm, setHoldingForm] = useState({
+    symbol: '',
+    quantity: '',
+    as_of_date: new Date().toISOString().split('T')[0],
+    cost_basis: '',
+    current_value: '',
+  });
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -174,6 +183,24 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
       setShowReconForm(false);
       setReconBalance('');
+    },
+  });
+
+  // Add holding mutation
+  const addHoldingMutation = useMutation({
+    mutationFn: () =>
+      addHolding(account.account_id, {
+        symbol: holdingForm.symbol,
+        quantity: parseFloat(holdingForm.quantity),
+        as_of_date: holdingForm.as_of_date,
+        cost_basis: holdingForm.cost_basis ? parseFloat(holdingForm.cost_basis) : undefined,
+        current_value: holdingForm.current_value ? parseFloat(holdingForm.current_value) : undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      setShowHoldingForm(false);
+      setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
     },
   });
 
@@ -553,6 +580,90 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
 
         {account.has_investment_component && (
           <TabPanel value={tabValue} index={2}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="subtitle2">Portfolio</Typography>
+              <Button
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={() => setShowHoldingForm(true)}
+                disabled={showHoldingForm}
+              >
+                Add Holding
+              </Button>
+            </Box>
+
+            {showHoldingForm && (
+              <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>New Holding</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="Symbol"
+                      value={holdingForm.symbol}
+                      onChange={(e) => setHoldingForm({ ...holdingForm, symbol: e.target.value.toUpperCase() })}
+                      fullWidth
+                      size="small"
+                      placeholder="AAPL"
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="Quantity"
+                      type="number"
+                      value={holdingForm.quantity}
+                      onChange={(e) => setHoldingForm({ ...holdingForm, quantity: e.target.value })}
+                      fullWidth
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="As of Date"
+                      type="date"
+                      value={holdingForm.as_of_date}
+                      onChange={(e) => setHoldingForm({ ...holdingForm, as_of_date: e.target.value })}
+                      fullWidth
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      label="Cost Basis"
+                      type="number"
+                      value={holdingForm.cost_basis}
+                      onChange={(e) => setHoldingForm({ ...holdingForm, cost_basis: e.target.value })}
+                      fullWidth
+                      size="small"
+                      InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      label="Current Value"
+                      type="number"
+                      value={holdingForm.current_value}
+                      onChange={(e) => setHoldingForm({ ...holdingForm, current_value: e.target.value })}
+                      fullWidth
+                      size="small"
+                      InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    />
+                  </Grid>
+                </Grid>
+                <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                  <Button size="small" onClick={() => setShowHoldingForm(false)}>Cancel</Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => addHoldingMutation.mutate()}
+                    disabled={!holdingForm.symbol || !holdingForm.quantity || addHoldingMutation.isPending}
+                  >
+                    {addHoldingMutation.isPending ? 'Adding...' : 'Add'}
+                  </Button>
+                </Box>
+              </Card>
+            )}
+
             {portfolio ? (
               <Box>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
