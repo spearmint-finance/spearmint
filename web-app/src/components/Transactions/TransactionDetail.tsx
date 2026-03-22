@@ -298,6 +298,46 @@ function TransactionDetail({
               </Grid>
             )}
 
+            {/* Splits */}
+            {transaction.splits && transaction.splits.length > 0 && (
+              <Grid item xs={12}>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+                  Split into {transaction.splits.length} items
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  {transaction.splits.map((split) => (
+                    <Box
+                      key={split.split_id}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        p: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body2">
+                          {split.category_name || `Category #${split.category_id}`}
+                        </Typography>
+                        {split.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {split.description}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {formatCurrency(split.amount)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </Grid>
+            )}
+
             {/* Entity Assignment */}
             {entities.length > 0 && (
               <Grid item xs={12} sm={6}>
