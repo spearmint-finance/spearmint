@@ -99,9 +99,8 @@ function TransactionList() {
 
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
-  const { data: categoriesData } = useCategories({
-    entity_id: selectedEntityId ?? undefined,
-  });
+  // Fetch all categories (unfiltered) so inline editors can filter per-row by entity
+  const { data: categoriesData } = useCategories();
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
@@ -354,6 +353,11 @@ function TransactionList() {
         const id = params.id as number;
         const currentValue =
           (params.value as number) ?? params.row.category_id ?? "";
+        // Filter categories by the row's entity_id: show entity-scoped + global categories
+        const rowEntityId = params.row.entity_id;
+        const rowCategoryOptions = categoriesData?.categories
+          ?.filter((cat) => !rowEntityId || !cat.entity_id || cat.entity_id === rowEntityId)
+          .map((cat) => ({ value: cat.category_id, label: cat.category_name })) || [];
         return (
           <Select
             autoFocus
@@ -396,7 +400,7 @@ function TransactionList() {
               }
             }}
           >
-            {categoryOptions.map((opt) => (
+            {rowCategoryOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
                 {opt.label}
               </MenuItem>
