@@ -131,6 +131,8 @@ function TransactionList() {
   const [selectedRowIds, setSelectedRowIds] = useState<number[]>([]);
   const [bulkEntityDialogOpen, setBulkEntityDialogOpen] = useState(false);
   const [bulkEntityId, setBulkEntityId] = useState<string>("");
+  const [bulkCategoryDialogOpen, setBulkCategoryDialogOpen] = useState(false);
+  const [bulkCategoryId, setBulkCategoryId] = useState<string>("");
 
   // State for advanced filters
   const [filters, setFilters] = useState({
@@ -515,18 +517,19 @@ function TransactionList() {
     })) as GridColDef[]),
   ];
 
-  const handleCellClick = (params: any) => {
+  const handleCellClick = useCallback((params: any, event: any) => {
     // Don't open detail dialog when clicking on editable or boolean toggle cells
     const nonClickableFields = [
       "__check__", "description", "category_id",
       "is_capital_expense", "is_tax_deductible", "is_recurring",
       "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
     ];
-    if (!nonClickableFields.includes(params.field)) {
-      setSelectedTransaction(params.row);
-      setDetailDialogOpen(true);
-    }
-  };
+    if (nonClickableFields.includes(params.field)) return;
+    // Prevent default to stop the click from propagating to sort handlers
+    if (event) event.defaultMuiPrevented = true;
+    setSelectedTransaction(params.row);
+    setDetailDialogOpen(true);
+  }, []);
 
   const filteredTransactions = (data as any)?.transactions || [];
 
@@ -839,6 +842,13 @@ function TransactionList() {
           <Button
             size="small"
             variant="outlined"
+            onClick={() => setBulkCategoryDialogOpen(true)}
+          >
+            Assign Category
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
             onClick={() => setBulkEntityDialogOpen(true)}
           >
             Assign Entity
@@ -863,7 +873,6 @@ function TransactionList() {
         }}
       >
         <DataGrid
-          key={`${paginationModel.page}-${paginationModel.pageSize}`}
           apiRef={apiRef}
           rows={filteredTransactions}
           columns={columns}
@@ -945,6 +954,10 @@ function TransactionList() {
             },
             "& .MuiDataGrid-row": {
               cursor: "pointer",
+            },
+            "& .MuiDataGrid-cell": {
+              display: "flex",
+              alignItems: "center",
             },
             "& .MuiDataGrid-cell--editable": {
               cursor: "text",
@@ -1039,6 +1052,71 @@ function TransactionList() {
                 queryClient.invalidateQueries({ queryKey: ["transactions"] });
               } catch {
                 enqueueSnackbar("Failed to update entities", { variant: "error" });
+              }
+            }}
+          >
+            Assign
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Category Assignment Dialog */}
+      <Dialog
+        open={bulkCategoryDialogOpen}
+        onClose={() => setBulkCategoryDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Assign Category to {selectedRowIds.length} Transactions</DialogTitle>
+        <DialogContent>
+          <TextField
+            select
+            fullWidth
+            label="Category"
+            value={bulkCategoryId}
+            onChange={(e) => setBulkCategoryId(e.target.value)}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem value=""><em>Select a category</em></MenuItem>
+            {categoriesData?.categories?.map((cat) => (
+              <MenuItem key={cat.category_id} value={String(cat.category_id)}>
+                {cat.category_name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkCategoryDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!bulkCategoryId}
+            onClick={async () => {
+              const categoryIdValue = parseInt(bulkCategoryId, 10);
+              try {
+                const response = await fetch("/api/transactions/bulk-update", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    transaction_ids: selectedRowIds,
+                    updates: { category_id: categoryIdValue },
+                  }),
+                });
+                if (!response.ok) throw new Error("Bulk update failed");
+                const result = await response.json();
+                if (result.failed && result.failed.length > 0) {
+                  enqueueSnackbar(
+                    `Updated ${result.updated} of ${result.total} transactions. ${result.failed.length} failed.`,
+                    { variant: "warning" }
+                  );
+                } else {
+                  enqueueSnackbar(`Category updated for ${result.updated} transactions`, { variant: "success" });
+                }
+                setBulkCategoryDialogOpen(false);
+                setSelectedRowIds([]);
+                setBulkCategoryId("");
+                queryClient.invalidateQueries({ queryKey: ["transactions"] });
+              } catch {
+                enqueueSnackbar("Failed to update categories", { variant: "error" });
               }
             }}
           >
