@@ -1025,7 +1025,14 @@ function TransactionList() {
                 });
                 if (!response.ok) throw new Error("Bulk update failed");
                 const result = await response.json();
-                enqueueSnackbar(`Entity updated for ${result.updated} transactions`, { variant: "success" });
+                if (result.failed && result.failed.length > 0) {
+                  enqueueSnackbar(
+                    `Updated ${result.updated} of ${result.total} transactions. ${result.failed.length} failed.`,
+                    { variant: "warning" }
+                  );
+                } else {
+                  enqueueSnackbar(`Entity updated for ${result.updated} transactions`, { variant: "success" });
+                }
                 setBulkEntityDialogOpen(false);
                 setSelectedRowIds([]);
                 setBulkEntityId("");
