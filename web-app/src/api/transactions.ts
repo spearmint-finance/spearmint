@@ -136,46 +136,59 @@ const transformTransaction = (backendTransaction: any): Transaction => {
 /**
  * Get list of transactions with optional filters.
  */
+/**
+ * List transactions — uses direct fetch to preserve entity_id, boolean
+ * properties, and splits that the SDK's Zod strict mode strips.
+ */
 export const getTransactions = async (
   params?: TransactionListParams
 ): Promise<TransactionListResponse> => {
-  const response = await transactionsApi.listTransactions({
-    startDate: params?.start_date,
-    endDate: params?.end_date,
-    transactionType: params?.transaction_type,
-    categoryId: params?.category_id,
-    includeInAnalysis: params?.include_in_analysis,
-    isTransfer: params?.is_transfer,
-    minAmount: params?.min_amount,
-    maxAmount: params?.max_amount,
-    searchText: params?.search_text,
-    accountId: params?.account_id,
-    entityId: params?.entity_id,
-    includeCapitalExpenses: params?.include_capital_expenses,
-    includeTransfers: params?.include_transfers,
-    limit: params?.limit,
-    offset: params?.offset,
-    sortBy: params?.sort_by,
-    sortOrder: params?.sort_order,
-  });
-  const data = response.data!;
+  const query = new URLSearchParams();
+  if (params?.start_date) query.set('start_date', params.start_date);
+  if (params?.end_date) query.set('end_date', params.end_date);
+  if (params?.transaction_type) query.set('transaction_type', params.transaction_type);
+  if (params?.category_id != null) query.set('category_id', String(params.category_id));
+  if (params?.include_in_analysis != null) query.set('include_in_analysis', String(params.include_in_analysis));
+  if (params?.is_transfer != null) query.set('is_transfer', String(params.is_transfer));
+  if (params?.min_amount != null) query.set('min_amount', String(params.min_amount));
+  if (params?.max_amount != null) query.set('max_amount', String(params.max_amount));
+  if (params?.search_text) query.set('search_text', params.search_text);
+  if (params?.account_id != null) query.set('account_id', String(params.account_id));
+  if (params?.entity_id != null) query.set('entity_id', String(params.entity_id));
+  if (params?.include_capital_expenses != null) query.set('include_capital_expenses', String(params.include_capital_expenses));
+  if (params?.include_transfers != null) query.set('include_transfers', String(params.include_transfers));
+  if (params?.limit != null) query.set('limit', String(params.limit));
+  if (params?.offset != null) query.set('offset', String(params.offset));
+  if (params?.sort_by) query.set('sort_by', params.sort_by);
+  if (params?.sort_order) query.set('sort_order', params.sort_order);
+
+  const response = await fetch(`/api/transactions?${query.toString()}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to load transactions' }));
+    throw new Error(err.detail || 'Failed to load transactions');
+  }
+  const data = await response.json();
 
   return {
     transactions: (data.transactions || []).map(transformTransaction),
     total: data.total ?? 0,
     limit: data.limit ?? params?.limit ?? 100,
     offset: data.offset ?? params?.offset ?? 0,
-    summary: (data as any).summary,
+    summary: data.summary,
   };
 };
 
 /**
- * Get a single transaction by ID
+ * Get a single transaction by ID — uses direct fetch to preserve all fields.
  */
 export const getTransaction = async (id: number): Promise<Transaction> => {
-  const response =
-    await transactionsApi.getTransaction(id);
-  return transformTransaction(response.data);
+  const response = await fetch(`/api/transactions/${id}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Transaction not found' }));
+    throw new Error(err.detail || 'Transaction not found');
+  }
+  const data = await response.json();
+  return transformTransaction(data);
 };
 
 /**
