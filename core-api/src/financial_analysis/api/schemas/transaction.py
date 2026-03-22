@@ -98,6 +98,7 @@ class TransactionResponse(TransactionBase):
     category: Optional[CategoryInfo] = Field(None, description="Category information")
     tags: List[TagInfo] = Field(default_factory=list, description="Associated tags")
     splits: List[TransactionSplitResponse] = Field(default_factory=list, description="Line-item splits")
+    split_portion: Optional[bool] = Field(None, description="True when the displayed amount is a split portion, not the full transaction amount")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

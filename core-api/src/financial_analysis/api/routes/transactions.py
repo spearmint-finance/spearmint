@@ -200,54 +200,37 @@ def list_transactions(
         else:
             tx.is_transfer = False
 
-    # When filtering by entity, adjust transactions that were included via
-    # split entity match: show the split's amount/entity/category instead of
-    # the parent transaction's values.
-    summary_adjustment = Decimal('0')  # track amount adjustments for summary
+    # When filtering by entity, adjust transactions that have entity-scoped
+    # splits: show only this entity's split portion amount.
     if entity_id:
         for tx in transactions:
-            # Skip if the transaction itself belongs to this entity
-            if tx.entity_id == entity_id:
+            # Check if this transaction has splits with entity assignments
+            splits = tx.splits or []
+            entity_assigned_splits = [s for s in splits if s.entity_id is not None]
+            if not entity_assigned_splits:
+                # No entity-scoped splits — show the full transaction as-is
                 continue
-            # Check if inherited from account
-            if tx.entity_id is None and tx.account_id:
-                from sqlalchemy import exists as sa_exists
-                from ..dependencies import get_db as _  # already have db
-                from ...database.models import account_entities
-                inherited = db.query(
-                    sa_exists().where(
-                        (account_entities.c.account_id == tx.account_id) &
-                        (account_entities.c.entity_id == entity_id)
-                    )
-                ).scalar()
-                if inherited:
-                    continue
-            # This transaction was included via split match — find the matching splits
-            matching_splits = [s for s in (tx.splits or []) if s.entity_id == entity_id]
+            # Transaction has entity-scoped splits — show only this entity's portion
+            matching_splits = [s for s in splits if s.entity_id == entity_id]
             if matching_splits:
-                original_amount = tx.amount
                 split_total = sum(s.amount for s in matching_splits)
-                # Override display values with split portion
                 tx.amount = split_total if tx.amount >= 0 else -abs(split_total)
                 tx.entity_id = entity_id
+                tx.split_portion = True
                 # Use the first matching split's category if available
-                if matching_splits[0].category_id:
+                if matching_splits[0].category_id and matching_splits[0].category:
                     tx.category_id = matching_splits[0].category_id
-                    # Update category relationship for display
-                    if matching_splits[0].category:
-                        tx.category = matching_splits[0].category
-                # Track the difference for summary adjustment
-                summary_adjustment += tx.amount - original_amount
+                    tx.category = matching_splits[0].category
 
     # Get total count and summary via SQL aggregation (single query, no row fetching)
     stats = service.count_and_summarize(filters)
     total = stats['total']
 
-    # Adjust summary stats to reflect split-based amounts
+    # When entity-filtered, recalculate summary from adjusted transaction amounts
+    # (split portions may differ from raw SQL aggregation)
     total_income = stats['total_income']
     total_expenses = stats['total_expenses']
-    if entity_id and summary_adjustment != 0:
-        # Recalculate from the adjusted transactions for accuracy
+    if entity_id:
         total_income = sum(
             tx.amount for tx in transactions if tx.transaction_type == 'Income'
         )

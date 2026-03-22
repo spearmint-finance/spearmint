@@ -45,6 +45,7 @@ export interface Transaction {
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
   splits?: TransactionSplit[];
+  split_portion?: boolean;
   created_at?: string;
   updated_at?: string;
 }
