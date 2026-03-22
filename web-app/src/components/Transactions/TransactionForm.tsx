@@ -214,6 +214,25 @@ function TransactionForm({
         return;
       }
 
+      // Validate splits sum if splits exist
+      if (data.splits.length > 0) {
+        const splitSum = data.splits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+        const parentAmount = Math.abs(Number(data.amount) || 0);
+        if (Math.abs(splitSum - parentAmount) > 0.01) {
+          enqueueSnackbar(
+            `Splits sum (${splitSum.toFixed(2)}) doesn't match transaction amount (${parentAmount.toFixed(2)})`,
+            { variant: "error" }
+          );
+          return;
+        }
+        // Validate each split has a category
+        const missingCategory = data.splits.some(s => !s.category_id || s.category_id === 0);
+        if (missingCategory) {
+          enqueueSnackbar("Each split must have a category selected", { variant: "error" });
+          return;
+        }
+      }
+
       const accountId = data.account_id ? parseInt(data.account_id, 10) : undefined;
       const entityId = data.entity_id ? parseInt(data.entity_id, 10) : null;
 
