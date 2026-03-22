@@ -619,19 +619,44 @@ function TransactionForm({
                 <Typography variant="caption" color="text.secondary">
                   Split Transaction
                 </Typography>
-                <Button
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => {
-                    const currentSplits = watch("splits") || [];
-                    setValue("splits", [
-                      ...currentSplits,
-                      { amount: 0, category_id: 0, entity_id: "", description: "" }
-                    ]);
-                  }}
-                >
-                  Add Split
-                </Button>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  {(watch("splits") || []).length >= 2 && (
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        const currentSplits = watch("splits") || [];
+                        const parentAmount = Math.abs(Number(watch("amount")) || 0);
+                        const count = currentSplits.length;
+                        if (count === 0 || parentAmount === 0) return;
+                        const evenAmount = Math.round((parentAmount / count) * 100) / 100;
+                        const lastAmount = Math.round((parentAmount - evenAmount * (count - 1)) * 100) / 100;
+                        const updated = currentSplits.map((s: SplitRow, i: number) => ({
+                          ...s,
+                          amount: i === count - 1 ? lastAmount : evenAmount,
+                        }));
+                        setValue("splits", updated);
+                      }}
+                    >
+                      Split Evenly
+                    </Button>
+                  )}
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => {
+                      const currentSplits = watch("splits") || [];
+                      const parentAmount = Math.abs(Number(watch("amount")) || 0);
+                      const usedAmount = currentSplits.reduce((sum: number, s: SplitRow) => sum + (Number(s.amount) || 0), 0);
+                      const remaining = Math.round((parentAmount - usedAmount) * 100) / 100;
+                      setValue("splits", [
+                        ...currentSplits,
+                        { amount: Math.max(0, remaining), category_id: 0, entity_id: "", description: "" }
+                      ]);
+                    }}
+                  >
+                    Add Split
+                  </Button>
+                </Box>
               </Box>
               <Controller
                 name="splits"
