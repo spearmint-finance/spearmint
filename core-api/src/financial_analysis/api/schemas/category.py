@@ -35,6 +35,7 @@ class CategoryResponse(CategoryBase):
 
     category_id: int = Field(..., description="Category ID")
     created_at: datetime = Field(..., description="Creation timestamp")
+    transaction_count: Optional[int] = Field(None, description="Number of transactions using this category")
 
     model_config = ConfigDict(from_attributes=True)
 

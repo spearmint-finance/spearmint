@@ -12,6 +12,7 @@ export interface Category {
   entity_id: number | null;
   created_at: string;
   updated_at?: string;
+  transaction_count?: number | null;
 }
 
 export interface CategoryCreate {
