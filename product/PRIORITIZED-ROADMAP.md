@@ -10,7 +10,7 @@
 
 **Goal:** Be the best self-hosted personal finance ledger on the market.
 
-**Status:** 90% complete — core transaction, account, reporting, and import workflows are production-ready. Key remaining items are authorization and budget management.
+**Status:** 85% complete (11/13 items done) — core transaction, account, reporting, import, and split workflows are production-ready. Key remaining items are authentication (#141) and budget management (#144). Transaction relationships are functional (auto-detection + linking) but need UI polish.
 
 ### G1 Checklist
 
@@ -25,10 +25,10 @@
 | 7 | Net worth tracking | Done | Multi-entity scoped, entity switcher |
 | 8 | Dashboard with charts | Done | Category pie chart, trends, cash flow, net worth card |
 | 9 | Multi-entity support | Done | Entity CRUD, entity-scoped accounts and P&L |
-| 10 | **Authentication & authorization** | **Not Started** | **P1 blocker — no auth on any endpoint (KI-002)** |
-| 11 | **Budget management UI** | **Not Started** | DB model exists, no frontend implementation |
-| 12 | Transaction relationships (transfers, reimbursements) | Partial | Detection endpoints exist, UI minimal |
-| 13 | Transaction splits | Partial | Form exists, backend complete |
+| 10 | **Authentication & authorization** | **Not Started** | **P0 blocker — no auth on any endpoint (#141)** |
+| 11 | **Budget management UI** | **Not Started** | DB model exists, no frontend implementation (#144) |
+| 12 | Transaction relationships (transfers, reimbursements) | Partial | Auto-detection + linking works; UI shows link icon + tooltip. Missing: relationship type display, manual link form, bidirectional navigation (#147) |
+| 13 | Transaction splits | Done | Full split form, "Split Evenly", inline entity selector, grid indicator, amount validation. Shipped by accounts team (iterations 58-66) |
 
 ### G1 Completion Criteria
 
@@ -49,9 +49,9 @@ G1 is complete when:
 
 | Priority | Item | Owner | PRD |
 |----------|------|-------|-----|
-| P1 | Scenario builder (full implementation) | Dashboard team | — |
+| P1 | Scenario builder (full implementation) | Dashboard team | [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md) |
 | P1 | Confidence-based forecasting (upper/lower bounds) | Dashboard team | [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md) |
-| P2 | Budget management (envelopes, drag-and-drop reallocation) | Accounts team | — |
+| P2 | Budget management (envelopes, drag-and-drop reallocation) | Accounts team | [budget-management-ui.md](feature-planning/budget-management-ui.md) |
 | P2 | Budget advisor agent (A2A) | Product team | [budget-advisor-agent.md](feature-planning/budget-advisor-agent.md) |
 | P3 | Bank data aggregation (Plaid) | Accounts team | [bank-data-aggregation.md](feature-planning/bank-data-aggregation.md) |
 
@@ -77,20 +77,27 @@ These are the items that should be worked on NOW, in priority order:
 | 4 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
 | 5 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
 | 6 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
-| 7 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
+| 7 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
+| 8 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
 ## Completed Work (by team)
 
-### Accounts Team (40+ iterations)
-- Full account CRUD with multi-type support
+### Accounts Team (71+ iterations, as of 2026-03-22)
+- Full account CRUD with multi-type support (checking, savings, credit card, loan, 401k, brokerage)
 - Entity-scoped net worth calculation
 - Balance history and reconciliation
-- Transaction form with account selector
-- CSV export, tag filtering, pagination
+- Transaction form with account selector, tags, categories, entity assignment
+- CSV import with auto-account creation from Tiller, deduplication
+- CSV export with loading state
+- Transaction splits: full form, "Split Evenly", inline entity selector, grid indicator, amount validation
+- Transaction relationships: auto-detection for transfers, CC payments, reimbursements, dividend reinvestments
+- Entity system: CRUD, M2M account-entity, direct + inherited entity assignment on transactions, bulk entity assign
+- Category management: entity-scoped categories, search, type filter, entity filter, inline editor
 - Accessibility improvements (aria labels, confirmation dialogs)
-- Entity reassignment in account details
+- Date range validation, batch clear validation, error feedback
+- Debug logging cleanup (print → proper logging)
 
 ### Dashboard Team (8 iterations)
 - Category pie chart with responsive layout
