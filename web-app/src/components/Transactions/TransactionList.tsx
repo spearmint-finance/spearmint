@@ -127,6 +127,11 @@ function TransactionList() {
   const [isExporting, setIsExporting] = useState(false);
   const [filtersDialogOpen, setFiltersDialogOpen] = useState(false);
 
+  // Bulk selection state
+  const [selectedRowIds, setSelectedRowIds] = useState<number[]>([]);
+  const [bulkEntityDialogOpen, setBulkEntityDialogOpen] = useState(false);
+  const [bulkEntityId, setBulkEntityId] = useState<string>("");
+
   // State for advanced filters
   const [filters, setFilters] = useState({
     start_date: "",
@@ -440,70 +445,35 @@ function TransactionList() {
     {
       field: "entity_id",
       headerName: "Entity",
-      width: 160,
+      width: 140,
       filterable: false,
       sortable: false,
-      renderCell: (params) => {
-        const row = params.row;
-        let displayName = "-";
-        let isDirect = false;
-
+      valueGetter: (_value, row) => {
         if (row.entity_id) {
-          isDirect = true;
           const entity = entitiesData.find((e) => e.entity_id === row.entity_id);
-          displayName = entity?.entity_name || "-";
-        } else if (row.account_id && accountsData) {
+          return entity?.entity_name || "-";
+        }
+        if (row.account_id && accountsData) {
           const account = accountsData.find((a) => a.account_id === row.account_id);
           if (account && account.entity_ids?.length > 0) {
-            displayName = account.entity_ids
+            return account.entity_ids
               .map((eid: number) => entitiesData.find((e) => e.entity_id === eid)?.entity_name)
               .filter(Boolean)
               .join(", ");
           }
         }
-
-        return (
-          <Select
-            fullWidth
-            size="small"
-            variant="standard"
-            value={row.entity_id ?? ""}
-            displayEmpty
-            onClick={(e) => e.stopPropagation()}
-            onChange={async (e) => {
-              e.stopPropagation();
-              const newVal = e.target.value === "" ? null : Number(e.target.value);
-              try {
-                await updateTransaction.mutateAsync({
-                  id: Number(params.id),
-                  data: { entity_id: newVal },
-                });
-                enqueueSnackbar("Entity updated", { variant: "success" });
-              } catch {
-                enqueueSnackbar("Failed to update entity", { variant: "error" });
-              }
-            }}
-            renderValue={() => (
-              <Typography
-                variant="body2"
-                color={isDirect ? "text.primary" : "text.secondary"}
-                noWrap
-                sx={{ fontStyle: isDirect ? "normal" : "italic" }}
-              >
-                {displayName}
-              </Typography>
-            )}
-            sx={{ "& .MuiSelect-select": { py: 0.5 }, "&:before": { display: "none" }, "&:after": { display: "none" } }}
-          >
-            <MenuItem value=""><em>None</em></MenuItem>
-            {entitiesData.map((entity) => (
-              <MenuItem key={entity.entity_id} value={entity.entity_id}>
-                {entity.entity_name}
-              </MenuItem>
-            ))}
-          </Select>
-        );
+        return "-";
       },
+      renderCell: (params) => (
+        <Typography
+          variant="body2"
+          color={params.row.entity_id ? "text.primary" : "text.secondary"}
+          sx={{ fontStyle: params.row.entity_id ? "normal" : "italic" }}
+          noWrap
+        >
+          {params.value}
+        </Typography>
+      ),
     } as GridColDef,
     ...([
       { field: "is_capital_expense", headerName: "CapEx" },
@@ -543,7 +513,7 @@ function TransactionList() {
   const handleCellClick = (params: any) => {
     // Don't open detail dialog when clicking on editable or boolean toggle cells
     const nonClickableFields = [
-      "description", "category_id", "entity_id",
+      "__check__", "description", "category_id",
       "is_capital_expense", "is_tax_deductible", "is_recurring",
       "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
     ];
@@ -855,6 +825,29 @@ function TransactionList() {
         </Paper>
       )}
 
+      {/* Bulk Action Bar */}
+      {selectedRowIds.length > 0 && (
+        <Paper sx={{ p: 1.5, mb: 1, display: "flex", alignItems: "center", gap: 2, bgcolor: "primary.50" }}>
+          <Typography variant="body2" sx={{ fontWeight: "medium" }}>
+            {selectedRowIds.length} selected
+          </Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setBulkEntityDialogOpen(true)}
+          >
+            Assign Entity
+          </Button>
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setSelectedRowIds([])}
+          >
+            Clear Selection
+          </Button>
+        </Paper>
+      )}
+
       {/* Data Grid */}
       <Paper
         sx={{
@@ -893,6 +886,14 @@ function TransactionList() {
           disableColumnMenu={false}
           columnVisibilityModel={columnVisibilityModel}
           onColumnVisibilityModelChange={setColumnVisibilityModel}
+          checkboxSelection
+          onRowSelectionModelChange={(model) => {
+            // MUI DataGrid v7: model is { type, ids: Set<GridRowId> }
+            const ids = model && typeof model === 'object' && 'ids' in model
+              ? Array.from((model as any).ids)
+              : Array.isArray(model) ? model : [];
+            setSelectedRowIds(ids as number[]);
+          }}
           editMode="cell"
           onCellEditCommit={async (params) => {
             try {
@@ -976,6 +977,63 @@ function TransactionList() {
         onClose={() => setCreateDialogOpen(false)}
         mode="create"
       />
+
+      {/* Bulk Entity Assignment Dialog */}
+      <Dialog
+        open={bulkEntityDialogOpen}
+        onClose={() => setBulkEntityDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Assign Entity to {selectedRowIds.length} Transactions</DialogTitle>
+        <DialogContent>
+          <TextField
+            select
+            fullWidth
+            label="Entity"
+            value={bulkEntityId}
+            onChange={(e) => setBulkEntityId(e.target.value)}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem value=""><em>None (clear entity)</em></MenuItem>
+            {entitiesData.map((entity) => (
+              <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                {entity.entity_name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkEntityDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              const entityIdValue = bulkEntityId === "" ? null : parseInt(bulkEntityId, 10);
+              try {
+                const response = await fetch("/api/transactions/bulk-update", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    transaction_ids: selectedRowIds,
+                    updates: { entity_id: entityIdValue },
+                  }),
+                });
+                if (!response.ok) throw new Error("Bulk update failed");
+                const result = await response.json();
+                enqueueSnackbar(`Entity updated for ${result.updated} transactions`, { variant: "success" });
+                setBulkEntityDialogOpen(false);
+                setSelectedRowIds([]);
+                setBulkEntityId("");
+                queryClient.invalidateQueries({ queryKey: ["transactions"] });
+              } catch {
+                enqueueSnackbar("Failed to update entities", { variant: "error" });
+              }
+            }}
+          >
+            Assign
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Filters Dialog */}
       <Dialog
