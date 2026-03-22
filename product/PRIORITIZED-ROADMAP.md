@@ -1,6 +1,6 @@
 # Spearmint Prioritized Roadmap
 
-**Last Updated:** 2026-03-20
+**Last Updated:** 2026-03-22
 **Owner:** Product Team
 **North Star Metric:** GitHub Stars (current: 0, target: 1,000+)
 
@@ -50,7 +50,7 @@ G1 is complete when:
 | Priority | Item | Owner | PRD |
 |----------|------|-------|-----|
 | P1 | Scenario builder (full implementation) | Dashboard team | — |
-| P1 | Confidence-based forecasting (upper/lower bounds) | Dashboard team | — |
+| P1 | Confidence-based forecasting (upper/lower bounds) | Dashboard team | [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md) |
 | P2 | Budget management (envelopes, drag-and-drop reallocation) | Accounts team | — |
 | P2 | Budget advisor agent (A2A) | Product team | [budget-advisor-agent.md](feature-planning/budget-advisor-agent.md) |
 | P3 | Bank data aggregation (Plaid) | Accounts team | [bank-data-aggregation.md](feature-planning/bank-data-aggregation.md) |
