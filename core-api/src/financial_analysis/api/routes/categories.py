@@ -119,10 +119,25 @@ def list_categories(
             search_text=search_text,
             entity_id=entity_id,
         )
-        
+
+        # Get transaction counts per category in a single query
+        from ...database.models import Transaction
+        from sqlalchemy import func
+        counts = dict(
+            db.query(Transaction.category_id, func.count(Transaction.transaction_id))
+            .group_by(Transaction.category_id)
+            .all()
+        )
+
+        category_responses = []
+        for cat in categories:
+            resp = CategoryResponse.model_validate(cat)
+            resp.transaction_count = counts.get(cat.category_id, 0)
+            category_responses.append(resp)
+
         return CategoryListResponse(
-            categories=categories,
-            total=len(categories)
+            categories=category_responses,
+            total=len(category_responses)
         )
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -40,6 +40,7 @@ export const categoriesApi = {
         description: c.description ?? null,
         entity_id: c.entity_id ?? c.entityId ?? null,
         created_at: c.created_at ?? c.createdAt ?? "",
+        transaction_count: c.transaction_count ?? c.transactionCount ?? null,
       })
     ) as Category[];
     return { categories, total: categories.length };
