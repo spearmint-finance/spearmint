@@ -5,7 +5,7 @@ import re
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-from ..database.models import Category, CategoryRule, Transaction
+from ..database.models import Category, CategoryRule, Transaction, TransactionSplit, Budget
 from ..utils.validators import DataValidator, ValidationError
 
 
@@ -333,6 +333,62 @@ class CategoryService:
         
         return True
     
+    def merge_category(self, source_id: int, target_id: int) -> dict:
+        """
+        Merge source category into target. Reassigns all transactions, splits,
+        rules, budgets, and child categories from source to target, then deletes source.
+
+        Returns:
+            dict with counts of reassigned items
+        """
+        source = self.get_category(source_id)
+        if not source:
+            raise ValidationError(f"Source category {source_id} not found")
+
+        target = self.get_category(target_id)
+        if not target:
+            raise ValidationError(f"Target category {target_id} not found")
+
+        if source_id == target_id:
+            raise ValidationError("Cannot merge a category into itself")
+
+        # Reassign transactions
+        tx_count = self.db.query(Transaction).filter(
+            Transaction.category_id == source_id
+        ).update({Transaction.category_id: target_id})
+
+        # Reassign splits
+        split_count = self.db.query(TransactionSplit).filter(
+            TransactionSplit.category_id == source_id
+        ).update({TransactionSplit.category_id: target_id})
+
+        # Reassign category rules
+        rule_count = self.db.query(CategoryRule).filter(
+            CategoryRule.category_id == source_id
+        ).update({CategoryRule.category_id: target_id})
+
+        # Reassign budgets
+        budget_count = self.db.query(Budget).filter(
+            Budget.category_id == source_id
+        ).update({Budget.category_id: target_id})
+
+        # Reparent child categories
+        child_count = self.db.query(Category).filter(
+            Category.parent_category_id == source_id
+        ).update({Category.parent_category_id: target_id})
+
+        # Delete the now-empty source category
+        self.db.delete(source)
+        self.db.commit()
+
+        return {
+            "transactions": tx_count,
+            "splits": split_count,
+            "rules": rule_count,
+            "budgets": budget_count,
+            "children": child_count,
+        }
+
     def _would_create_circular_reference(self, category_id: int, new_parent_id: int) -> bool:
         """
         Check if setting a new parent would create a circular reference.
