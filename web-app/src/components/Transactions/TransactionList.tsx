@@ -415,10 +415,22 @@ function TransactionList() {
     {
       field: "amount",
       headerName: "Amount",
-      width: 130,
+      width: 150,
       align: "right",
       headerAlign: "right",
-      valueFormatter: (value) => formatCurrency(value),
+      renderCell: (params) => {
+        const isSplitPortion = params.row.split_portion;
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "flex-end", width: "100%" }}>
+            {isSplitPortion && (
+              <Tooltip title="Showing entity's split portion">
+                <Chip label="split" size="small" variant="outlined" color="info" sx={{ height: 18, fontSize: "0.65rem", "& .MuiChip-label": { px: 0.5 } }} />
+              </Tooltip>
+            )}
+            <span>{formatCurrency(params.value)}</span>
+          </Box>
+        );
+      },
       sortComparator: (v1, v2) => {
         const num1 = typeof v1 === "string" ? parseFloat(v1) : v1;
         const num2 = typeof v2 === "string" ? parseFloat(v2) : v2;
