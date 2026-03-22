@@ -344,10 +344,10 @@ function TransactionForm({
       }
       onClose();
     } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      const action = mode === "create" ? "create" : "update";
       enqueueSnackbar(
-        mode === "create"
-          ? "Failed to create transaction"
-          : "Failed to update transaction",
+        detail ? `Failed to ${action} transaction: ${detail}` : `Failed to ${action} transaction`,
         { variant: "error" }
       );
     }
@@ -383,7 +383,8 @@ function TransactionForm({
         variant: "success",
       });
     } catch (error) {
-      enqueueSnackbar("Failed to create category", { variant: "error" });
+      const detail = error instanceof Error ? error.message : '';
+      enqueueSnackbar(detail ? `Failed to create category: ${detail}` : "Failed to create category", { variant: "error" });
     }
   };
 

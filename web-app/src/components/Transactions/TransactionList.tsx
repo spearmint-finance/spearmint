@@ -259,7 +259,8 @@ function TransactionList() {
       });
       return newRow;
     } catch (error) {
-      enqueueSnackbar("Failed to update transaction", { variant: "error" });
+      const detail = error instanceof Error ? error.message : '';
+      enqueueSnackbar(detail ? `Failed to update: ${detail}` : "Failed to update transaction", { variant: "error" });
       throw error;
     }
   };
