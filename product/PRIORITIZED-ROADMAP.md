@@ -80,7 +80,8 @@ These are the items that should be worked on NOW, in priority order:
 | 7 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
 | 8 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
 | 9 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
-| 10 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
+| 10 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. Replace 10 silent console.error failures with user-visible snackbar. Pattern established in PR #206. |
+| 11 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
