@@ -22,12 +22,12 @@ test.describe("Category Management", () => {
     await expect(page.getByText("Edit Category")).toBeVisible({ timeout: 5000 });
 
     // The dialog should contain a Category Name field pre-filled
-    const nameField = page.locator('input[type="text"]').first();
+    const dialog = page.locator('[role="dialog"]');
+    const nameField = dialog.getByLabel("Category Name");
     const nameValue = await nameField.inputValue();
     expect(nameValue.length).toBeGreaterThan(0);
 
     // Should have an Entity dropdown in the dialog
-    const dialog = page.locator('[role="dialog"]');
     await expect(dialog.getByText("Global categories are shared across all entities")).toBeVisible();
 
     // Should have Update button (not Create)
@@ -80,6 +80,64 @@ test.describe("Category Management", () => {
 
     // Close
     await page.getByRole("button", { name: "Cancel" }).click();
+  });
+
+  test("search filters categories by name", async ({ page }) => {
+    await page.goto("/settings");
+    await expect(page.locator(".MuiDataGrid-root")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(".MuiDataGrid-row").first()).toBeVisible({ timeout: 10000 });
+
+    // Type a search term to filter categories
+    const searchField = page.getByPlaceholder("Search categories...");
+    await searchField.fill("rent");
+    await page.waitForTimeout(500);
+
+    // After filtering, the grid should show fewer rows than total
+    // The count text shows "X of Y" where X is filtered count
+    const filteredCountText = page.locator('p.MuiTypography-body2:has-text(" of ")');
+    await expect(filteredCountText).toBeVisible({ timeout: 5000 });
+    const filteredText = await filteredCountText.textContent();
+    expect(filteredText).toMatch(/\d+ of \d+/);
+
+    // The filtered count should be less than total
+    const parts = filteredText!.match(/(\d+) of (\d+)/);
+    const filtered = parseInt(parts![1]);
+    const total = parseInt(parts![2]);
+    expect(filtered).toBeLessThan(total);
+    expect(filtered).toBeGreaterThan(0); // "rent" should match some categories
+
+    // Clear search — count should restore
+    await searchField.clear();
+    await page.waitForTimeout(500);
+    const restoredText = await filteredCountText.textContent();
+    const restoredParts = restoredText!.match(/(\d+) of (\d+)/);
+    expect(parseInt(restoredParts![1])).toBe(total);
+  });
+
+  test("type filter filters categories", async ({ page }) => {
+    await page.goto("/settings");
+    await expect(page.locator(".MuiDataGrid-root")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(".MuiDataGrid-row").first()).toBeVisible({ timeout: 10000 });
+
+    // Get initial count
+    const countText = page.locator('p.MuiTypography-body2:has-text(" of ")');
+    await expect(countText).toBeVisible({ timeout: 5000 });
+    const initialText = await countText.textContent();
+    const totalMatch = initialText!.match(/(\d+) of (\d+)/);
+    const total = parseInt(totalMatch![2]);
+
+    // Click the type filter dropdown (not the DataGrid column)
+    const typeFilter = page.getByRole("combobox", { name: /Type.*All Types/i });
+    await typeFilter.click();
+    await page.getByRole("option", { name: "Income" }).click();
+    await page.waitForTimeout(500);
+
+    // Count should be less than total
+    const filteredText = await countText.textContent();
+    const filteredMatch = filteredText!.match(/(\d+) of (\d+)/);
+    const filtered = parseInt(filteredMatch![1]);
+    expect(filtered).toBeLessThan(total);
+    expect(filtered).toBeGreaterThan(0);
   });
 
   test("category grid shows entity column with Global/entity chips", async ({ page }) => {
