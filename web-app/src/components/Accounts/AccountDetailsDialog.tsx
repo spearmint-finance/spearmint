@@ -38,8 +38,9 @@ import {
   History as HistoryIcon,
   CheckCircle as CheckCircleIcon,
   Receipt as ReceiptIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Account,
   AccountUpdate,
@@ -50,6 +51,7 @@ import {
   getBalanceHistory,
   getPortfolioSummary,
   getReconciliations,
+  createReconciliation,
   addBalanceSnapshot,
   updateAccount,
   deleteAccount,
@@ -102,6 +104,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     new Date().toISOString().split('T')[0]
   );
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [showReconForm, setShowReconForm] = useState(false);
+  const [reconDate, setReconDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reconBalance, setReconBalance] = useState('');
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     account_name: account.account_name,
@@ -154,6 +160,20 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       onAccountUpdated();
       setIsEditing(false);
+    },
+  });
+
+  // Create reconciliation mutation
+  const createReconMutation = useMutation({
+    mutationFn: () =>
+      createReconciliation(account.account_id, {
+        statement_date: reconDate,
+        statement_balance: parseFloat(reconBalance),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
+      setShowReconForm(false);
+      setReconBalance('');
     },
   });
 
@@ -597,6 +617,71 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
         )}
 
         <TabPanel value={tabValue} index={3}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="subtitle2">Reconciliations</Typography>
+            <Button
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => setShowReconForm(true)}
+              disabled={showReconForm}
+            >
+              Start Reconciliation
+            </Button>
+          </Box>
+
+          {showReconForm && (
+            <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                New Reconciliation
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Statement Date"
+                    type="date"
+                    value={reconDate}
+                    onChange={(e) => setReconDate(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    label="Statement Balance"
+                    type="number"
+                    value={reconBalance}
+                    onChange={(e) => setReconBalance(e.target.value)}
+                    fullWidth
+                    size="small"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                  />
+                </Grid>
+              </Grid>
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setShowReconForm(false);
+                    setReconBalance('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => createReconMutation.mutate()}
+                  disabled={!reconBalance || createReconMutation.isPending}
+                >
+                  {createReconMutation.isPending ? 'Creating...' : 'Create'}
+                </Button>
+              </Box>
+            </Card>
+          )}
+
           {reconciliations && reconciliations.length > 0 ? (
             <List>
               {reconciliations.map((recon) => (
@@ -609,11 +694,17 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       recon.calculated_balance
                     )} | Discrepancy: ${formatCurrency(recon.discrepancy_amount || 0)}`}
                   />
-                  {recon.is_reconciled && (
+                  {recon.is_reconciled ? (
                     <Chip
                       icon={<CheckCircleIcon />}
                       label="Reconciled"
                       color="success"
+                      size="small"
+                    />
+                  ) : (
+                    <Chip
+                      label={`${formatCurrency(recon.discrepancy_amount || 0)} off`}
+                      color={recon.discrepancy_amount && Math.abs(recon.discrepancy_amount) > 0.01 ? 'warning' : 'success'}
                       size="small"
                     />
                   )}
@@ -621,7 +712,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
               ))}
             </List>
           ) : (
-            <Typography color="text.secondary">No reconciliations found</Typography>
+            <Typography color="text.secondary">
+              No reconciliations yet. Click "Start Reconciliation" to compare your
+              statement balance against calculated transactions.
+            </Typography>
           )}
         </TabPanel>
       </DialogContent>
