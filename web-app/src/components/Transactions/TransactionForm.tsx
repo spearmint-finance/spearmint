@@ -98,8 +98,12 @@ function TransactionForm({
   const createCategoryMutation = useCreateCategory();
   const { selectedEntityId } = useEntityContext();
   const { data: entitiesData = [] } = useEntities();
+
+  // Track the form's entity_id to filter categories by the transaction's entity, not the global selector
+  const [formEntityId, setFormEntityId] = useState<number | undefined>(undefined);
+  const categoryEntityId = formEntityId ?? selectedEntityId ?? undefined;
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } =
-    useCategories({ entity_id: selectedEntityId ?? undefined });
+    useCategories({ entity_id: categoryEntityId });
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
@@ -153,6 +157,8 @@ function TransactionForm({
   // Reset form when transaction changes
   useEffect(() => {
     if (transaction && mode === "edit") {
+      // Use the transaction's entity_id to filter categories
+      setFormEntityId(transaction.entity_id ?? undefined);
       reset({
         date: transaction.date,
         description: transaction.description,
@@ -177,6 +183,7 @@ function TransactionForm({
         })) ?? [],
       });
     } else if (mode === "create") {
+      setFormEntityId(selectedEntityId ?? undefined);
       reset({
         date: getTodayDate(),
         description: "",
@@ -324,6 +331,7 @@ function TransactionForm({
       const newCategory = await createCategoryMutation.mutateAsync({
         category_name: newCategoryName,
         category_type: newCategoryType,
+        entity_id: formEntityId ?? null,
       });
 
       // Refresh the categories list
@@ -559,6 +567,11 @@ function TransactionForm({
                       select
                       fullWidth
                       value={field.value || ""}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const newEntityId = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                        setFormEntityId(newEntityId);
+                      }}
                     >
                       <MenuItem value="">
                         <em>Inherit from account</em>
