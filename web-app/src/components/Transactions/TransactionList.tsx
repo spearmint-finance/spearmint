@@ -440,31 +440,70 @@ function TransactionList() {
     {
       field: "entity_id",
       headerName: "Entity",
-      width: 140,
+      width: 160,
       filterable: false,
       sortable: false,
-      valueGetter: (_value, row) => {
+      renderCell: (params) => {
+        const row = params.row;
+        let displayName = "-";
+        let isDirect = false;
+
         if (row.entity_id) {
+          isDirect = true;
           const entity = entitiesData.find((e) => e.entity_id === row.entity_id);
-          return entity?.entity_name || "-";
-        }
-        // Inherit from account
-        if (row.account_id && accountsData) {
+          displayName = entity?.entity_name || "-";
+        } else if (row.account_id && accountsData) {
           const account = accountsData.find((a) => a.account_id === row.account_id);
-          if (account && account.entity_ids.length > 0) {
-            return account.entity_ids
-              .map((eid) => entitiesData.find((e) => e.entity_id === eid)?.entity_name)
+          if (account && account.entity_ids?.length > 0) {
+            displayName = account.entity_ids
+              .map((eid: number) => entitiesData.find((e) => e.entity_id === eid)?.entity_name)
               .filter(Boolean)
               .join(", ");
           }
         }
-        return "-";
+
+        return (
+          <Select
+            fullWidth
+            size="small"
+            variant="standard"
+            value={row.entity_id ?? ""}
+            displayEmpty
+            onClick={(e) => e.stopPropagation()}
+            onChange={async (e) => {
+              e.stopPropagation();
+              const newVal = e.target.value === "" ? null : Number(e.target.value);
+              try {
+                await updateTransaction.mutateAsync({
+                  id: Number(params.id),
+                  data: { entity_id: newVal },
+                });
+                enqueueSnackbar("Entity updated", { variant: "success" });
+              } catch {
+                enqueueSnackbar("Failed to update entity", { variant: "error" });
+              }
+            }}
+            renderValue={() => (
+              <Typography
+                variant="body2"
+                color={isDirect ? "text.primary" : "text.secondary"}
+                noWrap
+                sx={{ fontStyle: isDirect ? "normal" : "italic" }}
+              >
+                {displayName}
+              </Typography>
+            )}
+            sx={{ "& .MuiSelect-select": { py: 0.5 }, "&:before": { display: "none" }, "&:after": { display: "none" } }}
+          >
+            <MenuItem value=""><em>None</em></MenuItem>
+            {entitiesData.map((entity) => (
+              <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                {entity.entity_name}
+              </MenuItem>
+            ))}
+          </Select>
+        );
       },
-      renderCell: (params) => (
-        <Typography variant="body2" color={params.row.entity_id ? "text.primary" : "text.secondary"} noWrap>
-          {params.value}
-        </Typography>
-      ),
     } as GridColDef,
     ...([
       { field: "is_capital_expense", headerName: "CapEx" },
@@ -504,7 +543,7 @@ function TransactionList() {
   const handleCellClick = (params: any) => {
     // Don't open detail dialog when clicking on editable or boolean toggle cells
     const nonClickableFields = [
-      "description", "category_id",
+      "description", "category_id", "entity_id",
       "is_capital_expense", "is_tax_deductible", "is_recurring",
       "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
     ];
