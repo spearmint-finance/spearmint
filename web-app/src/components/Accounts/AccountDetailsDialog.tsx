@@ -549,12 +549,18 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     <Typography
                       variant="h6"
                       color={
-                        portfolio.total_gain_loss && portfolio.total_gain_loss > 0
-                          ? 'success.main'
-                          : 'error.main'
+                        portfolio.total_gain_loss == null
+                          ? 'text.secondary'
+                          : portfolio.total_gain_loss > 0
+                            ? 'success.main'
+                            : portfolio.total_gain_loss < 0
+                              ? 'error.main'
+                              : 'text.primary'
                       }
                     >
-                      {formatCurrency(portfolio.total_gain_loss || 0)}
+                      {portfolio.total_gain_loss != null
+                        ? formatCurrency(portfolio.total_gain_loss)
+                        : 'N/A'}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -569,7 +575,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                         primary={`${holding.symbol} - ${holding.description || 'N/A'}`}
                         secondary={`${holding.quantity} shares @ ${formatCurrency(
                           holding.current_value || 0
-                        )}`}
+                        )}${holding.gain_loss != null ? ` (${holding.gain_loss >= 0 ? '+' : ''}${formatCurrency(holding.gain_loss)})` : ''}`}
                       />
                       {holding.gain_loss_percent != null && (
                         <Chip
