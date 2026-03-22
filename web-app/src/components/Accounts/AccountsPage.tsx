@@ -144,6 +144,7 @@ const AccountsPage: React.FC = () => {
             cursor: 'pointer',
             '&:hover': { boxShadow: 3 },
             height: '100%',
+            ...(account.is_active === false && { opacity: 0.6 }),
           }}
           onClick={() => handleAccountClick(account)}
         >
@@ -163,6 +164,9 @@ const AccountsPage: React.FC = () => {
               <Box display="flex" alignItems="center" gap={0.5}>
                 {account.link_type && account.link_type !== 'manual' && account.linked_provider_id && (
                   <SyncButton linkedProviderId={account.linked_provider_id} />
+                )}
+                {account.is_active === false && (
+                  <Chip label="Inactive" size="small" color="warning" />
                 )}
                 <Chip
                   label={getAccountTypeLabel(account.account_type)}
