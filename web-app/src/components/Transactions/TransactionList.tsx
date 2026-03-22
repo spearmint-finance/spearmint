@@ -313,12 +313,33 @@ function TransactionList() {
       renderCell: (params) => {
         const categoryName = params.row.category_name;
         const isUncategorized = !categoryName;
+        const splits = params.row.splits || [];
+        const hasSplits = splits.length > 0;
 
-        if (isUncategorized) {
+        if (isUncategorized && !hasSplits) {
           return (
             <Typography variant="body2" sx={{ color: "warning.main", fontStyle: "italic" }}>
               Uncategorized
             </Typography>
+          );
+        }
+
+        if (hasSplits) {
+          return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Typography variant="body2" noWrap>
+                {categoryName || "Split"}
+              </Typography>
+              <Typography variant="caption" sx={{
+                bgcolor: "action.selected",
+                px: 0.5,
+                borderRadius: 0.5,
+                fontSize: "0.65rem",
+                whiteSpace: "nowrap",
+              }}>
+                {splits.length} splits
+              </Typography>
+            </Box>
           );
         }
 
