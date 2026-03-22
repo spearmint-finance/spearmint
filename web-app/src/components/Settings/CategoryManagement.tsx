@@ -173,7 +173,24 @@ export default function CategoryManagement() {
       const entityId = parseInt(entityFilter, 10);
       result = result.filter((c) => c.entity_id === entityId);
     }
-    return result;
+    // Sort hierarchically: parents first (sorted), then children under each parent
+    const roots = result.filter((c) => !c.parent_category_id);
+    const children = result.filter((c) => c.parent_category_id);
+    roots.sort((a, b) => a.category_name.localeCompare(b.category_name));
+    const sorted: typeof result = [];
+    for (const root of roots) {
+      sorted.push(root);
+      const kids = children
+        .filter((c) => c.parent_category_id === root.category_id)
+        .sort((a, b) => a.category_name.localeCompare(b.category_name));
+      sorted.push(...kids);
+    }
+    // Add orphan children (parent filtered out)
+    const placed = new Set(sorted.map((c) => c.category_id));
+    for (const child of children) {
+      if (!placed.has(child.category_id)) sorted.push(child);
+    }
+    return sorted;
   }, [categories, searchText, typeFilter, entityFilter]);
 
   if (isLoading) {
@@ -202,7 +219,7 @@ export default function CategoryManagement() {
       minWidth: 200,
       editable: true,
       renderCell: (params: GridRenderCellParams) => (
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box display="flex" alignItems="center" gap={1} sx={params.row.parent_category_id ? { pl: 3 } : {}}>
           {params.row.parent_category_id ? (
             <FolderIcon fontSize="small" color="action" />
           ) : (
