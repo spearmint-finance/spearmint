@@ -55,12 +55,18 @@ class CategoryService:
                 f"Category type must be one of {self.VALID_CATEGORY_TYPES}, got '{category_type}'"
             )
         
-        # Check for duplicate name
-        existing = self.db.query(Category).filter(
+        # Check for duplicate name within same entity scope
+        dup_query = self.db.query(Category).filter(
             Category.category_name == category_name
-        ).first()
+        )
+        if entity_id:
+            dup_query = dup_query.filter(Category.entity_id == entity_id)
+        else:
+            dup_query = dup_query.filter(Category.entity_id.is_(None))
+        existing = dup_query.first()
         if existing:
-            raise ValidationError(f"Category '{category_name}' already exists")
+            scope = "global" if not entity_id else f"entity {entity_id}"
+            raise ValidationError(f"Category '{category_name}' already exists in {scope} scope")
         
         # Verify parent category if provided
         if parent_category_id:
@@ -234,13 +240,20 @@ class CategoryService:
         # Validate updates
         if 'category_name' in updates:
             new_name = self.validator.validate_category(updates['category_name'], 'Category Name')
-            # Check for duplicate name (excluding current category)
-            existing = self.db.query(Category).filter(
+            # Check for duplicate name within same entity scope (excluding current category)
+            entity_id = updates.get('entity_id', category.entity_id)
+            dup_query = self.db.query(Category).filter(
                 Category.category_name == new_name,
                 Category.category_id != category_id
-            ).first()
+            )
+            if entity_id:
+                dup_query = dup_query.filter(Category.entity_id == entity_id)
+            else:
+                dup_query = dup_query.filter(Category.entity_id.is_(None))
+            existing = dup_query.first()
             if existing:
-                raise ValidationError(f"Category '{new_name}' already exists")
+                scope = "global" if not entity_id else f"entity {entity_id}"
+                raise ValidationError(f"Category '{new_name}' already exists in {scope} scope")
             updates['category_name'] = new_name
         
         if 'category_type' in updates:
