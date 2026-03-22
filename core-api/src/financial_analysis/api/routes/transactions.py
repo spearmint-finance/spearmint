@@ -69,6 +69,37 @@ def create_transaction(
         raise HTTPException(status_code=500, detail=f"Failed to create transaction: {str(e)}")
 
 
+@router.put("/transactions/bulk-update")
+def bulk_update_transactions(
+    updates: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Bulk update transactions. Accepts a list of transaction IDs and fields to update.
+
+    Body: { "transaction_ids": [1, 2, 3], "updates": { "entity_id": 1 } }
+    """
+    service = TransactionService(db)
+    transaction_ids = updates.get("transaction_ids", [])
+    field_updates = updates.get("updates", {})
+
+    if not transaction_ids:
+        raise HTTPException(status_code=400, detail="transaction_ids is required")
+    if not field_updates:
+        raise HTTPException(status_code=400, detail="updates is required")
+
+    updated_count = 0
+    for tid in transaction_ids:
+        try:
+            result = service.update_transaction(tid, **field_updates)
+            if result:
+                updated_count += 1
+        except Exception:
+            pass  # Skip failures in bulk operations
+
+    return {"updated": updated_count, "total": len(transaction_ids)}
+
+
 @router.get("/transactions/{transaction_id}", response_model=TransactionResponse)
 def get_transaction(
     transaction_id: int,
