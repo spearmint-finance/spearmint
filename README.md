@@ -18,6 +18,8 @@
 | Investment tracking | Yes | Yes | No | No | No |
 | Transaction rules engine | Yes | Yes | Partial | Yes | No |
 | Forecasting & projections | Yes | Partial | No | No | No |
+| Transaction splits | **Yes** | No | No | Partial | No |
+| Entity-scoped categories | **Yes** | No | No | No | No |
 
 ## Key Features
 
@@ -35,6 +37,12 @@ Manage personal, business, and rental property finances in one place. Each entit
 - **Receivables** — Outstanding reimbursements owed to you
 - **Reconciliation** — Statement vs. calculated balance verification
 - **Summary** — Key financial indicators at a glance
+
+### Transaction Splits
+Split a single transaction across multiple categories, entities, and people. "Split Evenly" distributes amounts automatically. Each split row can be assigned to a different entity — track shared household expenses at the per-person level.
+
+### Category Management
+Full category CRUD with hierarchy support, entity-scoped categories, search, type/entity filters, and inline editing. Categories automatically scope to the active entity — your "Business Travel" category stays out of your personal budget.
 
 ### Smart Automation
 - **Categorization Rules** — Pattern matching on description, source, amount, payment method
