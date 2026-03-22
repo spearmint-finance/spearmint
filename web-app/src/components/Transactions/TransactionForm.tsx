@@ -496,21 +496,37 @@ function TransactionForm({
                       </MenuItem>
                     ) : (
                       [
-                        ...(categoriesData?.categories
-                          .filter((category) => {
-                            // Filter categories by selected transaction type
-                            if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both" || category.category_type === "Transfer";
-                            if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both" || category.category_type === "Transfer";
-                            return true;
-                          })
-                          .map((category) => (
-                          <MenuItem
-                            key={category.category_id}
-                            value={category.category_id}
-                          >
-                            {category.category_name}
-                          </MenuItem>
-                        )) || []),
+                        ...(() => {
+                          const filtered = (categoriesData?.categories || [])
+                            .filter((category) => {
+                              if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both" || category.category_type === "Transfer";
+                              if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both" || category.category_type === "Transfer";
+                              return true;
+                            });
+                          // Sort hierarchically: roots alphabetically, children under their parent
+                          const roots = filtered.filter(c => !c.parent_category_id).sort((a, b) => a.category_name.localeCompare(b.category_name));
+                          const children = filtered.filter(c => c.parent_category_id);
+                          const sorted: typeof filtered = [];
+                          for (const root of roots) {
+                            sorted.push(root);
+                            const kids = children.filter(c => c.parent_category_id === root.category_id).sort((a, b) => a.category_name.localeCompare(b.category_name));
+                            sorted.push(...kids);
+                          }
+                          // Add orphans
+                          const placed = new Set(sorted.map(c => c.category_id));
+                          for (const child of children) {
+                            if (!placed.has(child.category_id)) sorted.push(child);
+                          }
+                          return sorted.map((category) => (
+                            <MenuItem
+                              key={category.category_id}
+                              value={category.category_id}
+                              sx={category.parent_category_id ? { pl: 4 } : { fontWeight: 500 }}
+                            >
+                              {category.parent_category_id ? `└ ${category.category_name}` : category.category_name}
+                            </MenuItem>
+                          ));
+                        })(),
                         <Divider key="divider" />,
                         <MenuItem key="create-new" value="CREATE_NEW">
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "primary.main", fontWeight: "medium" }}>
