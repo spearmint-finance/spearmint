@@ -47,6 +47,8 @@ interface TransactionFormProps {
   onClose: () => void;
   transaction?: Transaction | null;
   mode: "create" | "edit";
+  /** Pre-fill the form in create mode (e.g. for duplicating a transaction) */
+  defaultTransaction?: Transaction | null;
 }
 
 // Default tag suggestions matching seed_tags.py
@@ -90,6 +92,7 @@ function TransactionForm({
   onClose,
   transaction,
   mode,
+  defaultTransaction,
 }: TransactionFormProps) {
   const { enqueueSnackbar } = useSnackbar();
   const createMutation = useCreateTransaction();
@@ -184,27 +187,55 @@ function TransactionForm({
         })) ?? [],
       });
     } else if (mode === "create") {
-      setFormEntityId(selectedEntityId ?? undefined);
-      reset({
-        date: getTodayDate(),
-        description: "",
-        amount: 0,
-        transaction_type: "Expense",
-        category_id: "" as any, // Empty string for unselected state
-        account_id: "",
-        entity_id: selectedEntityId ? String(selectedEntityId) : "",
-        notes: "",
-        tags: [],
-        is_capital_expense: false,
-        is_tax_deductible: false,
-        is_recurring: false,
-        is_reimbursable: false,
-        exclude_from_income: false,
-        exclude_from_expenses: false,
-        splits: [],
-      });
+      const prefill = defaultTransaction;
+      if (prefill) {
+        setFormEntityId(prefill.entity_id ?? selectedEntityId ?? undefined);
+        reset({
+          date: getTodayDate(),
+          description: prefill.description,
+          amount: Math.abs(prefill.amount),
+          transaction_type: prefill.transaction_type === "Transfer" ? "Expense" : prefill.transaction_type,
+          category_id: prefill.category_id,
+          account_id: prefill.account_id ? String(prefill.account_id) : "",
+          entity_id: prefill.entity_id ? String(prefill.entity_id) : selectedEntityId ? String(selectedEntityId) : "",
+          notes: prefill.notes || "",
+          tags: prefill.tags || [],
+          is_capital_expense: !!prefill.is_capital_expense,
+          is_tax_deductible: !!prefill.is_tax_deductible,
+          is_recurring: !!prefill.is_recurring,
+          is_reimbursable: !!prefill.is_reimbursable,
+          exclude_from_income: !!prefill.exclude_from_income,
+          exclude_from_expenses: !!prefill.exclude_from_expenses,
+          splits: prefill.splits?.map(s => ({
+            amount: s.amount,
+            category_id: s.category_id ?? 0,
+            entity_id: s.entity_id ? String(s.entity_id) : "",
+            description: s.description ?? "",
+          })) ?? [],
+        });
+      } else {
+        setFormEntityId(selectedEntityId ?? undefined);
+        reset({
+          date: getTodayDate(),
+          description: "",
+          amount: 0,
+          transaction_type: "Expense",
+          category_id: "" as any, // Empty string for unselected state
+          account_id: "",
+          entity_id: selectedEntityId ? String(selectedEntityId) : "",
+          notes: "",
+          tags: [],
+          is_capital_expense: false,
+          is_tax_deductible: false,
+          is_recurring: false,
+          is_reimbursable: false,
+          exclude_from_income: false,
+          exclude_from_expenses: false,
+          splits: [],
+        });
+      }
     }
-  }, [transaction, mode, reset]);
+  }, [transaction, mode, reset, defaultTransaction]);
 
   const onSubmit = async (data: FormData) => {
     try {

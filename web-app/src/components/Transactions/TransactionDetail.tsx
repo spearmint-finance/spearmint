@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
@@ -65,6 +66,7 @@ function TransactionDetail({
     queryFn: () => getAccounts(),
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editingTags, setEditingTags] = useState(false);
   const [editedTags, setEditedTags] = useState<string[]>([]);
@@ -481,6 +483,12 @@ function TransactionDetail({
             Delete
           </Button>
           <Box sx={{ flex: 1 }} />
+          <Button
+            startIcon={<ContentCopyIcon />}
+            onClick={() => setDuplicateDialogOpen(true)}
+          >
+            Duplicate
+          </Button>
           <Button onClick={onClose}>Close</Button>
           <Button
             variant="contained"
@@ -498,6 +506,14 @@ function TransactionDetail({
         onClose={() => setEditDialogOpen(false)}
         transaction={transaction}
         mode="edit"
+      />
+
+      {/* Duplicate Dialog */}
+      <TransactionForm
+        open={duplicateDialogOpen}
+        onClose={() => setDuplicateDialogOpen(false)}
+        mode="create"
+        defaultTransaction={transaction}
       />
 
       {/* Delete Confirmation Dialog */}
