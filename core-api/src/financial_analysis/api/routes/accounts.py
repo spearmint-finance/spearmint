@@ -442,11 +442,12 @@ def get_holdings(
         }
 
         # Calculate gain/loss if we have both values
-        if holding.cost_basis and holding.current_value:
+        if holding.cost_basis is not None and holding.current_value is not None:
             holding_dict["gain_loss"] = holding.current_value - holding.cost_basis
-            holding_dict["gain_loss_percent"] = float(
-                ((holding.current_value - holding.cost_basis) / holding.cost_basis) * 100
-            )
+            if holding.cost_basis != 0:
+                holding_dict["gain_loss_percent"] = float(
+                    ((holding.current_value - holding.cost_basis) / holding.cost_basis) * 100
+                )
 
         result.append(HoldingResponse(**holding_dict))
 
@@ -532,11 +533,12 @@ def get_portfolio_summary(
             "updated_at": holding.updated_at
         }
 
-        if holding.cost_basis and holding.current_value:
+        if holding.cost_basis is not None and holding.current_value is not None:
             holding_dict["gain_loss"] = holding.current_value - holding.cost_basis
-            holding_dict["gain_loss_percent"] = float(
-                ((holding.current_value - holding.cost_basis) / holding.cost_basis) * 100
-            )
+            if holding.cost_basis != 0:
+                holding_dict["gain_loss_percent"] = float(
+                    ((holding.current_value - holding.cost_basis) / holding.cost_basis) * 100
+                )
 
         holding_responses.append(HoldingResponse(**holding_dict))
 
