@@ -10,9 +10,8 @@
 | [budget-management-ui.md](budget-management-ui.md) | Budget management UI | Accounts team | Draft | G1/G2 |
 | [scenario-builder-completion.md](scenario-builder-completion.md) | Scenario builder completion | Dashboard team | Draft | G2 |
 | [confidence-based-forecasting.md](confidence-based-forecasting.md) | Confidence-based forecasting | Dashboard team | Draft | G2 |
+| [authentication-authorization.md](authentication-authorization.md) | Authentication & authorization | Accounts / Platform team | Draft | G1 |
 
 ## PRDs Needed
 
-| Feature | Priority | Gate | Notes |
-|---------|----------|------|-------|
-| Authentication & authorization | P0 | G1 | No auth on any endpoint — critical blocker (#141) |
+All identified features now have PRDs.

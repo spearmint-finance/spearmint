@@ -71,7 +71,7 @@ These are the items that should be worked on NOW, in priority order:
 
 | Rank | Item | Target Team | Rationale |
 |------|------|-------------|-----------|
-| 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
+| 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. PRD: [authentication-authorization.md](feature-planning/authentication-authorization.md). Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
 | 2 | **Budget management UI** | Accounts team | Directive: #144. PRD: [budget-management-ui.md](feature-planning/budget-management-ui.md). Budgeting is the #1 reason people use personal finance apps. |
 | 3 | ~~**README & setup documentation**~~ | ~~Marketing team~~ | **Done** (PR #146). Complete README rewrite with competitive positioning, Docker quick start, feature comparison table. |
 | 4 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
