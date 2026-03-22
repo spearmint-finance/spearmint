@@ -8,7 +8,7 @@ from ...agents.registry import AgentRegistry
 from ...agents.budget_advisor.schemas import A2ARequest
 
 # Trigger agent registration on import
-import src.financial_analysis.agents.budget_advisor  # noqa: F401
+import financial_analysis.agents.budget_advisor  # noqa: F401
 
 router = APIRouter()
 

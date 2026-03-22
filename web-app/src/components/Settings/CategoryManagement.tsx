@@ -296,6 +296,23 @@ export default function CategoryManagement() {
       },
     },
     {
+      field: "transaction_count",
+      headerName: "Txns",
+      width: 80,
+      type: "number",
+      renderCell: (params: GridRenderCellParams) => {
+        const count = params.value ?? 0;
+        return (
+          <Chip
+            label={count}
+            size="small"
+            variant={count > 0 ? "filled" : "outlined"}
+            color={count > 0 ? "default" : "default"}
+          />
+        );
+      },
+    },
+    {
       field: "actions",
       headerName: "Actions",
       width: 110,

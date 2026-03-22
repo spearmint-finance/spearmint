@@ -146,8 +146,8 @@ test.describe("Category Management", () => {
     await expect(page.locator(".MuiDataGrid-root")).toBeVisible({ timeout: 10000 });
     await expect(page.locator(".MuiDataGrid-row").first()).toBeVisible({ timeout: 10000 });
 
-    // Should have an Entity column header
-    await expect(page.getByText("Entity", { exact: false })).toBeVisible();
+    // Should have an Entity column header in the grid
+    await expect(page.locator('.MuiDataGrid-columnHeaderTitle:has-text("Entity")')).toBeVisible();
 
     // Should have at least one "Global" chip for categories without entity
     const globalChips = page.locator('.MuiChip-root:has-text("Global")');
