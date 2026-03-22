@@ -113,6 +113,7 @@ function TransactionForm({
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"Income" | "Expense" | "Transfer">("Expense");
+  const [newCategoryParentId, setNewCategoryParentId] = useState<number | null>(null);
 
   // Get today's date in local timezone (YYYY-MM-DD format)
   const getTodayDate = () => {
@@ -332,6 +333,7 @@ function TransactionForm({
         category_name: newCategoryName,
         category_type: newCategoryType,
         entity_id: formEntityId ?? null,
+        parent_category_id: newCategoryParentId,
       });
 
       // Refresh the categories list
@@ -344,6 +346,7 @@ function TransactionForm({
       setNewCategoryDialogOpen(false);
       setNewCategoryName("");
       setNewCategoryType("Expense");
+      setNewCategoryParentId(null);
 
       enqueueSnackbar(`Category "${newCategoryName}" created successfully`, {
         variant: "success",
@@ -894,6 +897,30 @@ function TransactionForm({
                 />
               </RadioGroup>
             </FormControl>
+            <TextField
+              select
+              label="Parent Category (optional)"
+              fullWidth
+              value={newCategoryParentId ?? ""}
+              onChange={(e) => setNewCategoryParentId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <MenuItem value="">
+                <em>None (Root Category)</em>
+              </MenuItem>
+              {categoriesData?.categories
+                .filter((c) => !c.parent_category_id)
+                .map((cat) => (
+                  <MenuItem key={cat.category_id} value={cat.category_id}>
+                    {cat.category_name}
+                  </MenuItem>
+                ))}
+            </TextField>
+            {formEntityId && (
+              <Typography variant="caption" color="text.secondary">
+                This category will be scoped to{" "}
+                <strong>{entitiesData.find((e) => e.entity_id === formEntityId)?.entity_name || "selected entity"}</strong>
+              </Typography>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -901,6 +928,7 @@ function TransactionForm({
             setNewCategoryDialogOpen(false);
             setNewCategoryName("");
             setNewCategoryType("Expense");
+            setNewCategoryParentId(null);
           }}>
             Cancel
           </Button>
