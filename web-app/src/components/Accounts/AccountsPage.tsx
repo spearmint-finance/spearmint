@@ -13,6 +13,8 @@ import {
   Tab,
   Paper,
   Skeleton,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -21,6 +23,8 @@ import {
   AccountBalance as AccountBalanceIcon,
   TrendingUp as TrendingUpIcon,
   AccountBalanceWallet as WalletIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getAccounts, getNetWorth } from '../../api/accounts';
@@ -68,6 +72,7 @@ const AccountsPage: React.FC = () => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const { selectedEntityId, selectedEntity, entities } = useEntityContext();
 
   // Fetch accounts (filtered by selected entity)
@@ -107,11 +112,18 @@ const AccountsPage: React.FC = () => {
 
   const isRefreshing = (accountsFetching || netWorthFetching) && !accountsLoading && !netWorthLoading;
 
-  // Filter and sort accounts by balance (highest first)
+  // Filter by search text, then sort by balance (highest first)
+  const searchLower = searchText.toLowerCase().trim();
+  const filteredAccounts = searchLower
+    ? accounts.filter((acc) =>
+        acc.account_name.toLowerCase().includes(searchLower) ||
+        (acc.institution_name && acc.institution_name.toLowerCase().includes(searchLower))
+      )
+    : accounts;
   const sortByBalance = (a: Account, b: Account) =>
     Math.abs(b.current_balance ?? b.opening_balance ?? 0) - Math.abs(a.current_balance ?? a.opening_balance ?? 0);
-  const assetAccounts = accounts.filter((acc) => isAssetAccount(acc.account_type)).sort(sortByBalance);
-  const liabilityAccounts = accounts.filter((acc) => !isAssetAccount(acc.account_type)).sort(sortByBalance);
+  const assetAccounts = filteredAccounts.filter((acc) => isAssetAccount(acc.account_type)).sort(sortByBalance);
+  const liabilityAccounts = filteredAccounts.filter((acc) => !isAssetAccount(acc.account_type)).sort(sortByBalance);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -322,6 +334,31 @@ const AccountsPage: React.FC = () => {
         </Box>
       )}
 
+      {/* Search */}
+      {accounts.length > 3 && (
+        <TextField
+          size="small"
+          placeholder="Search accounts..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          sx={{ mb: 2, maxWidth: 350 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" color="action" />
+              </InputAdornment>
+            ),
+            endAdornment: searchText ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => setSearchText('')} aria-label="Clear search">
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+        />
+      )}
+
       {/* Account Tabs */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -331,7 +368,7 @@ const AccountsPage: React.FC = () => {
           sx={{ borderBottom: 1, borderColor: 'divider' }}
         >
           <Tab
-            label={`All Accounts (${accounts.length})`}
+            label={`All Accounts (${filteredAccounts.length})`}
             icon={<WalletIcon />}
             iconPosition="start"
           />
@@ -348,9 +385,9 @@ const AccountsPage: React.FC = () => {
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          {accounts.length > 0 ? (
+          {filteredAccounts.length > 0 ? (
             <Grid container spacing={3}>
-              {accounts.map(renderAccountCard)}
+              {filteredAccounts.map(renderAccountCard)}
             </Grid>
           ) : (
             <Box textAlign="center" py={4}>
