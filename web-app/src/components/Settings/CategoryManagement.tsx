@@ -75,6 +75,7 @@ export default function CategoryManagement() {
   );
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
+  const [entityFilter, setEntityFilter] = useState<string>("All");
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -153,7 +154,7 @@ export default function CategoryManagement() {
   const categories = data?.categories || [];
   const parentCategories = categories.filter((c) => !c.parent_category_id);
 
-  // Filter categories by search text and type
+  // Filter categories by search text, type, and entity
   const filteredCategories = useMemo(() => {
     let result = categories;
     if (searchText.trim()) {
@@ -166,8 +167,14 @@ export default function CategoryManagement() {
     if (typeFilter !== "All") {
       result = result.filter((c) => c.category_type === typeFilter);
     }
+    if (entityFilter === "Global") {
+      result = result.filter((c) => !c.entity_id);
+    } else if (entityFilter !== "All") {
+      const entityId = parseInt(entityFilter, 10);
+      result = result.filter((c) => c.entity_id === entityId);
+    }
     return result;
-  }, [categories, searchText, typeFilter]);
+  }, [categories, searchText, typeFilter, entityFilter]);
 
   if (isLoading) {
     return (
@@ -382,6 +389,24 @@ export default function CategoryManagement() {
                   <MenuItem value="Both">Both</MenuItem>
                   <MenuItem value="Transfer">Transfer</MenuItem>
                 </TextField>
+                {entities.length > 0 && (
+                  <TextField
+                    select
+                    size="small"
+                    label="Entity"
+                    value={entityFilter}
+                    onChange={(e) => setEntityFilter(e.target.value)}
+                    sx={{ minWidth: 150 }}
+                  >
+                    <MenuItem value="All">All Entities</MenuItem>
+                    <MenuItem value="Global">Global Only</MenuItem>
+                    {entities.map((entity) => (
+                      <MenuItem key={entity.entity_id} value={String(entity.entity_id)}>
+                        {entity.entity_name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
                 <Typography variant="body2" color="text.secondary" alignSelf="center">
                   {filteredCategories.length} of {categories.length}
                 </Typography>
