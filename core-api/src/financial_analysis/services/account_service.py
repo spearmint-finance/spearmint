@@ -453,6 +453,17 @@ class AccountService:
 
         return holdings
 
+    def delete_holding(self, holding_id: int) -> bool:
+        """Delete an investment holding by ID."""
+        holding = self.db.query(InvestmentHolding).filter(
+            InvestmentHolding.holding_id == holding_id
+        ).first()
+        if not holding:
+            return False
+        self.db.delete(holding)
+        self.db.commit()
+        return True
+
     # ==================== Reconciliation ====================
 
     def create_reconciliation(

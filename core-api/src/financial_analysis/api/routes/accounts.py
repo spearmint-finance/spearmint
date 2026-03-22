@@ -489,6 +489,19 @@ def add_holding(
     return HoldingResponse.model_validate(new_holding)
 
 
+@router.delete("/holdings/{holding_id}")
+def delete_holding(
+    holding_id: int = Path(..., description="Holding ID"),
+    db: Session = Depends(get_db)
+):
+    """Delete an investment holding."""
+    service = AccountService(db)
+    deleted = service.delete_holding(holding_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Holding not found")
+    return {"message": f"Holding {holding_id} deleted"}
+
+
 @router.get("/{account_id}/portfolio", response_model=PortfolioSummary)
 def get_portfolio_summary(
     account_id: int = Path(..., description="Account ID"),

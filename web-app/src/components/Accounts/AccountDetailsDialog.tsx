@@ -53,6 +53,7 @@ import {
   getReconciliations,
   createReconciliation,
   addHolding,
+  deleteHolding,
   addBalanceSnapshot,
   updateAccount,
   deleteAccount,
@@ -201,6 +202,15 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
       setShowHoldingForm(false);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+  });
+
+  // Delete holding mutation
+  const deleteHoldingMutation = useMutation({
+    mutationFn: (holdingId: number) => deleteHolding(holdingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
     },
   });
 
@@ -701,7 +711,23 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                 </Typography>
                 <List>
                   {portfolio.holdings.map((holding) => (
-                    <ListItem key={holding.holding_id}>
+                    <ListItem
+                      key={holding.holding_id}
+                      secondaryAction={
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          onClick={() => {
+                            if (window.confirm(`Delete holding ${holding.symbol}?`)) {
+                              deleteHoldingMutation.mutate(holding.holding_id);
+                            }
+                          }}
+                          title="Delete holding"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      }
+                    >
                       <ListItemText
                         primary={`${holding.symbol} - ${holding.description || 'N/A'}`}
                         secondary={`${holding.quantity} shares @ ${formatCurrency(
@@ -715,6 +741,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                           )}%`}
                           color={holding.gain_loss_percent > 0 ? 'success' : 'error'}
                           size="small"
+                          sx={{ mr: 4 }}
                         />
                       )}
                     </ListItem>
