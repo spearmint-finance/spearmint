@@ -231,8 +231,8 @@ export const updateTransaction = async (
   if (data.transaction_type != null) body.transaction_type = data.transaction_type;
   if (data.category_id != null) body.category_id = data.category_id;
   if (data.account_id != null) body.account_id = data.account_id;
-  // Always include entity_id so clearing it (null) is persisted
-  body.entity_id = data.entity_id ?? null;
+  // Only include entity_id when explicitly provided (undefined = don't change, null = clear)
+  if (data.entity_id !== undefined) body.entity_id = data.entity_id;
   if (data.notes != null) body.notes = data.notes;
   if (data.tag_names != null) body.tag_names = data.tag_names;
   if (data.is_capital_expense != null) body.is_capital_expense = data.is_capital_expense;
