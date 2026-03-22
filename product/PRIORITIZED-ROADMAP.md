@@ -74,12 +74,13 @@ These are the items that should be worked on NOW, in priority order:
 | 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. PRD: [authentication-authorization.md](feature-planning/authentication-authorization.md). Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
 | 2 | **Budget management UI** | Accounts team | Directive: #144. PRD: [budget-management-ui.md](feature-planning/budget-management-ui.md). Budgeting is the #1 reason people use personal finance apps. |
 | 3 | ~~**README & setup documentation**~~ | ~~Marketing team~~ | **Done** (PR #146). Complete README rewrite with competitive positioning, Docker quick start, feature comparison table. |
-| 4 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
-| 5 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
-| 6 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
-| 7 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
-| 8 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
-| 9 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
+| 4 | **Analysis page export fix** | Dashboard team | Directive: #221. Export button downloads empty placeholder CSV — zero actual data. Quick fix: pass analysis data to ExportButton. |
+| 5 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
+| 6 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
+| 7 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
+| 8 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
+| 9 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
+| 10 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
