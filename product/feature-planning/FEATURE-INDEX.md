@@ -1,6 +1,6 @@
 # Feature Planning Index
 
-**Last Updated:** 2026-03-20
+**Last Updated:** 2026-03-22
 
 | PRD | Feature | Owner | Status | Gate |
 |-----|---------|-------|--------|------|
@@ -9,10 +9,10 @@
 | [business-entity-separation.md](business-entity-separation.md) | Multi-entity support | Accounts team | Draft (shipped) | G1 |
 | [budget-management-ui.md](budget-management-ui.md) | Budget management UI | Accounts team | Draft | G1/G2 |
 | [scenario-builder-completion.md](scenario-builder-completion.md) | Scenario builder completion | Dashboard team | Draft | G2 |
+| [confidence-based-forecasting.md](confidence-based-forecasting.md) | Confidence-based forecasting | Dashboard team | Draft | G2 |
 
 ## PRDs Needed
 
 | Feature | Priority | Gate | Notes |
 |---------|----------|------|-------|
 | Authentication & authorization | P0 | G1 | No auth on any endpoint — critical blocker (#141) |
-| Confidence-based forecasting | P2 | G2 | Single deterministic forecast only |
