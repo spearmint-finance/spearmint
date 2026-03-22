@@ -32,6 +32,7 @@ import {
   Rule as RuleIcon,
   Category as CategoryIcon,
   Search as SearchIcon,
+  MergeType as MergeIcon,
 } from "@mui/icons-material";
 import {
   DataGrid,
@@ -43,7 +44,9 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useDeleteCategory,
+  useMergeCategory,
 } from "../../hooks/useCategories";
+import { Autocomplete } from "@mui/material";
 import { useEntities } from "../../hooks/useEntities";
 import type { Category, CategoryCreate } from "../../types/settings";
 import CategoryRulesList from "./CategoryRulesList";
@@ -74,6 +77,9 @@ export default function CategoryManagement() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null
   );
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [categoryToMerge, setCategoryToMerge] = useState<Category | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<Category | null>(null);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [entityFilter, setEntityFilter] = useState<string>("All");
@@ -90,6 +96,7 @@ export default function CategoryManagement() {
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const deleteMutation = useDeleteCategory();
+  const mergeMutation = useMergeCategory();
 
   const handleOpenDialog = (category?: Category) => {
     if (category) {
@@ -157,6 +164,38 @@ export default function CategoryManagement() {
       handleCloseDeleteDialog();
     } catch (err) {
       enqueueSnackbar("Failed to delete category. It may have transactions — try Force Delete.", { variant: "error" });
+    }
+  };
+
+  const handleOpenMergeDialog = (category: Category) => {
+    setCategoryToMerge(category);
+    setMergeTarget(null);
+    setMergeDialogOpen(true);
+  };
+
+  const handleCloseMergeDialog = () => {
+    setMergeDialogOpen(false);
+    setCategoryToMerge(null);
+    setMergeTarget(null);
+  };
+
+  const handleMerge = async () => {
+    if (!categoryToMerge || !mergeTarget) return;
+    try {
+      const result = await mergeMutation.mutateAsync({
+        sourceCategoryId: categoryToMerge.category_id,
+        targetCategoryId: mergeTarget.category_id,
+      });
+      enqueueSnackbar(
+        `Merged "${categoryToMerge.category_name}" into "${mergeTarget.category_name}" (${result.transactions} transactions, ${result.splits} splits moved)`,
+        { variant: "success" }
+      );
+      handleCloseMergeDialog();
+    } catch (err) {
+      enqueueSnackbar(
+        `Failed to merge: ${err instanceof Error ? err.message : "Unknown error"}`,
+        { variant: "error" }
+      );
     }
   };
 
@@ -324,7 +363,7 @@ export default function CategoryManagement() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 110,
+      width: 150,
       sortable: false,
       filterable: false,
       renderCell: (params: GridRenderCellParams) => (
@@ -336,6 +375,14 @@ export default function CategoryManagement() {
             color="primary"
           >
             <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => handleOpenMergeDialog(params.row as Category)}
+            title="Merge into another category"
+            color="info"
+          >
+            <MergeIcon fontSize="small" />
           </IconButton>
           <IconButton
             size="small"
@@ -628,6 +675,49 @@ export default function CategoryManagement() {
             variant="contained"
           >
             Force Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Merge Dialog */}
+      <Dialog open={mergeDialogOpen} onClose={handleCloseMergeDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Merge Category</DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Merge "{categoryToMerge?.category_name}" into another category. All
+            transactions, splits, rules, budgets, and child categories will be
+            reassigned to the target.
+          </Typography>
+          <Alert severity="warning" sx={{ mt: 1, mb: 2 }}>
+            This will delete "{categoryToMerge?.category_name}" after reassignment.
+          </Alert>
+          <Autocomplete
+            options={categories.filter(
+              (c) => c.category_id !== categoryToMerge?.category_id
+            )}
+            getOptionLabel={(option) => option.category_name}
+            value={mergeTarget}
+            onChange={(_e, value) => setMergeTarget(value)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Target category"
+                placeholder="Select category to merge into..."
+                fullWidth
+              />
+            )}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMergeDialog}>Cancel</Button>
+          <Button
+            onClick={handleMerge}
+            color="primary"
+            variant="contained"
+            disabled={!mergeTarget || mergeMutation.isPending}
+          >
+            {mergeMutation.isPending ? "Merging..." : "Merge"}
           </Button>
         </DialogActions>
       </Dialog>

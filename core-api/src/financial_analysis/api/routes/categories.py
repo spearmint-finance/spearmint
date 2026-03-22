@@ -265,6 +265,36 @@ def delete_category(
         raise HTTPException(status_code=500, detail=f"Failed to delete category: {str(e)}")
 
 
+@router.put("/categories/{category_id}/merge")
+def merge_category(
+    category_id: int,
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Merge source category into target category. All transactions, splits,
+    rules, budgets, and child categories are reassigned to the target.
+    The source category is then deleted.
+
+    Body: { "target_category_id": 123 }
+    """
+    service = CategoryService(db)
+    target_id = body.get("target_category_id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="target_category_id is required")
+
+    try:
+        result = service.merge_category(category_id, target_id)
+        return {
+            "message": f"Category {category_id} merged into {target_id}",
+            **result,
+        }
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to merge category: {str(e)}")
+
+
 # ============================================================================
 # Category Rule Endpoints
 # ============================================================================
