@@ -47,6 +47,7 @@ import {
 import { useEntities } from "../../hooks/useEntities";
 import type { Category, CategoryCreate } from "../../types/settings";
 import CategoryRulesList from "./CategoryRulesList";
+import { useSnackbar } from "notistack";
 
 interface CategoryFormData {
   category_name: string;
@@ -80,6 +81,8 @@ export default function CategoryManagement() {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
+
+  const { enqueueSnackbar } = useSnackbar();
 
   // Queries and mutations
   const { data, isLoading, error } = useCategories();
@@ -118,12 +121,17 @@ export default function CategoryManagement() {
           categoryId: editingCategory.category_id,
           category: formData,
         });
+        enqueueSnackbar("Category updated successfully", { variant: "success" });
       } else {
         await createMutation.mutateAsync(formData as CategoryCreate);
+        enqueueSnackbar("Category created successfully", { variant: "success" });
       }
       handleCloseDialog();
     } catch (err) {
-      console.error("Failed to save category:", err);
+      enqueueSnackbar(
+        editingCategory ? "Failed to update category" : "Failed to create category",
+        { variant: "error" }
+      );
     }
   };
 
@@ -145,9 +153,10 @@ export default function CategoryManagement() {
         categoryId: categoryToDelete.category_id,
         force,
       });
+      enqueueSnackbar(`Category "${categoryToDelete.category_name}" deleted`, { variant: "success" });
       handleCloseDeleteDialog();
     } catch (err) {
-      console.error("Failed to delete category:", err);
+      enqueueSnackbar("Failed to delete category. It may have transactions — try Force Delete.", { variant: "error" });
     }
   };
 
@@ -354,10 +363,11 @@ export default function CategoryManagement() {
           entity_id: newRow.entity_id ?? null,
         },
       });
+      enqueueSnackbar("Category updated", { variant: "success" });
       return newRow;
     } catch (error) {
-      console.error("Failed to update category:", error);
-      return oldRow; // Revert on error
+      enqueueSnackbar("Failed to update category", { variant: "error" });
+      return oldRow;
     }
   };
 
