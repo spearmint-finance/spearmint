@@ -730,9 +730,11 @@ function TransactionForm({
                       const parentAmount = Math.abs(Number(watch("amount")) || 0);
                       const usedAmount = currentSplits.reduce((sum: number, s: SplitRow) => sum + (Number(s.amount) || 0), 0);
                       const remaining = Math.round((parentAmount - usedAmount) * 100) / 100;
+                      const parentCategoryId = watch("category_id") || 0;
+                      const parentEntityId = watch("entity_id") || "";
                       setValue("splits", [
                         ...currentSplits,
-                        { amount: Math.max(0, remaining), category_id: 0, entity_id: "", description: "" }
+                        { amount: Math.max(0, remaining), category_id: parentCategoryId, entity_id: parentEntityId, description: "" }
                       ]);
                     }}
                   >
