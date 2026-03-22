@@ -13,6 +13,7 @@ from ..schemas.transaction import (
     TransactionResponse,
     TransactionListResponse
 )
+from ..schemas.split import TransactionSplitCreate, TransactionSplitResponse
 from ..schemas.common import SuccessResponse, PaginationParams
 from ...services.transaction_service import TransactionService, TransactionFilter
 from ...utils.validators import ValidationError
@@ -218,6 +219,40 @@ def update_transaction(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update transaction: {str(e)}")
+
+
+@router.put("/transactions/{transaction_id}/splits", response_model=TransactionResponse)
+def set_transaction_splits(
+    transaction_id: int,
+    splits: List[TransactionSplitCreate],
+    db: Session = Depends(get_db)
+):
+    """
+    Replace all splits for a transaction.
+
+    Passing an empty list removes all splits.
+
+    Args:
+        transaction_id: Transaction ID
+        splits: New splits to set
+        db: Database session
+
+    Returns:
+        TransactionResponse: Updated transaction with new splits
+    """
+    service = TransactionService(db)
+
+    try:
+        updated = service.update_transaction(transaction_id, splits=splits)
+
+        if not updated:
+            raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
+
+        return updated
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set splits: {str(e)}")
 
 
 @router.delete("/transactions/{transaction_id}", response_model=SuccessResponse)
