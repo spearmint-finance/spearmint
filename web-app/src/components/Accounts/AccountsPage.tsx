@@ -389,6 +389,16 @@ const AccountsPage: React.FC = () => {
             <Grid container spacing={3}>
               {filteredAccounts.map(renderAccountCard)}
             </Grid>
+          ) : searchText ? (
+            <Box textAlign="center" py={4}>
+              <SearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography color="text.secondary" gutterBottom>
+                No accounts match "{searchText}"
+              </Typography>
+              <Button size="small" onClick={() => setSearchText('')}>
+                Clear search
+              </Button>
+            </Box>
           ) : (
             <Box textAlign="center" py={4}>
               <AccountBalanceIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
@@ -412,6 +422,10 @@ const AccountsPage: React.FC = () => {
             <Grid container spacing={3}>
               {assetAccounts.map(renderAccountCard)}
             </Grid>
+          ) : searchText ? (
+            <Box textAlign="center" py={4}>
+              <Typography color="text.secondary">No asset accounts match "{searchText}"</Typography>
+            </Box>
           ) : (
             <Box textAlign="center" py={4}>
               <TrendingUpIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
@@ -430,6 +444,10 @@ const AccountsPage: React.FC = () => {
             <Grid container spacing={3}>
               {liabilityAccounts.map(renderAccountCard)}
             </Grid>
+          ) : searchText ? (
+            <Box textAlign="center" py={4}>
+              <Typography color="text.secondary">No liability accounts match "{searchText}"</Typography>
+            </Box>
           ) : (
             <Box textAlign="center" py={4}>
               <AccountBalanceIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
