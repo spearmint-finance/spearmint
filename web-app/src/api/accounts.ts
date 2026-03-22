@@ -276,6 +276,22 @@ export const addHolding = async (
   return response.data as unknown as InvestmentHolding;
 };
 
+export const deleteHolding = async (
+  holdingId: number
+): Promise<{ message: string }> => {
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+  const response = await fetch(`${baseUrl}/api/accounts/holdings/${holdingId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Delete failed' }));
+    throw new Error(err.detail || 'Failed to delete holding');
+  }
+  return response.json();
+};
+
 export const getPortfolioSummary = async (
   accountId: number
 ): Promise<PortfolioSummary> => {
