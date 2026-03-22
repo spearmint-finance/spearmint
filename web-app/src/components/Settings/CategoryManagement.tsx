@@ -3,7 +3,7 @@
  * Editable grid for managing categories with tabs for categories and rules
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Box,
   Button,
@@ -21,6 +21,7 @@ import {
   Tabs,
   Tab,
   Paper,
+  InputAdornment,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -30,6 +31,7 @@ import {
   FolderOpen as FolderOpenIcon,
   Rule as RuleIcon,
   Category as CategoryIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 import {
   DataGrid,
@@ -71,6 +73,8 @@ export default function CategoryManagement() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null
   );
+  const [searchText, setSearchText] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("All");
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -146,6 +150,25 @@ export default function CategoryManagement() {
     }
   };
 
+  const categories = data?.categories || [];
+  const parentCategories = categories.filter((c) => !c.parent_category_id);
+
+  // Filter categories by search text and type
+  const filteredCategories = useMemo(() => {
+    let result = categories;
+    if (searchText.trim()) {
+      const lower = searchText.toLowerCase();
+      result = result.filter((c) =>
+        c.category_name.toLowerCase().includes(lower) ||
+        (c.description && c.description.toLowerCase().includes(lower))
+      );
+    }
+    if (typeFilter !== "All") {
+      result = result.filter((c) => c.category_type === typeFilter);
+    }
+    return result;
+  }, [categories, searchText, typeFilter]);
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" p={4}>
@@ -162,9 +185,6 @@ export default function CategoryManagement() {
       </Alert>
     );
   }
-
-  const categories = data?.categories || [];
-  const parentCategories = categories.filter((c) => !c.parent_category_id);
 
   // Define DataGrid columns
   const columns: GridColDef[] = [
@@ -333,9 +353,43 @@ export default function CategoryManagement() {
                 </Button>
               </Box>
 
+              <Box display="flex" gap={2} mb={2}>
+                <TextField
+                  size="small"
+                  placeholder="Search categories..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ flex: 1, maxWidth: 400 }}
+                />
+                <TextField
+                  select
+                  size="small"
+                  label="Type"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  sx={{ minWidth: 130 }}
+                >
+                  <MenuItem value="All">All Types</MenuItem>
+                  <MenuItem value="Income">Income</MenuItem>
+                  <MenuItem value="Expense">Expense</MenuItem>
+                  <MenuItem value="Both">Both</MenuItem>
+                  <MenuItem value="Transfer">Transfer</MenuItem>
+                </TextField>
+                <Typography variant="body2" color="text.secondary" alignSelf="center">
+                  {filteredCategories.length} of {categories.length}
+                </Typography>
+              </Box>
+
               <Box sx={{ height: 600, width: "100%" }}>
                 <DataGrid
-                  rows={categories}
+                  rows={filteredCategories}
                   columns={columns}
                   getRowId={(row) => row.category_id}
                   processRowUpdate={handleProcessRowUpdate}
