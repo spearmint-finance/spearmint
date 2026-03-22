@@ -20,6 +20,7 @@ import {
   Checkbox,
   FormControlLabel,
   Badge,
+  Autocomplete,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 
@@ -1179,24 +1180,35 @@ function TransactionList() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth data-testid="filter-category">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={filters.category_id}
-                  label="Category"
-                  onChange={(e) =>
-                    setFilters({ ...filters, category_id: e.target.value })
-                  }
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {categoriesData?.categories?.map((cat) => (
-                    <MenuItem key={cat.category_id} value={cat.category_id}>
-                      {cat.category_name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+            <Grid item xs={12} data-testid="filter-category">
+              <Autocomplete
+                options={categoriesData?.categories || []}
+                getOptionLabel={(option) => option.category_name}
+                value={
+                  categoriesData?.categories?.find(
+                    (c) => c.category_id === Number(filters.category_id)
+                  ) || null
+                }
+                onChange={(_e, newValue) =>
+                  setFilters({
+                    ...filters,
+                    category_id: newValue ? String(newValue.category_id) : "",
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField {...params} label="Category" placeholder="Search categories..." />
+                )}
+                isOptionEqualToValue={(option, value) =>
+                  option.category_id === value.category_id
+                }
+                groupBy={(option) =>
+                  option.parent_category_id
+                    ? categoriesData?.categories?.find(
+                        (c) => c.category_id === option.parent_category_id
+                      )?.category_name || "Other"
+                    : option.category_name
+                }
+              />
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth data-testid="filter-account">
