@@ -90,6 +90,8 @@ jobs:
           echo "✓ Postman CLI installed"
 
       - name: Login to Postman
+        id: postman-login
+        continue-on-error: true
         run: |
           export PATH="$HOME/.postman/bin:$PATH"
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
@@ -97,6 +99,7 @@ jobs:
 
       - name: Validate spec against Postman governance & security rules
         id: validate
+        if: steps.postman-login.outcome == 'success'
         run: |
           set -e
           export PATH="$HOME/.postman/bin:$PATH"
@@ -111,6 +114,11 @@ jobs:
             --output-file spec-validation-results.json
           echo ""
           echo "✓ Postman validation completed"
+
+      - name: Warn if Postman validation skipped
+        if: steps.postman-login.outcome != 'success'
+        run: |
+          echo "::warning::Postman login failed — governance validation skipped. Check POSTMAN_API_KEY secret."
 
       - name: Upload OpenAPI spec artifact
         uses: actions/upload-artifact@v4
