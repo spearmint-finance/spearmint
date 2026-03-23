@@ -17,6 +17,6 @@ fi
 
 echo ""
 echo "Spearmint Dev Container Ready"
-echo "  Create worktree:  worktree create"
-echo "  Start API:        cd core-api && uvicorn main:app --reload --port 8000"
+echo "  Start API:        cd core-api && python run_api.py"
+echo "  Start Frontend:   cd web-app && npm run dev"
 echo ""

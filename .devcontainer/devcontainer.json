@@ -13,7 +13,6 @@
   "mounts": [
     "source=spearmint-core-api-venv,target=/workspace/core-api/venv,type=volume",
     "source=spearmint-web-app-node-modules,target=/workspace/web-app/node_modules,type=volume",
-    "source=spearmint-worktree-cli-node-modules,target=/workspace/worktree-cli/node_modules,type=volume",
     "source=spearmint-shell-history,target=/commandhistory,type=volume",
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
