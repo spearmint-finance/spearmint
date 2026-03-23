@@ -131,7 +131,7 @@ See [LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md) for 
 
 ## License
 
-MIT
+PolyForm Noncommercial — free for personal use, contributions welcome, no commercial use. See [LICENSE](LICENSE).
 
 ## Author
 

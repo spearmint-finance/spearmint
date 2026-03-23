@@ -1,0 +1,66 @@
+Copyright 2026 Spearmint Finance
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to use, copy, modify, and distribute the Software for any Noncommercial
+purpose, subject to the conditions below.
+
+"Noncommercial" means academic, research, personal, or other activity
+that is not fundamentally intended for or directed toward commercial
+advantage or monetary compensation.
+
+1. Notices
+
+   You must give anyone who receives a copy of the Software from you a
+   copy of these terms.
+
+   You must not remove or alter any license notices (including copyright
+   notices, patent notices, disclaimers of warranty, or limitations of
+   liability) in the source code or documentation.
+
+2. No Commercial Use
+
+   You may not use the Software for any Commercial purpose.
+
+   "Commercial purpose" means use primarily intended for or directed
+   toward commercial advantage or monetary compensation. Examples of
+   Commercial purposes include:
+
+   (a) providing the Software to third parties as a commercial product
+       or service, including as a hosted or managed service;
+
+   (b) using the Software to support business operations of a
+       for-profit company in a way that would otherwise require
+       purchasing a similar product;
+
+   (c) incorporating the Software into a product or service that is
+       sold or offered commercially.
+
+   Examples of Noncommercial purposes include:
+
+   (a) personal finance management for individuals and households;
+
+   (b) academic or research use;
+
+   (c) evaluation and testing;
+
+   (d) contributing improvements back to the project.
+
+3. Contributions
+
+   Contributions to the project are welcome and will be licensed under
+   these same terms.
+
+4. No Warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+   BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
+   ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+This license is based on the PolyForm Noncommercial License 1.0.0
+(https://polyformproject.org/licenses/noncommercial/1.0.0).
