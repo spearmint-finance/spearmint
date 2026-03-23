@@ -126,6 +126,15 @@ class TransactionService:
         if not category:
             raise ValidationError(f"Category with ID {category_id} not found")
 
+        # Auto-inherit entity from account if not explicitly set
+        resolved_entity_id = entity_id
+        if resolved_entity_id is None and account_id is not None:
+            from .account_service import AccountService
+            account_svc = AccountService(self.db)
+            acct = account_svc.get_account(account_id)
+            if acct and len(acct.entities) == 1:
+                resolved_entity_id = acct.entities[0].entity_id
+
         # Create transaction
         transaction = Transaction(
             transaction_date=transaction_date,
@@ -140,7 +149,7 @@ class TransactionService:
             transfer_account_to=transfer_account_to,
             notes=notes,
             account_id=account_id,
-            entity_id=entity_id,
+            entity_id=resolved_entity_id,
             is_capital_expense=is_capital_expense,
             is_tax_deductible=is_tax_deductible,
             is_recurring=is_recurring,
