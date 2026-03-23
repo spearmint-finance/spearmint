@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Spearmint? We'd love to hear it! Check the [roadmap](product/PRIORITIZED-ROADMAP.md) first to see if it's already planned.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or pain point.
+      placeholder: "I want to track my budget by category but there's no budget feature yet."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+      placeholder: "A budget page where I can set monthly limits per category and see progress bars showing how much I've spent."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you've thought about?
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Transactions
+        - Accounts
+        - Dashboard / Reports
+        - Categories / Rules
+        - Import / Export
+        - Settings
+        - Marketing Site
+        - API / Backend
+        - Other
+    validations:
+      required: true
