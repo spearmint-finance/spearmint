@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('edit holding via account details portfolio tab', async ({ page }) => {
-  await page.goto('http://localhost:5173/accounts');
+  await page.goto('/accounts');
   await page.waitForLoadState('networkidle');
 
   // Find an investment account card and click it

@@ -13,7 +13,7 @@ test("Add Split auto-fills remaining amount and Split Evenly works", async ({ pa
     data: [], headers: { "Content-Type": "application/json" },
   });
 
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(2000);
 

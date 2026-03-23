@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-test.use({ baseURL: "http://localhost:5173" });
 
 test.describe("Category Management", () => {
   test("edit button opens edit dialog for existing category", async ({ page }) => {

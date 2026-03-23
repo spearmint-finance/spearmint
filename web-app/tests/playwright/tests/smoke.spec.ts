@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 test("smoke test", async ({ page }) => {
-  console.log("Navigating to http://localhost:5174...");
+  console.log("Navigating to app root...");
   try {
-    await page.goto("http://localhost:5174", { timeout: 10000 });
+    await page.goto("/", { timeout: 10000 });
 
     // Take a screenshot of the initial state
     await page.screenshot({ path: "smoke-test-initial.png" });

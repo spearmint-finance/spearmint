@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Transaction Paging and Filtering', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/transactions');
+    await page.goto('/transactions');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
   });

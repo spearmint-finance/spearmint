@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('verify paging is working - check data not display', async ({ page }) => {
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
 

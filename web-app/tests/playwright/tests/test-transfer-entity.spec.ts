@@ -16,7 +16,7 @@ test("debug transfer disappearing from entity scope", async ({ page }) => {
     }
   });
 
-  await page.goto("http://localhost:8080/transactions");
+  await page.goto("/transactions");
   await page.waitForSelector(".MuiDataGrid-row", { timeout: 15000 });
 
   // Click "All Entities" dropdown in sidebar

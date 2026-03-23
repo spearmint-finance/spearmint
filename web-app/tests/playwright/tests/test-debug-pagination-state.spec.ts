@@ -8,7 +8,7 @@ test('debug pagination state changes', async ({ page }) => {
     }
   });
 
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(1000);
 

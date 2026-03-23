@@ -23,7 +23,7 @@ test('capture console errors on transactions page', async ({ page }) => {
 
   // Navigate to transactions page
   console.log('Navigating to transactions page...');
-  await page.goto('http://localhost:5173/transactions');
+  await page.goto('/transactions');
 
   // Wait for network to be idle
   await page.waitForLoadState('networkidle');

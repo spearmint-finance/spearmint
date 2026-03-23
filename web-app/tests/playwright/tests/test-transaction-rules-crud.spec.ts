@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Transaction Rules CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
     await page.getByRole('tab', { name: /Transaction Rules/i }).click();
     await page.waitForTimeout(500);

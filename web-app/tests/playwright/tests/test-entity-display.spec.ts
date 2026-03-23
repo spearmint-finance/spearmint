@@ -20,7 +20,7 @@ test("entity values display in transaction list", async ({ page }) => {
   });
 
   // Load transactions page
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(3000);
 

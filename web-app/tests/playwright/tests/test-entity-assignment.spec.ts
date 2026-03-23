@@ -27,7 +27,7 @@ test.describe("Entity Assignment", () => {
     });
 
     // Step 1: Navigate to transactions
-    await page.goto("http://localhost:8080/transactions");
+    await page.goto("/transactions");
     await waitForGrid(page);
 
     // Step 2: Click on the amount cell of first row (triggers dialog)
@@ -122,7 +122,7 @@ test.describe("Entity Assignment", () => {
   });
 
   test("new transaction form has Entity field and boolean flags", async ({ page }) => {
-    await page.goto("http://localhost:8080/transactions");
+    await page.goto("/transactions");
     await waitForGrid(page);
 
     await page.getByRole("button", { name: /new transaction/i }).click();

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Transaction Rules Tab', () => {
   test('Transaction Rules tab is visible at top level in Settings', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: 'tests/playwright/test-results/artifacts/settings-before-rules.png' });
 
@@ -21,7 +21,7 @@ test.describe('Transaction Rules Tab', () => {
   });
 
   test('Transaction Rules tab shows rules list with Create Rule button', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     // Click Transaction Rules tab
@@ -40,7 +40,7 @@ test.describe('Transaction Rules Tab', () => {
   });
 
   test('Create Rule form shows Entity dropdown', async ({ page }) => {
-    await page.goto('http://localhost:5173/settings');
+    await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
     // Click Transaction Rules tab

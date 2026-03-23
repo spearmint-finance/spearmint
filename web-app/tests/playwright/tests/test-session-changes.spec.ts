@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-test.use({ baseURL: "http://localhost:5173" });
 
 /**
  * Validation tests for iterations 78-84 + PR #234 changes.

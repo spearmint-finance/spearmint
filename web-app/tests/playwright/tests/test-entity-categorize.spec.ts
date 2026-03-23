@@ -68,7 +68,7 @@ test.describe("Entity filter + category change", () => {
 
     // Step 3: Update category via the frontend API function (simulating what the UI does)
     // This is the critical test — updating only category_id should NOT clear entity_id
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
 
     // Use the frontend's updateTransaction path by calling fetch from the page context

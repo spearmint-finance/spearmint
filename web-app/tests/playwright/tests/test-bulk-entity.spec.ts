@@ -9,7 +9,7 @@ test("bulk assign entity to selected transactions", async ({ page }) => {
   const entityId = entity.entity_id ?? entity.entityId;
   const entityName = entity.entity_name ?? entity.entityName ?? entity.name;
 
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(3000);
 

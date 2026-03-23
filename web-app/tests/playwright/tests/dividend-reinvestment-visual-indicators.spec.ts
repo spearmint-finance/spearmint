@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Dividend Reinvestment Visual Indicators', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to transactions page
-    await page.goto('http://localhost:5176/transactions');
+    await page.goto('/transactions');
     
     // Wait for the page to load
     await page.waitForLoadState('networkidle');

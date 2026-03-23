@@ -10,7 +10,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Detect Relationships Button", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to transactions page
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
 
     // Wait for the "Detect Relationships" button to be ready (not in "Detecting..." state)

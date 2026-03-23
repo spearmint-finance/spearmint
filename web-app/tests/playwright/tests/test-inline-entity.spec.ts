@@ -7,7 +7,7 @@ test("inline entity selector works in transaction grid", async ({ page }) => {
   const entity = entityList[0];
   const entityName = entity.entity_name ?? entity.entityName ?? entity.name;
 
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(2000);
 

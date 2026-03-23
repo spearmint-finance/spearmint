@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("split indicator shows in category column", async ({ page }) => {
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(2000);
 

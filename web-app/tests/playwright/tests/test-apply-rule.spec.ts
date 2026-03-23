@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('test apply rule button', async ({ page }) => {
   // Navigate to the app
-  await page.goto('http://localhost:5176');
+  await page.goto('/');
 
   // Wait for page to load
   await page.waitForLoadState('networkidle');

@@ -5,8 +5,6 @@
 
 import { test, expect, Page } from '@playwright/test';
 
-// Using 5178 for our test server (overriding playwright.config.ts baseURL)
-const BASE_URL = 'http://localhost:5178';
 
 // Helper function to wait for page to be ready
 async function waitForPageLoad(page: Page) {
@@ -30,7 +28,7 @@ async function checkNoConsoleErrors(page: Page): Promise<string[]> {
 test.describe('Page 1: Dashboard', () => {
 
   test('Dashboard page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // Check page title or main content is present
@@ -38,7 +36,7 @@ test.describe('Page 1: Dashboard', () => {
   });
 
   test('Dashboard shows main navigation sidebar', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // The sidebar uses ListItemButton with onClick instead of anchor links
@@ -48,7 +46,7 @@ test.describe('Page 1: Dashboard', () => {
   });
 
   test('Dashboard displays KPI cards or summary data', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // Look for common dashboard elements - cards, stats, charts
@@ -57,7 +55,7 @@ test.describe('Page 1: Dashboard', () => {
   });
 
   test('Navigation from Dashboard to other pages works', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // Try navigating to Accounts
@@ -76,14 +74,14 @@ test.describe('Page 1: Dashboard', () => {
 test.describe('Page 2: Accounts', () => {
 
   test('Accounts page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/accounts`);
+    await page.goto(`/accounts`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*accounts/);
   });
 
   test('Accounts page shows account list or empty state', async ({ page }) => {
-    await page.goto(`${BASE_URL}/accounts`);
+    await page.goto(`/accounts`);
     await waitForPageLoad(page);
 
     // Either shows accounts list or empty state message
@@ -92,7 +90,7 @@ test.describe('Page 2: Accounts', () => {
   });
 
   test('Add Account button is visible and clickable', async ({ page }) => {
-    await page.goto(`${BASE_URL}/accounts`);
+    await page.goto(`/accounts`);
     await waitForPageLoad(page);
 
     // Look for Add Account button
@@ -101,7 +99,7 @@ test.describe('Page 2: Accounts', () => {
   });
 
   test('Add Account dialog opens and contains required fields', async ({ page }) => {
-    await page.goto(`${BASE_URL}/accounts`);
+    await page.goto(`/accounts`);
     await waitForPageLoad(page);
 
     // Click add button
@@ -118,7 +116,7 @@ test.describe('Page 2: Accounts', () => {
   });
 
   test('Can create a new account successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/accounts`);
+    await page.goto(`/accounts`);
     await waitForPageLoad(page);
 
     // Use a unique account name with timestamp
@@ -162,14 +160,14 @@ test.describe('Page 2: Accounts', () => {
 test.describe('Page 3: Transactions', () => {
 
   test('Transactions page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/transactions`);
+    await page.goto(`/transactions`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*transactions/);
   });
 
   test('Transactions page shows transaction list or empty state', async ({ page }) => {
-    await page.goto(`${BASE_URL}/transactions`);
+    await page.goto(`/transactions`);
     await waitForPageLoad(page);
 
     // Either shows transaction table or empty state
@@ -178,7 +176,7 @@ test.describe('Page 3: Transactions', () => {
   });
 
   test('Transaction filters are visible', async ({ page }) => {
-    await page.goto(`${BASE_URL}/transactions`);
+    await page.goto(`/transactions`);
     await waitForPageLoad(page);
 
     // Look for filter controls
@@ -195,14 +193,14 @@ test.describe('Page 3: Transactions', () => {
 test.describe('Page 4: Analysis - Main', () => {
 
   test('Analysis page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis`);
+    await page.goto(`/analysis`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*analysis/);
   });
 
   test('Analysis page shows charts or data visualizations', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis`);
+    await page.goto(`/analysis`);
     await waitForPageLoad(page);
 
     // Look for chart containers or visualization elements
@@ -217,14 +215,14 @@ test.describe('Page 4: Analysis - Main', () => {
 test.describe('Page 5: Income Analysis', () => {
 
   test('Income Analysis page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis/income`);
+    await page.goto(`/analysis/income`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*analysis\/income/);
   });
 
   test('Income Analysis shows income data or empty state', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis/income`);
+    await page.goto(`/analysis/income`);
     await waitForPageLoad(page);
 
     const content = page.locator('.MuiPaper-root, .recharts-wrapper, [class*="chart"], [class*="income"]');
@@ -238,14 +236,14 @@ test.describe('Page 5: Income Analysis', () => {
 test.describe('Page 6: Expense Analysis', () => {
 
   test('Expense Analysis page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis/expenses`);
+    await page.goto(`/analysis/expenses`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*analysis\/expenses/);
   });
 
   test('Expense Analysis shows expense data or empty state', async ({ page }) => {
-    await page.goto(`${BASE_URL}/analysis/expenses`);
+    await page.goto(`/analysis/expenses`);
     await waitForPageLoad(page);
 
     const content = page.locator('.MuiPaper-root, .recharts-wrapper, [class*="chart"], [class*="expense"]');
@@ -259,14 +257,14 @@ test.describe('Page 6: Expense Analysis', () => {
 test.describe('Page 7: Classifications', () => {
 
   test('Classifications page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/classifications`);
+    await page.goto(`/classifications`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*classifications/);
   });
 
   test('Classifications page shows classification types', async ({ page }) => {
-    await page.goto(`${BASE_URL}/classifications`);
+    await page.goto(`/classifications`);
     await waitForPageLoad(page);
 
     const content = page.locator('.MuiTable-root, .MuiList-root, .MuiPaper-root, [class*="classification"]');
@@ -274,7 +272,7 @@ test.describe('Page 7: Classifications', () => {
   });
 
   test('Classifications page has tabs or sections for types and rules', async ({ page }) => {
-    await page.goto(`${BASE_URL}/classifications`);
+    await page.goto(`/classifications`);
     await waitForPageLoad(page);
 
     // Look for tab navigation
@@ -290,14 +288,14 @@ test.describe('Page 7: Classifications', () => {
 test.describe('Page 8: Projections', () => {
 
   test('Projections page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projections`);
+    await page.goto(`/projections`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*projections/);
   });
 
   test('Projections page shows forecast controls or data', async ({ page }) => {
-    await page.goto(`${BASE_URL}/projections`);
+    await page.goto(`/projections`);
     await waitForPageLoad(page);
 
     const content = page.locator('.MuiPaper-root, .recharts-wrapper, [class*="projection"], [class*="forecast"]');
@@ -311,14 +309,14 @@ test.describe('Page 8: Projections', () => {
 test.describe('Page 9: Import', () => {
 
   test('Import page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/import`);
+    await page.goto(`/import`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*import/);
   });
 
   test('Import page shows file upload area', async ({ page }) => {
-    await page.goto(`${BASE_URL}/import`);
+    await page.goto(`/import`);
     await waitForPageLoad(page);
 
     // Look for file input or upload area
@@ -333,14 +331,14 @@ test.describe('Page 9: Import', () => {
 test.describe('Page 10: Settings', () => {
 
   test('Settings page loads successfully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/settings`);
+    await page.goto(`/settings`);
     await waitForPageLoad(page);
 
     await expect(page).toHaveURL(/.*settings/);
   });
 
   test('Settings page shows configuration options', async ({ page }) => {
-    await page.goto(`${BASE_URL}/settings`);
+    await page.goto(`/settings`);
     await waitForPageLoad(page);
 
     // Settings page should show something - either the settings content or an error state
@@ -361,7 +359,7 @@ test.describe('Page 11: Assistant', () => {
 
   test('Assistant/Chat feature is accessible', async ({ page }) => {
     // First go to dashboard to find assistant entry point
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // Look for assistant button, chat icon, or assistant link
@@ -378,14 +376,14 @@ test.describe('Page 11: Assistant', () => {
       expect(assistantVisible).toBeTruthy();
     } else {
       // Try direct navigation
-      await page.goto(`${BASE_URL}/assistant`);
+      await page.goto(`/assistant`);
       await waitForPageLoad(page);
       // Page should exist or redirect
     }
   });
 
   test('Assistant chat input is functional', async ({ page }) => {
-    await page.goto(`${BASE_URL}/dashboard`);
+    await page.goto(`/dashboard`);
     await waitForPageLoad(page);
 
     // Try to open assistant

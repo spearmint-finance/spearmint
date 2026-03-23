@@ -26,7 +26,7 @@ test("FULL UI: entity filter + inline category change", async ({ page }) => {
   });
 
   // 1. Navigate
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(3000);
 

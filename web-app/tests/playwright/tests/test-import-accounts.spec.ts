@@ -13,14 +13,14 @@ const TILLER_FILE = path.resolve(
 test.describe("Import with auto-account creation", () => {
   test("imports Tiller XLSX and creates accounts", async ({ page }) => {
     // Navigate to import page
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
     // Find and click Import nav link
     const importLink = page.locator('a[href*="import"], [role="tab"]:has-text("Import"), button:has-text("Import")').first();
     if (await importLink.isVisible({ timeout: 3000 }).catch(() => false)) {
       await importLink.click();
     } else {
       // Try direct navigation
-      await page.goto("http://localhost:5173/import");
+      await page.goto("/import");
     }
     await page.waitForLoadState("networkidle");
 
@@ -56,7 +56,7 @@ test.describe("Import with auto-account creation", () => {
   });
 
   test("accounts page shows imported accounts", async ({ page }) => {
-    await page.goto("http://localhost:5173/accounts");
+    await page.goto("/accounts");
     await page.waitForLoadState("networkidle");
 
     // Verify some imported accounts are visible

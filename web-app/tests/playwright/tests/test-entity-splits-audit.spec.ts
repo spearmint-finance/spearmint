@@ -201,7 +201,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
       headers: { "Content-Type": "application/json" },
     });
 
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
 
@@ -215,7 +215,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("12. UI: entity filter dropdown works", async ({ page }) => {
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
 
@@ -243,7 +243,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("13. UI: open edit form and verify splits section exists", async ({ page }) => {
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
 
@@ -278,7 +278,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("14. UI: add and save splits with amounts", async ({ page }) => {
-    await page.goto("http://localhost:5173/transactions");
+    await page.goto("/transactions");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
 

@@ -61,8 +61,8 @@ test.describe("Dashboard Debug", () => {
     });
 
     // Navigate to dashboard with cache bypass
-    console.log("Navigating to http://localhost:8080/ (bypassing cache)");
-    await page.goto("http://localhost:8080/", {
+    console.log("Navigating to / (bypassing cache)");
+    await page.goto("/", {
       waitUntil: "domcontentloaded",
     });
 

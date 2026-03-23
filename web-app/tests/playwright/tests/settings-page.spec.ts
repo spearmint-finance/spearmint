@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-test.use({ baseURL: "http://localhost:5173" });
 
 test.describe("Settings Page", () => {
   test("settings page loads without crashing", async ({ page }) => {

@@ -18,7 +18,7 @@ test("EXACT REPRO: assign Acme Corp, scope, edit category, observe disappearance
   });
 
   // Step 1: View all transactions
-  await page.goto("http://localhost:5173/transactions");
+  await page.goto("/transactions");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(3000);
 

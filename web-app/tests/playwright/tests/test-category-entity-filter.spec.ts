@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-test.use({ baseURL: "http://localhost:5173" });
 
 test.describe("Category Entity Filtering in TransactionForm", () => {
   test("transaction form shows category and entity fields", async ({ page }) => {

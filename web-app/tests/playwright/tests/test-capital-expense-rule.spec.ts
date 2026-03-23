@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Capital Expense Classification Rule', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the application
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
 
     // Wait for the app to load
     await page.waitForLoadState('networkidle');
