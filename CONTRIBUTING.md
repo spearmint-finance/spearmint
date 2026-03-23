@@ -99,4 +99,4 @@ See `product/PRIORITIZED-ROADMAP.md` for the current priority order.
 
 ## License
 
-Spearmint is MIT licensed. By contributing, you agree that your contributions will be licensed under the same license.
+Spearmint is licensed under the PolyForm Noncommercial License — free for personal use, no commercial use. By contributing, you agree that your contributions will be licensed under the same terms. See [LICENSE](LICENSE).
