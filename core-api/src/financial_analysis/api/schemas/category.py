@@ -56,7 +56,8 @@ class CategoryRuleBase(BaseModel):
 
     rule_name: str = Field(..., min_length=1, max_length=100, description="Name of the rule")
     rule_priority: int = Field(100, ge=1, description="Rule priority (lower = higher priority)")
-    category_id: int = Field(..., gt=0, description="Category to assign when rule matches")
+    category_id: Optional[int] = Field(None, gt=0, description="Category to assign when rule matches")
+    entity_id: Optional[int] = Field(None, gt=0, description="Entity to assign when rule matches")
     is_active: bool = Field(True, description="Whether the rule is active")
     description_pattern: Optional[str] = Field(None, max_length=255, description="Pattern to match in description (SQL LIKE syntax with %)")
     source_pattern: Optional[str] = Field(None, max_length=255, description="Pattern to match in source")
@@ -77,6 +78,7 @@ class CategoryRuleUpdate(BaseModel):
     rule_name: Optional[str] = Field(None, min_length=1, max_length=100, description="Name of the rule")
     rule_priority: Optional[int] = Field(None, ge=1, description="Rule priority (lower = higher priority)")
     category_id: Optional[int] = Field(None, gt=0, description="Category to assign when rule matches")
+    entity_id: Optional[int] = Field(None, gt=0, description="Entity to assign when rule matches")
     is_active: Optional[bool] = Field(None, description="Whether the rule is active")
     description_pattern: Optional[str] = Field(None, max_length=255, description="Pattern to match in description")
     source_pattern: Optional[str] = Field(None, max_length=255, description="Pattern to match in source")
@@ -136,6 +138,6 @@ class ApplyCategoryRulesResponse(BaseModel):
 
     total_processed: int = Field(..., description="Total number of transactions processed")
     categorized_count: int = Field(..., description="Number of transactions categorized")
+    entity_assigned_count: int = Field(0, description="Number of transactions with entity assigned")
     skipped_count: int = Field(..., description="Number of transactions skipped")
     rules_applied: int = Field(..., description="Number of rules applied")
-
