@@ -6,24 +6,9 @@
 
 > *"Most apps tell you what you spent. Spearmint tells you what you're building."*
 
-## Why Spearmint?
-
-| Feature | Spearmint | Monarch ($15/mo) | YNAB ($15/mo) | Firefly III | Actual Budget |
-|---------|-----------|-------------------|---------------|-------------|---------------|
-| Self-hosted & free | Yes | No | No | Yes | Yes |
-| CapEx/OpEx separation | **Yes** | No | No | No | No |
-| Multi-entity accounting | **Yes** | No | No | No | No |
-| 7 report types | **Yes** | Partial | No | Partial | No |
-| AI financial assistant | **Yes** | No | No | No | No |
-| Investment tracking | Yes | Yes | No | No | No |
-| Transaction rules engine | Yes | Yes | Partial | Yes | No |
-| Forecasting & projections | Yes | Partial | No | No | No |
-| Transaction splits | **Yes** | No | No | Partial | No |
-| Entity-scoped categories | **Yes** | No | No | No | No |
-
 ## Key Features
 
-### The "Renovation Moment" — CapEx/OpEx Separation
+### CapEx/OpEx Separation
 A $15,000 kitchen remodel isn't the same as a grocery bill. Toggle "Capital Expenditure" on a transaction and it moves from Operating Expenses to Asset Investment. Your monthly burn rate drops from $18,000 to $3,000 — your actual living expenses.
 
 ### Multi-Entity Accounting
@@ -45,7 +30,7 @@ Split a single transaction across multiple categories, entities, and people. "Sp
 Full category CRUD with hierarchy support, entity-scoped categories, search, type/entity filters, and inline editing. Categories automatically scope to the active entity — your "Business Travel" category stays out of your personal budget.
 
 ### Smart Automation
-- **Categorization Rules** — Pattern matching on description, source, amount, payment method
+- **Transaction Rules** — Pattern matching on description, source, amount, payment method. Auto-assign categories and entities.
 - **Classification Rules** — Auto-exclude transfers, reimbursements, and internal transactions
 - **Transaction Relationships** — Detect transfer pairs, credit card payments, reimbursements, dividend reinvestments
 
@@ -95,7 +80,6 @@ spearmint/
 ├── sdk/                # Generated TypeScript SDK
 ├── api-gateway/        # API gateway
 ├── marketing-site/     # Next.js marketing site
-├── product/            # PRDs, roadmap, competitive analysis
 ├── docker-compose.yml  # One-command deployment
 └── docs/               # Architecture & API docs
 ```
@@ -118,16 +102,11 @@ spearmint/
 
 ## Current Status
 
-Spearmint is in active development. Core financial tracking, analysis, and reporting are production-ready. See the [product roadmap](product/PRIORITIZED-ROADMAP.md) for what's next.
+Spearmint is in active development. Core financial tracking, analysis, and reporting are production-ready. See the [roadmap](product/PRIORITIZED-ROADMAP.md) for what's next.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with proper testing
-4. Submit a pull request
-
-See [LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md) for development setup details.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and guidelines.
 
 ## License
 
