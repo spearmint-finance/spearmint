@@ -14,6 +14,7 @@
 
 | [multi-currency-display.md](multi-currency-display.md) | Multi-currency display support | Accounts team | Draft | G1/G2 |
 | [account-reconciliation.md](account-reconciliation.md) | Account reconciliation | Accounts team | In Progress (~40%) | G2 |
+| [demo-data-package.md](demo-data-package.md) | Demo data package for screenshots & first-run | Accounts team | Draft | G1 |
 
 ## PRDs Needed
 

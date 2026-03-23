@@ -1,6 +1,6 @@
 # Spearmint Prioritized Roadmap
 
-**Last Updated:** 2026-03-23
+**Last Updated:** 2026-03-23 (iteration 19)
 **Owner:** Product Team
 **North Star Metric:** GitHub Stars (current: 0, target: 1,000+)
 
@@ -76,15 +76,16 @@ These are the items that should be worked on NOW, in priority order:
 |------|------|-------------|-----------|
 | 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. PRD: [authentication-authorization.md](feature-planning/authentication-authorization.md). Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
 | 2 | **Budget management UI** | Accounts team | Directive: #144. PRD: [budget-management-ui.md](feature-planning/budget-management-ui.md). Budgeting is the #1 reason people use personal finance apps. |
-| 3 | ~~**README & setup documentation**~~ | ~~Marketing team~~ | **Done** (PR #146). Complete README rewrite with competitive positioning, Docker quick start, feature comparison table. |
-| 4 | **Analysis page export fix** | Dashboard team | Directive: #221. Export button downloads empty placeholder CSV — zero actual data. Quick fix: pass analysis data to ExportButton. |
-| 5 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
-| 6 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
-| 7 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
-| 8 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
-| 9 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
-| 10 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. ~86% done — 77 snackbar calls across major flows (PR #244). 7 edge-case gaps remain (scenario builder, export, rule testing). |
-| 11 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
+| 3 | **Demo data package** | Accounts team | Directive: #273. PRD: [demo-data-package.md](feature-planning/demo-data-package.md). Prerequisite for README screenshots (#253). Empty app = zero star conversion. Every high-star OSS finance app has screenshots. |
+| 4 | **README screenshots** | Accounts + Dashboard | Directive: #253. Blocked by #273 (demo data). Once demo data ships, capture screenshots of populated dashboard, transactions, reports. |
+| 5 | **Analysis page export fix** | Dashboard team | Directive: #221. Export button downloads empty placeholder CSV — zero actual data. Quick fix: pass analysis data to ExportButton. |
+| 6 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
+| 7 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
+| 8 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
+| 9 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
+| 10 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
+| 11 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. ~86% done — 77 snackbar calls across major flows (PR #244). 7 edge-case gaps remain (scenario builder, export, rule testing). |
+| 12 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
