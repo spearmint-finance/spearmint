@@ -1,5 +1,9 @@
 # Disclaimer
 
+## Demonstration Project
+
+Spearmint is a **demonstration and reference implementation** built primarily with AI coding tools (Claude Code, GitHub Copilot). It is intended to serve as an example of how to build a full-stack financial tracking application with AI assistance. **It is not production-grade financial software.** Use it for educational purposes, experimentation, or as a starting point for your own projects. If you choose to use it with real financial data, you do so entirely at your own risk.
+
 ## Not Financial Advice
 
 Spearmint is a personal finance **tracking and reporting tool**. It is not a financial advisor, tax advisor, accountant, or fiduciary. Nothing in this software constitutes financial, investment, tax, or legal advice.

@@ -2,9 +2,9 @@
 
 [![npm version](https://img.shields.io/npm/v/@spearmint-finance/sdk)](https://www.npmjs.com/package/@spearmint-finance/sdk)
 
-**Business-class finance for the household.** Spearmint is a free, self-hosted financial engine that treats your household like a business — separating operating costs from capital investments, tracking multiple entities, and providing professional-grade reporting. No subscriptions, no cloud dependency, your data stays on your hardware.
+> **This project is a demonstration and reference implementation.** Spearmint was built almost entirely with AI coding tools (Claude Code, GitHub Copilot) as an example of how to build a full-stack financial tracking application with AI assistance. It is intended for **educational and demonstration purposes only**. It is not production-grade financial software. Do not use it as your sole system for managing real money. If you choose to run it, you do so entirely at your own risk. See [DISCLAIMER.md](DISCLAIMER.md).
 
-> *"Most apps tell you what you spent. Spearmint tells you what you're building."*
+Spearmint is a free, self-hosted financial engine that treats your household like a business — separating operating costs from capital investments, tracking multiple entities, and providing professional-grade reporting. No subscriptions, no cloud dependency, your data stays on your hardware.
 
 ## Key Features
 
