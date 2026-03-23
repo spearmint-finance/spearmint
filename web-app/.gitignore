@@ -28,3 +28,7 @@ test-results
 playwright-report
 web-app/tests/playwright/test-results
 web-app/tests/playwright/playwright-report
+
+# Debug screenshots (generated during development)
+test-screenshots/
+*.png
