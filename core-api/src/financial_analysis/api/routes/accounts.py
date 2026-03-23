@@ -31,6 +31,7 @@ from ..schemas.account import (
     BalanceResponse,
     BalanceHistory,
     HoldingCreate,
+    HoldingUpdate,
     HoldingResponse,
     PortfolioSummary,
     ReconciliationCreate,
@@ -487,6 +488,46 @@ def add_holding(
     )
 
     return HoldingResponse.model_validate(new_holding)
+
+
+@router.put("/holdings/{holding_id}", response_model=HoldingResponse)
+def update_holding(
+    holding_id: int = Path(..., description="Holding ID"),
+    holding: HoldingUpdate = ...,
+    db: Session = Depends(get_db)
+):
+    """Update an investment holding."""
+    service = AccountService(db)
+    updates = holding.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    updated = service.update_holding(holding_id, updates)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Holding not found")
+
+    result = {
+        "holding_id": updated.holding_id,
+        "account_id": updated.account_id,
+        "symbol": updated.symbol,
+        "description": updated.description,
+        "quantity": updated.quantity,
+        "cost_basis": updated.cost_basis,
+        "current_value": updated.current_value,
+        "as_of_date": updated.as_of_date,
+        "asset_class": updated.asset_class,
+        "sector": updated.sector,
+        "created_at": updated.created_at,
+        "updated_at": updated.updated_at
+    }
+
+    if updated.cost_basis is not None and updated.current_value is not None:
+        result["gain_loss"] = float(updated.current_value - updated.cost_basis)
+        result["gain_loss_percent"] = (
+            float((updated.current_value - updated.cost_basis) / updated.cost_basis * 100)
+            if updated.cost_basis != 0 else 0.0
+        )
+
+    return result
 
 
 @router.delete("/holdings/{holding_id}")
