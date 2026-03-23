@@ -132,17 +132,19 @@ Implement the change. Rules:
 - Test both frontend and backend changes
 - Verify no regressions to existing account/transaction functionality
 - Respect the SDK's camelCase (frontend) ↔ snake_case (backend) transformation
+- If adding columns to existing database models, run `ALTER TABLE` manually — SQLite `create_all()` does not add columns to existing tables
 
-### Step 6: VALIDATE (hard gate — real validation, not synthetic test)
+### Step 6: VALIDATE (hard gate — Playwright verification required)
 
 Validation means:
-- Deploy to preview/staging environment
-- Manually verify the change works on the deployed URL
-- Test the specific workflow end-to-end (not just the changed component)
+- **Write and run a Playwright test** that exercises the new or changed feature end-to-end in the browser. This is mandatory for all frontend and full-stack changes — do not skip it.
+- Ensure the backend is restarted if model/schema changes were made
+- Ensure the frontend dev server is running and serving the latest code
+- Run existing related Playwright tests to verify no regressions
 - Red Team challenges the implementation
 - Verify no regressions on adjacent features
 
-Do NOT declare validation passed based on local dev server alone.
+Do NOT declare validation passed based on TypeScript compilation or code review alone. The change must be verified working in the browser via Playwright.
 
 ### Step 7: MEASURE AGAIN (close the loop)
 
@@ -374,9 +376,9 @@ search_memories({ query: "cross-team-escalations accounts" })
 |---|---|
 | Starting a new iteration without verifying the previous one shipped | Step 0 gate is mandatory. Complete all 6 gate items before proceeding. |
 | Skipping prior art search before gap selection | Bar Raiser blocks. Document search results (even if empty) in your plan. |
-| Validating only on local dev server | Step 6 requires deployed preview verification. |
+| Skipping Playwright validation on UI changes | Step 6 requires a Playwright test that exercises the feature in the browser. TypeScript compilation is not validation. |
 | Declaring "shipped" without both outcome memory AND repo entry | Both are required. One without the other is incomplete. |
-| Modifying data models without considering migration impact | Evaluate whether existing data needs migration. Escalate breaking changes. |
+| Modifying data models without running ALTER TABLE | SQLite `create_all()` does not add columns to existing tables. You must run `ALTER TABLE` manually and restart the backend. |
 | Ignoring the SDK camelCase/snake_case transformation | All API ↔ frontend data must go through the SDK transformation layer. |
 | Skipping Security Reviewer on "simple" changes | All changes go through Security Reviewer. Financial data is sensitive — no exceptions. |
 | Not updating `spearmint-accounts-leader-state` at session end | State must be saved. Without it, the next session cannot resume. |
