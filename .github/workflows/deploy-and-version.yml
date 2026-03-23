@@ -1,7 +1,6 @@
 name: Deploy, Version Bump, and Postman Collection
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
@@ -9,8 +8,6 @@ on:
       - 'core-api/**'
       - 'web-app/**'
       - 'sdk/**'
-      - 'mcp-server/**'  # Include MCP server changes
-      - 'dev-tools/**'  # Include dev-tools changes to trigger workflow for publishing scripts
       - '.github/workflows/deploy-and-version.yml'
 
 permissions:
