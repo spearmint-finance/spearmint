@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("EXACT REPRO: assign MemNexus, scope, edit category, observe disappearance", async ({ page }) => {
+test("EXACT REPRO: assign Acme Corp, scope, edit category, observe disappearance", async ({ page }) => {
   // Track all PUT requests
   const puts: { url: string; body: string }[] = [];
   page.on("request", (req) => {
@@ -27,7 +27,7 @@ test("EXACT REPRO: assign MemNexus, scope, edit category, observe disappearance"
   const allRows = await page.locator('[role="row"][data-rowindex]').count();
   console.log(`Step 1: All transactions visible, rows=${allRows}`);
 
-  // Step 2: Choose one and assign to MemNexus
+  // Step 2: Choose one and assign to Acme Corp
   // Click on the first transaction's amount cell to open edit dialog
   const amountCell = page.locator('[role="gridcell"]').filter({ hasText: /^\$|^-\$/ }).first();
   await amountCell.click();
@@ -36,13 +36,13 @@ test("EXACT REPRO: assign MemNexus, scope, edit category, observe disappearance"
   let dialog = page.locator('[role="dialog"]');
   await expect(dialog).toBeVisible({ timeout: 5000 });
 
-  // Find the entity dropdown in the form and select "MemNexus"
+  // Find the entity dropdown in the form and select "Acme Corp"
   const entityField = dialog.getByRole('combobox', { name: 'Entity' }).first();
   await entityField.click();
   await page.waitForTimeout(300);
-  const memnexusOption = page.locator('[role="option"]:has-text("MemNexus")');
-  await expect(memnexusOption).toBeVisible({ timeout: 3000 });
-  await memnexusOption.click();
+  const entityOption = page.locator('[role="option"]:has-text("Acme Corp")');
+  await expect(entityOption).toBeVisible({ timeout: 3000 });
+  await entityOption.click();
   await page.waitForTimeout(500);
 
   // Save the form
@@ -50,7 +50,7 @@ test("EXACT REPRO: assign MemNexus, scope, edit category, observe disappearance"
   await saveBtn.click();
   await page.waitForTimeout(3000);
 
-  console.log("\nStep 2: Assigned MemNexus entity");
+  console.log("\nStep 2: Assigned Acme Corp entity");
   console.log(`PUT requests: ${puts.length}`);
   for (const p of puts) {
     const parsed = JSON.parse(p.body);
@@ -59,20 +59,20 @@ test("EXACT REPRO: assign MemNexus, scope, edit category, observe disappearance"
 
   await page.screenshot({ path: "tests/playwright/test-results/artifacts/repro-02-assigned.png" });
 
-  // Step 3: Change scope to MemNexus
+  // Step 3: Change scope to Acme Corp
   puts.length = 0;
   gets.length = 0;
 
   const entitySelect = page.locator('text=All Entities').first();
   await entitySelect.click();
   await page.waitForTimeout(500);
-  const mnOption = page.locator('[role="option"]:has-text("MemNexus")').first();
+  const mnOption = page.locator('[role="option"]:has-text("Acme Corp")').first();
   await expect(mnOption).toBeVisible({ timeout: 3000 });
   await mnOption.click();
   await page.waitForTimeout(3000);
 
   const mnRows = await page.locator('[role="row"][data-rowindex]').count();
-  console.log(`\nStep 3: MemNexus scope, rows=${mnRows}`);
+  console.log(`\nStep 3: Acme Corp scope, rows=${mnRows}`);
   await page.screenshot({ path: "tests/playwright/test-results/artifacts/repro-03-scoped.png" });
 
   // Step 4: Click on that transaction to open edit dialog

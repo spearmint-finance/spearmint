@@ -44,10 +44,11 @@ spearmint/
 ├── web-app/           # React frontend (TypeScript, Material-UI, Vite)
 ├── api-gateway/       # API gateway
 ├── marketing-site/    # Next.js marketing site
-├── mcp-server/        # MCP server (TypeScript)
+├── mcp-server/        # MCP server for AI assistant (TypeScript)
 ├── docs/              # Architecture & API documentation
 ├── product/           # PRDs and roadmap
 ├── scripts/           # Development scripts
+├── dev-tools/         # Spec validation, SDK testing utilities
 └── docker-compose.yml
 ```
 
