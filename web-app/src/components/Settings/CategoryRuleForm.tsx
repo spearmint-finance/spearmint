@@ -3,7 +3,7 @@
  * Dialog for creating/editing category rules
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import {
   Dialog,
@@ -66,6 +66,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
     handleSubmit,
     reset,
     watch,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<CategoryRuleFormData>({
     defaultValues: {
@@ -117,10 +118,27 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
   }, [rule, reset]);
 
   // Handle form submission
+  const [formError, setFormError] = useState<string | null>(null);
+
   const onSubmit = async (data: CategoryRuleFormData) => {
+    setFormError(null);
+
     // Validate at least one assignment target
     if (!data.category_id && !data.entity_id) {
-      alert("At least one of Category or Entity must be selected.");
+      setFormError("At least one of Category or Entity must be selected.");
+      return;
+    }
+
+    // Validate at least one pattern is provided
+    if (!data.description_pattern && !data.source_pattern && !data.payment_method_pattern
+        && !data.amount_min && !data.amount_max && !data.transaction_type_pattern) {
+      setFormError("At least one matching pattern is required.");
+      return;
+    }
+
+    // Validate amount range
+    if (data.amount_min && data.amount_max && parseFloat(data.amount_min) > parseFloat(data.amount_max)) {
+      setFormError("Minimum amount cannot be greater than maximum amount.");
       return;
     }
 
@@ -150,7 +168,8 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
 
       onClose();
     } catch (error) {
-      console.error("Failed to save rule:", error);
+      const detail = error instanceof Error ? error.message : 'Unknown error';
+      setFormError(`Failed to save rule: ${detail}`);
     }
   };
 
@@ -189,7 +208,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={(e) => e.preventDefault()}>
         <DialogTitle>
           {isEditing ? "Edit Transaction Rule" : "Create Transaction Rule"}
         </DialogTitle>
@@ -225,10 +244,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
                 <Controller
                   name="rule_priority"
                   control={control}
-                  rules={{
-                    required: "Priority is required",
-                    min: { value: 1, message: "Priority must be at least 1" },
-                  }}
+                  rules={{ required: "Priority is required" }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -418,6 +434,12 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
           </Box>
         </DialogContent>
 
+        {formError && (
+          <Alert severity="error" sx={{ mx: 3, mb: 1 }} onClose={() => setFormError(null)}>
+            {formError}
+          </Alert>
+        )}
+
         <DialogActions>
           <Button
             onClick={handleTestRule}
@@ -426,7 +448,18 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
             Test Rule
           </Button>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" disabled={isSubmitting}>
+          <Button
+            variant="contained"
+            disabled={isSubmitting}
+            onClick={() => {
+              const data = getValues();
+              if (!data.rule_name?.trim()) {
+                setFormError("Rule name is required.");
+                return;
+              }
+              onSubmit(data);
+            }}
+          >
             {isEditing ? "Update" : "Create"}
           </Button>
         </DialogActions>

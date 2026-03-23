@@ -170,30 +170,47 @@ export const categoryRulesApi = {
     active_only?: boolean;
     category_id?: number;
   }): Promise<CategoryRuleListResponse> => {
-    const response =
-      await categoriesClient.listCategoryRules({
-        activeOnly: params?.active_only,
-        categoryId: params?.category_id,
-      });
-    return response.data as unknown as CategoryRuleListResponse;
+    // Bypass SDK — returns camelCase but components expect snake_case
+    const searchParams = new URLSearchParams();
+    if (params?.active_only !== undefined) searchParams.set("active_only", String(params.active_only));
+    if (params?.category_id !== undefined) searchParams.set("category_id", String(params.category_id));
+    const qs = searchParams.toString();
+    const response = await fetch(`${baseUrl}/api/category-rules${qs ? `?${qs}` : ""}`);
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 
   /**
    * Get a single category rule by ID
    */
   getById: async (ruleId: number): Promise<CategoryRule> => {
-    const response =
-      await categoriesClient.getCategoryRule(ruleId);
-    return response.data as unknown as CategoryRule;
+    // Bypass SDK — returns camelCase but components expect snake_case
+    const response = await fetch(`${baseUrl}/api/category-rules/${ruleId}`);
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 
   /**
    * Create a new category rule
    */
   create: async (rule: CategoryRuleCreate): Promise<CategoryRule> => {
-    const response =
-      await categoriesClient.createCategoryRule(rule as any);
-    return response.data as unknown as CategoryRule;
+    // Bypass SDK — its schema requires categoryId and lacks entityId
+    const response = await fetch(`${baseUrl}/api/category-rules`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rule),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 
   /**
@@ -203,21 +220,30 @@ export const categoryRulesApi = {
     ruleId: number,
     rule: CategoryRuleUpdate
   ): Promise<CategoryRule> => {
-    const response =
-      await categoriesClient.updateCategoryRule(
-        ruleId,
-        rule as any
-      );
-    return response.data as unknown as CategoryRule;
+    // Bypass SDK — its schema requires categoryId and lacks entityId
+    const response = await fetch(`${baseUrl}/api/category-rules/${ruleId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rule),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 
   /**
    * Delete a category rule
    */
   delete: async (ruleId: number): Promise<{ message: string }> => {
-    await categoriesClient.deleteCategoryRule(
-      ruleId
-    );
+    const response = await fetch(`${baseUrl}/api/category-rules/${ruleId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
     return { message: "Rule deleted" };
   },
 
@@ -227,9 +253,17 @@ export const categoryRulesApi = {
   test: async (
     request: TestCategoryRuleRequest
   ): Promise<TestCategoryRuleResponse> => {
-    const response =
-      await categoriesClient.testCategoryRule(request);
-    return response.data as unknown as TestCategoryRuleResponse;
+    // Bypass SDK for consistency with create/update
+    const response = await fetch(`${baseUrl}/api/category-rules/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 
   /**
@@ -238,10 +272,16 @@ export const categoryRulesApi = {
   apply: async (
     request: ApplyCategoryRulesRequest
   ): Promise<ApplyCategoryRulesResponse> => {
-    const response =
-      await categoriesClient.applyCategoryRules(
-        request
-      );
-    return response.data as unknown as ApplyCategoryRulesResponse;
+    // Bypass SDK for consistency with create/update
+    const response = await fetch(`${baseUrl}/api/category-rules/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail);
+    }
+    return response.json();
   },
 };

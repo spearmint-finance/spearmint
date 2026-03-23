@@ -115,8 +115,9 @@ export function useApplyCategoryRules() {
     mutationFn: (request: ApplyCategoryRulesRequest) =>
       categoryRulesApi.apply(request),
     onSuccess: () => {
-      // Invalidate transactions since they may have been updated
+      // Invalidate transactions and entities since both may have been updated
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["entities"] });
     },
   });
 }
