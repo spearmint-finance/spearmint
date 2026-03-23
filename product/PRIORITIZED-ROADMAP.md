@@ -1,6 +1,6 @@
 # Spearmint Prioritized Roadmap
 
-**Last Updated:** 2026-03-22
+**Last Updated:** 2026-03-23
 **Owner:** Product Team
 **North Star Metric:** GitHub Stars (current: 0, target: 1,000+)
 
@@ -10,7 +10,7 @@
 
 **Goal:** Be the best self-hosted personal finance ledger on the market.
 
-**Status:** 85% complete (11/13 items done) — core transaction, account, reporting, import, and split workflows are production-ready. Key remaining items are authentication (#141) and budget management (#144). Transaction relationships are functional (auto-detection + linking) but need UI polish.
+**Status:** 85% complete (11/13 items done) — core transaction, account, reporting, import, and split workflows are production-ready. Key remaining items are authentication (#141) and budget management (#144). Transaction relationships are functional (auto-detection + linking) but need UI polish. Since last update: accounts team shipped category merge/reassign, holdings CRUD, reconciliation creation form, transaction rules with entity auto-assignment, and snackbar error feedback across major flows.
 
 ### G1 Checklist
 
@@ -53,7 +53,7 @@ G1 is complete when:
 | P1 | Confidence-based forecasting (upper/lower bounds) | Dashboard team | [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md) |
 | P2 | Budget management (envelopes, drag-and-drop reallocation) | Accounts team | [budget-management-ui.md](feature-planning/budget-management-ui.md) |
 | P2 | Budget advisor agent (A2A) | Product team | [budget-advisor-agent.md](feature-planning/budget-advisor-agent.md) |
-| P2 | Account reconciliation | Accounts team | [account-reconciliation.md](feature-planning/account-reconciliation.md) |
+| P2 | Account reconciliation | Accounts team | [account-reconciliation.md](feature-planning/account-reconciliation.md) — **In Progress**: backend complete, creation form + history view shipped (PR #241). Missing: transaction-clearing UI, real-time balance, cleared indicator |
 | P2 | AI assistant completion (4 stub endpoints) | Accounts/Platform team | — (directive #227) |
 | P3 | Mobile responsive design | Accounts + Dashboard | — (directive #229) |
 | P3 | Bank data aggregation (Plaid) | Accounts team | [bank-data-aggregation.md](feature-planning/bank-data-aggregation.md) |
@@ -83,29 +83,35 @@ These are the items that should be worked on NOW, in priority order:
 | 7 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
 | 8 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
 | 9 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
-| 10 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. Replace 10 silent console.error failures with user-visible snackbar. Pattern established in PR #206. |
+| 10 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. ~86% done — 77 snackbar calls across major flows (PR #244). 7 edge-case gaps remain (scenario builder, export, rule testing). |
 | 11 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
 ---
 
 ## Completed Work (by team)
 
-### Accounts Team (71+ iterations, as of 2026-03-22)
+### Accounts Team (90+ iterations, as of 2026-03-23)
 - Full account CRUD with multi-type support (checking, savings, credit card, loan, 401k, brokerage)
 - Entity-scoped net worth calculation
 - Balance history and reconciliation
 - Transaction form with account selector, tags, categories, entity assignment
 - CSV import with auto-account creation from Tiller, deduplication
 - CSV export with loading state
-- Transaction splits: full form, "Split Evenly", inline entity selector, grid indicator, amount validation
+- Transaction splits: full form, "Split Evenly", inline entity selector, grid indicator, amount validation, portion indicator chip, split breakdown in detail dialog, entity filter support
 - Transaction relationships: auto-detection for transfers, CC payments, reimbursements, dividend reinvestments
 - Entity system: CRUD, M2M account-entity, direct + inherited entity assignment on transactions, bulk entity assign
-- Category management: entity-scoped categories with hierarchy, search, type filter, entity filter, inline editor, transaction count per category, snackbar feedback, duplicate name validation
+- Category management: entity-scoped categories with hierarchy, search, type filter, entity filter, inline editor, transaction count per category, snackbar feedback, duplicate name validation, **category merge/reassign workflow**
+- **Holdings CRUD**: creation form and delete capability in portfolio tab with gain/loss display
+- **Transaction rules extended**: auto-assign entities alongside categories, promoted to top-level Settings tab, renamed from "Category Rules" to "Transaction Rules"
+- **Reconciliation creation form**: start reconciliation with statement date/balance in account details (backend fully implemented, frontend creation + history view)
+- **Snackbar error feedback**: 77 instances across major flows (PR #244 added backend error detail surfacing)
+- Account search bar with search-aware empty state
 - Accessibility improvements (aria labels, confirmation dialogs)
 - Date range validation, batch clear validation, error feedback
 - Debug logging cleanup (print → proper logging)
 - Searchable category filter with Autocomplete on transactions page
 - Enhanced "Create New Category" dialog with parent and entity info
+- Duplicate transaction action, bulk category assignment
 
 ### Dashboard Team (8 iterations)
 - Category pie chart with responsive layout
