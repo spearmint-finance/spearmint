@@ -36,6 +36,7 @@ import {
   useDeleteCategoryRule,
 } from "../../hooks/useCategoryRules";
 import { useCategories } from "../../hooks/useCategories";
+import { useEntities } from "../../hooks/useEntities";
 
 function CategoryRulesList() {
   const [editingRule, setEditingRule] = useState<CategoryRule | null>(null);
@@ -55,15 +56,24 @@ function CategoryRulesList() {
   } = useCategoryRules();
 
   const { data: categoriesData } = useCategories();
+  const { data: entities = [] } = useEntities();
 
   const deleteRuleMutation = useDeleteCategoryRule();
 
   // Get category name by ID
-  const getCategoryName = (categoryId: number): string => {
+  const getCategoryName = (categoryId: number | null): string => {
+    if (!categoryId) return "";
     const category = categoriesData?.categories.find(
       (c) => c.category_id === categoryId
     );
     return category?.category_name || "Unknown";
+  };
+
+  // Get entity name by ID
+  const getEntityName = (entityId: number | null): string => {
+    if (!entityId) return "";
+    const entity = (entities as any[]).find((e) => e.entity_id === entityId);
+    return entity?.entity_name || "Unknown";
   };
 
   // Handle edit rule
@@ -137,7 +147,7 @@ function CategoryRulesList() {
           mb: 3,
         }}
       >
-        <Typography variant="h6">Category Rules</Typography>
+        <Typography variant="h6">Transaction Rules</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
             variant="outlined"
@@ -159,9 +169,9 @@ function CategoryRulesList() {
 
       {/* Info Alert */}
       <Alert severity="info" sx={{ mb: 3 }}>
-        Category rules automatically assign categories to transactions based on
-        patterns. Rules are applied in priority order (lower number = higher
-        priority).
+        Transaction rules automatically assign categories and/or entities to
+        transactions based on patterns. Rules are applied in priority order
+        (lower number = higher priority).
       </Alert>
 
       {/* Rules Table */}
@@ -179,6 +189,7 @@ function CategoryRulesList() {
                 <TableCell>Priority</TableCell>
                 <TableCell>Rule Name</TableCell>
                 <TableCell>Category</TableCell>
+                <TableCell>Entity</TableCell>
                 <TableCell>Patterns</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -203,11 +214,27 @@ function CategoryRulesList() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={getCategoryName(rule.category_id)}
-                        size="small"
-                        color="secondary"
-                      />
+                      {rule.category_id ? (
+                        <Chip
+                          label={getCategoryName(rule.category_id)}
+                          size="small"
+                          color="secondary"
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">—</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {rule.entity_id ? (
+                        <Chip
+                          label={getEntityName(rule.entity_id)}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">—</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>

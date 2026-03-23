@@ -30,11 +30,13 @@ import {
   useTestCategoryRule,
 } from "../../hooks/useCategoryRules";
 import { useCategories } from "../../hooks/useCategories";
+import { useEntities } from "../../hooks/useEntities";
 
 interface CategoryRuleFormData {
   rule_name: string;
   rule_priority: number;
   category_id: number | "";
+  entity_id: number | "";
   is_active: boolean;
   description_pattern: string;
   source_pattern: string;
@@ -54,6 +56,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
   const isEditing = !!rule;
 
   const { data: categoriesData } = useCategories();
+  const { data: entities = [] } = useEntities();
   const createRuleMutation = useCreateCategoryRule();
   const updateRuleMutation = useUpdateCategoryRule();
   const testRuleMutation = useTestCategoryRule();
@@ -69,6 +72,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
       rule_name: "",
       rule_priority: 100,
       category_id: "" as any,
+      entity_id: "" as any,
       is_active: true,
       description_pattern: "",
       source_pattern: "",
@@ -85,7 +89,8 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
       reset({
         rule_name: rule.rule_name,
         rule_priority: rule.rule_priority,
-        category_id: rule.category_id,
+        category_id: rule.category_id || ("" as any),
+        entity_id: rule.entity_id || ("" as any),
         is_active: rule.is_active,
         description_pattern: rule.description_pattern || "",
         source_pattern: rule.source_pattern || "",
@@ -99,6 +104,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
         rule_name: "",
         rule_priority: 100,
         category_id: "" as any,
+        entity_id: "" as any,
         is_active: true,
         description_pattern: "",
         source_pattern: "",
@@ -112,11 +118,18 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
 
   // Handle form submission
   const onSubmit = async (data: CategoryRuleFormData) => {
+    // Validate at least one assignment target
+    if (!data.category_id && !data.entity_id) {
+      alert("At least one of Category or Entity must be selected.");
+      return;
+    }
+
     try {
       const ruleData = {
         rule_name: data.rule_name,
         rule_priority: data.rule_priority,
-        category_id: Number(data.category_id),
+        category_id: data.category_id ? Number(data.category_id) : null,
+        entity_id: data.entity_id ? Number(data.entity_id) : null,
         is_active: data.is_active,
         description_pattern: data.description_pattern || null,
         source_pattern: data.source_pattern || null,
@@ -178,14 +191,14 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogTitle>
-          {isEditing ? "Edit Category Rule" : "Create Category Rule"}
+          {isEditing ? "Edit Transaction Rule" : "Create Transaction Rule"}
         </DialogTitle>
 
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Alert severity="info" sx={{ mb: 3 }}>
-              Rules use SQL LIKE patterns. Use % as wildcard (e.g., %walmart%
-              matches "WALMART STORE"). Leave fields empty to ignore them.
+              Rules auto-assign a category and/or entity to matching transactions.
+              Use % as wildcard in patterns (e.g., %walmart% matches "WALMART STORE").
             </Alert>
 
             <Grid container spacing={2}>
@@ -232,19 +245,47 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
                 />
               </Grid>
 
-              {/* Category */}
+              {/* Assignment Targets */}
               <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Assignment (at least one required)
+                </Typography>
+              </Grid>
+
+              {/* Category */}
+              <Grid item xs={12} sm={6}>
                 <Controller
                   name="category_id"
                   control={control}
-                  rules={{ required: "Category is required" }}
                   render={({ field }) => (
-                    <FormControl fullWidth error={!!errors.category_id}>
+                    <FormControl fullWidth>
                       <InputLabel>Category</InputLabel>
                       <Select {...field} label="Category">
+                        <MenuItem value="">None</MenuItem>
                         {categoriesData?.categories.map((c) => (
                           <MenuItem key={c.category_id} value={c.category_id}>
                             {c.category_name} ({c.category_type})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+
+              {/* Entity */}
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="entity_id"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel>Entity</InputLabel>
+                      <Select {...field} label="Entity">
+                        <MenuItem value="">None</MenuItem>
+                        {entities.map((e: any) => (
+                          <MenuItem key={e.entity_id} value={e.entity_id}>
+                            {e.entity_name}
                           </MenuItem>
                         ))}
                       </Select>

@@ -370,6 +370,7 @@ def create_category_rule(
         created = service.create_category_rule(
             rule_name=rule.rule_name,
             category_id=rule.category_id,
+            entity_id=rule.entity_id,
             rule_priority=rule.rule_priority,
             is_active=rule.is_active,
             description_pattern=rule.description_pattern,
@@ -526,6 +527,7 @@ def apply_category_rules(
         return ApplyCategoryRulesResponse(
             total_processed=result['total_processed'],
             categorized_count=result['categorized_count'],
+            entity_assigned_count=result.get('entity_assigned_count', 0),
             skipped_count=result['skipped_count'],
             rules_applied=result['rules_applied']
         )
