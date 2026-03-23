@@ -22,7 +22,7 @@
     "@mui/material": "^5.16.7",
     "@mui/x-data-grid": "^8.13.1",
     "@mui/x-date-pickers": "^8.14.0",
-    "@spearmint-finance/sdk": "^0.0.95",
+    "@spearmint-finance/sdk": "^0.0.118",
     "@tanstack/react-query": "^5.56.2",
     "axios": "^1.7.7",
     "date-fns": "^3.6.0",

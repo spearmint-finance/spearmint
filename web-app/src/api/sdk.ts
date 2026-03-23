@@ -54,6 +54,7 @@ export const categoriesApi = sdk.categories;
 export const relationshipsApi = sdk.relationships;
 export const personsApi = sdk.persons;
 export const splitsApi = sdk.splits;
+export const entitiesApi = sdk.entities;
 
 // Also export the main SDK instance for direct access
 export default sdk;
