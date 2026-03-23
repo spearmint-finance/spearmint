@@ -192,7 +192,7 @@ export const categoryRulesApi = {
    */
   create: async (rule: CategoryRuleCreate): Promise<CategoryRule> => {
     const response =
-      await categoriesClient.createCategoryRule(rule);
+      await categoriesClient.createCategoryRule(rule as any);
     return response.data as unknown as CategoryRule;
   },
 
@@ -206,7 +206,7 @@ export const categoryRulesApi = {
     const response =
       await categoriesClient.updateCategoryRule(
         ruleId,
-        rule
+        rule as any
       );
     return response.data as unknown as CategoryRule;
   },

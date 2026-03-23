@@ -156,16 +156,18 @@ class TransactionRelationship(Base):
 
 class CategoryRule(Base):
     """
-    Category rules table.
+    Transaction rules table.
 
-    Pattern-based rules for automatic transaction categorization.
+    Pattern-based rules for automatic transaction categorization and entity assignment.
+    A rule can assign a category, an entity, or both.
     """
     __tablename__ = "category_rules"
 
     rule_id = Column(Integer, primary_key=True, autoincrement=True)
     rule_name = Column(String(100), nullable=False)
     rule_priority = Column(Integer, default=100)
-    category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=False)
+    category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=True)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
     is_active = Column(Boolean, default=True)
 
     # Pattern matching criteria
@@ -181,12 +183,14 @@ class CategoryRule(Base):
 
     # Relationships
     category = relationship("Category", backref="category_rules")
+    entity = relationship("Entity")
 
     # Indexes
     __table_args__ = (
         Index('idx_category_rule_priority', 'rule_priority'),
         Index('idx_category_rule_active', 'is_active'),
         Index('idx_category_rule_category', 'category_id'),
+        Index('idx_category_rule_entity', 'entity_id'),
     )
 
     def __repr__(self):

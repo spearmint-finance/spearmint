@@ -41,7 +41,8 @@ export interface CategoryRule {
   rule_id: number;
   rule_name: string;
   rule_priority: number;
-  category_id: number;
+  category_id: number | null;
+  entity_id: number | null;
   is_active: boolean;
   description_pattern: string | null;
   source_pattern: string | null;
@@ -56,7 +57,8 @@ export interface CategoryRule {
 export interface CategoryRuleCreate {
   rule_name: string;
   rule_priority?: number;
-  category_id: number;
+  category_id?: number | null;
+  entity_id?: number | null;
   is_active?: boolean;
   description_pattern?: string | null;
   source_pattern?: string | null;
@@ -69,7 +71,8 @@ export interface CategoryRuleCreate {
 export interface CategoryRuleUpdate {
   rule_name?: string;
   rule_priority?: number;
-  category_id?: number;
+  category_id?: number | null;
+  entity_id?: number | null;
   is_active?: boolean;
   description_pattern?: string | null;
   source_pattern?: string | null;
@@ -118,6 +121,7 @@ export interface ApplyCategoryRulesRequest {
 export interface ApplyCategoryRulesResponse {
   total_processed: number;
   categorized_count: number;
+  entity_assigned_count: number;
   skipped_count: number;
   rules_applied: number;
 }

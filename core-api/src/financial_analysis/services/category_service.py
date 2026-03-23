@@ -428,7 +428,8 @@ class CategoryService:
     def create_category_rule(
         self,
         rule_name: str,
-        category_id: int,
+        category_id: Optional[int] = None,
+        entity_id: Optional[int] = None,
         rule_priority: int = 100,
         is_active: bool = True,
         description_pattern: Optional[str] = None,
@@ -439,30 +440,27 @@ class CategoryService:
         transaction_type_pattern: Optional[str] = None
     ) -> CategoryRule:
         """
-        Create a new category rule.
+        Create a new category/entity assignment rule.
 
-        Args:
-            rule_name: Name of the rule
-            category_id: Category to assign when rule matches
-            rule_priority: Priority (lower = higher priority)
-            is_active: Whether rule is active
-            description_pattern: Pattern to match in description (SQL LIKE syntax with %)
-            source_pattern: Pattern to match in source
-            amount_min: Minimum amount
-            amount_max: Maximum amount
-            payment_method_pattern: Pattern to match in payment method
-            transaction_type_pattern: 'Income', 'Expense', or None for both
-
-        Returns:
-            CategoryRule: Created rule
-
-        Raises:
-            ValidationError: If validation fails
+        A rule can assign a category, an entity, or both to matching transactions.
+        At least one of category_id or entity_id must be provided.
         """
-        # Validate category exists
-        category = self.get_category(category_id)
-        if not category:
-            raise ValidationError(f"Category with ID {category_id} not found")
+        # Validate at least one assignment target
+        if not category_id and not entity_id:
+            raise ValidationError("At least one of category_id or entity_id must be provided")
+
+        # Validate category exists if provided
+        if category_id:
+            category = self.get_category(category_id)
+            if not category:
+                raise ValidationError(f"Category with ID {category_id} not found")
+
+        # Validate entity exists if provided
+        if entity_id:
+            from ..database.models import Entity
+            entity = self.db.query(Entity).filter(Entity.entity_id == entity_id).first()
+            if not entity:
+                raise ValidationError(f"Entity with ID {entity_id} not found")
 
         # Validate transaction type pattern if provided
         if transaction_type_pattern and transaction_type_pattern not in ('Income', 'Expense'):
@@ -479,6 +477,7 @@ class CategoryService:
         rule = CategoryRule(
             rule_name=rule_name,
             category_id=category_id,
+            entity_id=entity_id,
             rule_priority=rule_priority,
             is_active=is_active,
             description_pattern=description_pattern,
@@ -557,10 +556,17 @@ class CategoryService:
             return None
 
         # Validate category if being updated
-        if 'category_id' in updates:
+        if 'category_id' in updates and updates['category_id']:
             category = self.get_category(updates['category_id'])
             if not category:
                 raise ValidationError(f"Category with ID {updates['category_id']} not found")
+
+        # Validate entity if being updated
+        if 'entity_id' in updates and updates['entity_id']:
+            from ..database.models import Entity
+            entity = self.db.query(Entity).filter(Entity.entity_id == updates['entity_id']).first()
+            if not entity:
+                raise ValidationError(f"Entity with ID {updates['entity_id']} not found")
 
         # Validate transaction type pattern if being updated
         if 'transaction_type_pattern' in updates:
@@ -601,13 +607,13 @@ class CategoryService:
 
     def auto_categorize_transaction(self, transaction: Transaction) -> bool:
         """
-        Automatically categorize a transaction based on rules.
+        Automatically apply rules to a transaction (category and/or entity).
 
         Args:
-            transaction: Transaction to categorize
+            transaction: Transaction to process
 
         Returns:
-            bool: True if categorization was applied
+            bool: True if any assignment was applied
         """
         # Get active rules ordered by priority
         rules = self.db.query(CategoryRule).filter(
@@ -616,9 +622,14 @@ class CategoryService:
 
         for rule in rules:
             if self._rule_matches(transaction, rule):
-                # Apply category
-                transaction.category_id = rule.category_id
-                return True
+                applied = False
+                if rule.category_id:
+                    transaction.category_id = rule.category_id
+                    applied = True
+                if rule.entity_id:
+                    transaction.entity_id = rule.entity_id
+                    applied = True
+                return applied
 
         return False
 
@@ -761,26 +772,37 @@ class CategoryService:
         transactions = query.all()
 
         categorized_count = 0
+        entity_assigned_count = 0
         skipped_count = 0
 
         for transaction in transactions:
-            # Skip if already has a category and not forcing recategorization
-            if transaction.category_id and not force_recategorize:
+            # Skip if already fully assigned and not forcing
+            if transaction.category_id and transaction.entity_id and not force_recategorize:
                 skipped_count += 1
                 continue
 
             # Try to match with rules
+            matched = False
             for rule in rules:
                 if self._rule_matches(transaction, rule):
-                    transaction.category_id = rule.category_id
-                    categorized_count += 1
+                    if rule.category_id and (not transaction.category_id or force_recategorize):
+                        transaction.category_id = rule.category_id
+                        categorized_count += 1
+                    if rule.entity_id and (not transaction.entity_id or force_recategorize):
+                        transaction.entity_id = rule.entity_id
+                        entity_assigned_count += 1
+                    matched = True
                     break  # Stop at first matching rule
+
+            if not matched:
+                skipped_count += 1
 
         self.db.commit()
 
         return {
             'total_processed': len(transactions),
             'categorized_count': categorized_count,
+            'entity_assigned_count': entity_assigned_count,
             'skipped_count': skipped_count,
             'rules_applied': len(rules)
         }
