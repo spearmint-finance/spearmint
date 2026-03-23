@@ -292,14 +292,38 @@ export const deleteHolding = async (
   return response.json();
 };
 
+export const updateHolding = async (
+  holdingId: number,
+  updates: Record<string, unknown>
+): Promise<InvestmentHolding> => {
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+  const response = await fetch(`${baseUrl}/api/accounts/holdings/${holdingId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Update failed' }));
+    throw new Error(err.detail || 'Failed to update holding');
+  }
+  return response.json();
+};
+
 export const getPortfolioSummary = async (
   accountId: number
 ): Promise<PortfolioSummary> => {
-  const response =
-    await accountsApi.getPortfolioSummary(
-      accountId
-    );
-  return response.data as unknown as PortfolioSummary;
+  // Bypass SDK — returns camelCase but components expect snake_case
+  const sdkConfig = (sdk as any).config ?? {};
+  const baseUrl = sdkConfig.baseUrl || sdkConfig.environment ||
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8080');
+  const response = await fetch(`${baseUrl}/api/accounts/${accountId}/portfolio`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch portfolio' }));
+    throw new Error(err.detail || 'Failed to fetch portfolio');
+  }
+  return response.json();
 };
 
 // ==================== Reconciliation ====================

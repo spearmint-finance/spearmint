@@ -137,6 +137,18 @@ class HoldingCreate(BaseModel):
     sector: Optional[str] = Field(None, max_length=50)
 
 
+class HoldingUpdate(BaseModel):
+    """Schema for updating a holding. All fields optional."""
+    symbol: Optional[str] = Field(None, min_length=1, max_length=20)
+    quantity: Optional[Decimal] = Field(None, gt=0)
+    as_of_date: Optional[date] = None
+    description: Optional[str] = Field(None, max_length=200)
+    cost_basis: Optional[Decimal] = None
+    current_value: Optional[Decimal] = None
+    asset_class: Optional[str] = Field(None, max_length=50)
+    sector: Optional[str] = Field(None, max_length=50)
+
+
 class HoldingResponse(BaseModel):
     """Schema for holding responses."""
     model_config = ConfigDict(from_attributes=True)
