@@ -7,11 +7,13 @@ import { useState } from "react";
 import { Box, Typography, Tabs, Tab, Paper } from "@mui/material";
 import {
   Category as CategoryIcon,
+  Rule as RuleIcon,
   Tune as TuneIcon,
   Palette as PaletteIcon,
   VpnKey as VpnKeyIcon,
 } from "@mui/icons-material";
 import CategoryManagement from "./CategoryManagement";
+import CategoryRulesList from "./CategoryRulesList";
 import UserPreferences from "./UserPreferences";
 import ThemeCustomization from "./ThemeCustomization";
 import APIKeysManagement from "./APIKeysManagement";
@@ -66,9 +68,10 @@ export default function SettingsPage() {
           sx={{ borderBottom: 1, borderColor: "divider" }}
         >
           <Tab icon={<CategoryIcon />} label="Categories" {...a11yProps(0)} />
-          <Tab icon={<TuneIcon />} label="Preferences" {...a11yProps(1)} />
-          <Tab icon={<PaletteIcon />} label="Theme" {...a11yProps(2)} />
-          <Tab icon={<VpnKeyIcon />} label="API Keys" {...a11yProps(3)} />
+          <Tab icon={<RuleIcon />} label="Transaction Rules" {...a11yProps(1)} />
+          <Tab icon={<TuneIcon />} label="Preferences" {...a11yProps(2)} />
+          <Tab icon={<PaletteIcon />} label="Theme" {...a11yProps(3)} />
+          <Tab icon={<VpnKeyIcon />} label="API Keys" {...a11yProps(4)} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -76,12 +79,15 @@ export default function SettingsPage() {
             <CategoryManagement />
           </TabPanel>
           <TabPanel value={currentTab} index={1}>
-            <UserPreferences />
+            <CategoryRulesList />
           </TabPanel>
           <TabPanel value={currentTab} index={2}>
-            <ThemeCustomization />
+            <UserPreferences />
           </TabPanel>
           <TabPanel value={currentTab} index={3}>
+            <ThemeCustomization />
+          </TabPanel>
+          <TabPanel value={currentTab} index={4}>
             <APIKeysManagement />
           </TabPanel>
         </Box>
