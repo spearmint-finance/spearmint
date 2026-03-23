@@ -1,15 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test("Add Split auto-fills remaining amount and Split Evenly works", async ({ page }) => {
   // Use a transaction without existing splits — offset to find one
-  const txRes = await page.request.get("http://localhost:8000/api/transactions?limit=1&offset=20");
+  const txRes = await page.request.get(`${API_BASE_URL}/api/transactions?limit=1&offset=20`);
   const txData = await txRes.json();
   const tx = txData.transactions[0];
   const txId = tx.transaction_id;
   const amount = Math.abs(parseFloat(tx.amount));
 
   // Clear any existing splits
-  await page.request.put(`http://localhost:8000/api/transactions/${txId}/splits`, {
+  await page.request.put(`${API_BASE_URL}/api/transactions/${txId}/splits`, {
     data: [], headers: { "Content-Type": "application/json" },
   });
 

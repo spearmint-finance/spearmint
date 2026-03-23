@@ -1,17 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test("FULL UI: entity filter + inline category change", async ({ page }) => {
   // Setup
-  const entRes = await page.request.get("http://localhost:8000/api/entities");
+  const entRes = await page.request.get(`${API_BASE_URL}/api/entities`);
   const entities = await entRes.json();
   const entityList = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
   const entityName = entityList[0].entity_name ?? entityList[0].entityName;
   const entityId = entityList[0].entity_id ?? entityList[0].entityId;
 
   // Ensure we have transactions with this entity
-  const txRes = await page.request.get("http://localhost:8000/api/transactions?limit=5&offset=300");
+  const txRes = await page.request.get(`${API_BASE_URL}/api/transactions?limit=5&offset=300`);
   for (const tx of (await txRes.json()).transactions) {
-    await page.request.put(`http://localhost:8000/api/transactions/${tx.transaction_id}`, {
+    await page.request.put(`${API_BASE_URL}/api/transactions/${tx.transaction_id}`, {
       data: { entity_id: entityId },
       headers: { "Content-Type": "application/json" },
     });

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe('Expense Analysis - All Exclusions', () => {
 
@@ -9,7 +10,7 @@ test.describe('Expense Analysis - All Exclusions', () => {
     const endDate = '2025-10-03';
 
     // Get analysis mode total
-    const analysisResponse = await request.get('http://localhost:8000/api/analysis/expenses', {
+    const analysisResponse = await request.get(`${API_BASE_URL}/api/analysis/expenses`, {
       params: {
         start_date: startDate,
         end_date: endDate,
@@ -19,7 +20,7 @@ test.describe('Expense Analysis - All Exclusions', () => {
     const analysisData = await analysisResponse.json();
 
     // Get complete mode total
-    const completeResponse = await request.get('http://localhost:8000/api/analysis/expenses', {
+    const completeResponse = await request.get(`${API_BASE_URL}/api/analysis/expenses`, {
       params: {
         start_date: startDate,
         end_date: endDate,
@@ -54,7 +55,7 @@ test.describe('Expense Analysis - All Exclusions', () => {
     let totalExcluded = 0;
 
     for (const classification of excludedClassifications) {
-      const response = await request.get('http://localhost:8000/api/transactions', {
+      const response = await request.get(`${API_BASE_URL}/api/transactions`, {
         params: {
           start_date: startDate,
           end_date: endDate,
@@ -78,7 +79,7 @@ test.describe('Expense Analysis - All Exclusions', () => {
     console.log(`Actual difference in totals: $${totalDifference.toFixed(2)}`);
 
     // Check for transfers (also excluded in analysis mode)
-    const transfersResponse = await request.get('http://localhost:8000/api/transactions', {
+    const transfersResponse = await request.get(`${API_BASE_URL}/api/transactions`, {
       params: {
         start_date: startDate,
         end_date: endDate,

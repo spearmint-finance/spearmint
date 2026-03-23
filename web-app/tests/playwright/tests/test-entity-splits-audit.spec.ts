@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 /**
  * Comprehensive audit of entity association + split transaction features.
@@ -14,7 +15,7 @@ let categoryIds: number[] = [];
 
 test.describe.serial("Entity + Split comprehensive audit", () => {
   test("setup: get entities and categories", async ({ request }) => {
-    const entRes = await request.get("http://localhost:8000/api/entities");
+    const entRes = await request.get(`${API_BASE_URL}/api/entities`);
     const entities = await entRes.json();
     const list = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
     expect(list.length).toBeGreaterThanOrEqual(1);
@@ -26,31 +27,31 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
       entity2Name = list[1].entity_name ?? list[1].entityName ?? list[1].name;
     }
 
-    const catRes = await request.get("http://localhost:8000/api/categories");
+    const catRes = await request.get(`${API_BASE_URL}/api/categories`);
     const cats = await catRes.json();
     const catList = Array.isArray(cats) ? cats : cats.categories || cats.data || [];
     categoryIds = catList.slice(0, 3).map((c: any) => c.category_id ?? c.categoryId);
   });
 
   test("1. assign entity via API, verify in list response", async ({ request }) => {
-    const txRes = await request.get("http://localhost:8000/api/transactions?limit=1&offset=5");
+    const txRes = await request.get(`${API_BASE_URL}/api/transactions?limit=1&offset=5`);
     const txData = await txRes.json();
     testTxId = txData.transactions[0].transaction_id;
 
     // Assign entity
-    const updateRes = await request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    const updateRes = await request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { entity_id: entityId },
       headers: { "Content-Type": "application/json" },
     });
     expect(updateRes.ok()).toBeTruthy();
 
     // Verify in single get
-    const getRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const getRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await getRes.json();
     expect(tx.entity_id).toBe(entityId);
 
     // Verify in list response (the bug we just fixed)
-    const listRes = await request.get(`http://localhost:8000/api/transactions?limit=100`);
+    const listRes = await request.get(`${API_BASE_URL}/api/transactions?limit=100`);
     const listData = await listRes.json();
     const found = listData.transactions.find((t: any) => t.transaction_id === testTxId);
     expect(found).toBeTruthy();
@@ -58,7 +59,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("2. entity filter returns only matching transactions", async ({ request }) => {
-    const res = await request.get(`http://localhost:8000/api/transactions?entity_id=${entityId}&limit=50`);
+    const res = await request.get(`${API_BASE_URL}/api/transactions?entity_id=${entityId}&limit=50`);
     const data = await res.json();
     // Every returned transaction should have this entity (directly or via account)
     for (const tx of data.transactions) {
@@ -70,52 +71,52 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   test("3. changing category preserves entity_id", async ({ request }) => {
     // Change category
     const newCatId = categoryIds[1] || categoryIds[0];
-    const updateRes = await request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    const updateRes = await request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { category_id: newCatId },
       headers: { "Content-Type": "application/json" },
     });
     expect(updateRes.ok()).toBeTruthy();
 
     // Verify entity still set
-    const getRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const getRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await getRes.json();
     expect(tx.entity_id).toBe(entityId);
     expect(tx.category_id).toBe(newCatId);
   });
 
   test("4. changing description preserves entity_id", async ({ request }) => {
-    const updateRes = await request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    const updateRes = await request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { description: "TEST DESCRIPTION AUDIT" },
       headers: { "Content-Type": "application/json" },
     });
     expect(updateRes.ok()).toBeTruthy();
 
-    const getRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const getRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await getRes.json();
     expect(tx.entity_id).toBe(entityId);
     expect(tx.description).toBe("TEST DESCRIPTION AUDIT");
   });
 
   test("5. clearing entity_id works (set to null)", async ({ request }) => {
-    const updateRes = await request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    const updateRes = await request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { entity_id: null },
       headers: { "Content-Type": "application/json" },
     });
     expect(updateRes.ok()).toBeTruthy();
 
-    const getRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const getRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await getRes.json();
     expect(tx.entity_id).toBeNull();
 
     // Restore for next tests
-    await request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    await request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { entity_id: entityId },
       headers: { "Content-Type": "application/json" },
     });
   });
 
   test("6. create splits with different entities per split", async ({ request }) => {
-    const txRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const txRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await txRes.json();
     const amount = Math.abs(parseFloat(tx.amount));
 
@@ -123,7 +124,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
     const split2Amt = Math.round((amount - split1Amt) * 100) / 100;
 
     const splitRes = await request.put(
-      `http://localhost:8000/api/transactions/${testTxId}/splits`,
+      `${API_BASE_URL}/api/transactions/${testTxId}/splits`,
       {
         data: [
           { amount: split1Amt, category_id: categoryIds[0], entity_id: entityId, description: "Entity 1 split" },
@@ -143,7 +144,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("7. splits persist on re-fetch", async ({ request }) => {
-    const res = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const res = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await res.json();
     expect(tx.splits.length).toBe(2);
     expect(tx.splits[0].description).toBe("Entity 1 split");
@@ -151,7 +152,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("8. splits appear in list endpoint", async ({ request }) => {
-    const res = await request.get(`http://localhost:8000/api/transactions?limit=100`);
+    const res = await request.get(`${API_BASE_URL}/api/transactions?limit=100`);
     const data = await res.json();
     const found = data.transactions.find((t: any) => t.transaction_id === testTxId);
     expect(found).toBeTruthy();
@@ -159,7 +160,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
   });
 
   test("9. replacing splits works", async ({ request }) => {
-    const txRes = await request.get(`http://localhost:8000/api/transactions/${testTxId}`);
+    const txRes = await request.get(`${API_BASE_URL}/api/transactions/${testTxId}`);
     const tx = await txRes.json();
     const amount = Math.abs(parseFloat(tx.amount));
 
@@ -169,7 +170,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
     const s3 = Math.round((amount - s1 - s2) * 100) / 100;
 
     const res = await request.put(
-      `http://localhost:8000/api/transactions/${testTxId}/splits`,
+      `${API_BASE_URL}/api/transactions/${testTxId}/splits`,
       {
         data: [
           { amount: s1, category_id: categoryIds[0] },
@@ -186,7 +187,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
 
   test("10. clearing all splits works", async ({ request }) => {
     const res = await request.put(
-      `http://localhost:8000/api/transactions/${testTxId}/splits`,
+      `${API_BASE_URL}/api/transactions/${testTxId}/splits`,
       { data: [], headers: { "Content-Type": "application/json" } }
     );
     expect(res.ok()).toBeTruthy();
@@ -196,7 +197,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
 
   test("11. UI: entity column shows assigned entity name", async ({ page }) => {
     // Ensure entity is assigned
-    await page.request.put(`http://localhost:8000/api/transactions/${testTxId}`, {
+    await page.request.put(`${API_BASE_URL}/api/transactions/${testTxId}`, {
       data: { entity_id: entityId },
       headers: { "Content-Type": "application/json" },
     });
@@ -358,7 +359,7 @@ test.describe.serial("Entity + Split comprehensive audit", () => {
 
   test("15. cleanup: remove splits from test transaction", async ({ request }) => {
     await request.put(
-      `http://localhost:8000/api/transactions/${testTxId}/splits`,
+      `${API_BASE_URL}/api/transactions/${testTxId}/splits`,
       { data: [], headers: { "Content-Type": "application/json" } }
     );
   });

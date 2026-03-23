@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe("Entity filter + category change", () => {
   test("categorizing a transaction preserves its entity assignment", async ({
@@ -6,7 +7,7 @@ test.describe("Entity filter + category change", () => {
   }) => {
     // Step 1: Create a transaction with entity assignment via API
     // First get available entities
-    const entitiesRes = await page.request.get("http://localhost:8000/api/entities");
+    const entitiesRes = await page.request.get(`${API_BASE_URL}/api/entities`);
     const entities = await entitiesRes.json();
     const entityList = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
 
@@ -20,7 +21,7 @@ test.describe("Entity filter + category change", () => {
     const entityName = entity.entityName ?? entity.entity_name ?? entity.name;
 
     // Get a transaction to work with
-    const txRes = await page.request.get("http://localhost:8000/api/transactions?limit=5");
+    const txRes = await page.request.get(`${API_BASE_URL}/api/transactions?limit=5`);
     const txData = await txRes.json();
     const transactions = Array.isArray(txData) ? txData : txData.transactions || txData.data || [];
 
@@ -34,7 +35,7 @@ test.describe("Entity filter + category change", () => {
 
     // Assign entity to this transaction via direct API
     const assignRes = await page.request.put(
-      `http://localhost:8000/api/transactions/${txId}`,
+      `${API_BASE_URL}/api/transactions/${txId}`,
       {
         data: { entity_id: entityId },
         headers: { "Content-Type": "application/json" },
@@ -44,14 +45,14 @@ test.describe("Entity filter + category change", () => {
 
     // Verify entity_id is set
     const verifyRes = await page.request.get(
-      `http://localhost:8000/api/transactions/${txId}`
+      `${API_BASE_URL}/api/transactions/${txId}`
     );
     const verifiedTx = await verifyRes.json();
     const verifiedEntityId = verifiedTx.entityId ?? verifiedTx.entity_id;
     expect(verifiedEntityId).toBe(entityId);
 
     // Step 2: Get a category to change to
-    const catRes = await page.request.get("http://localhost:8000/api/categories");
+    const catRes = await page.request.get(`${API_BASE_URL}/api/categories`);
     const catData = await catRes.json();
     const categories = Array.isArray(catData) ? catData : catData.categories || catData.data || [];
     const currentCatId = verifiedTx.categoryId ?? verifiedTx.category_id;
@@ -87,7 +88,7 @@ test.describe("Entity filter + category change", () => {
 
     // Step 4: Verify entity_id is STILL set after category change
     const afterRes = await page.request.get(
-      `http://localhost:8000/api/transactions/${txId}`
+      `${API_BASE_URL}/api/transactions/${txId}`
     );
     const afterTx = await afterRes.json();
     const afterEntityId = afterTx.entityId ?? afterTx.entity_id;

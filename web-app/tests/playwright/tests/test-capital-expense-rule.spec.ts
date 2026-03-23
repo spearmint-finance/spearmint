@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe('Capital Expense Classification Rule', () => {
   test.beforeEach(async ({ page }) => {
@@ -100,7 +101,7 @@ test.describe('Capital Expense Classification Rule', () => {
 
   test('should check backend API directly', async ({ request }) => {
     // Test the rule directly via API
-    const testRuleResponse = await request.post('http://localhost:8000/api/classification-rules/test', {
+    const testRuleResponse = await request.post(`${API_BASE_URL}/api/classification-rules/test`, {
       data: {
         category_pattern: '100 S Stratford Maint',
         amount_min: undefined,
@@ -113,7 +114,7 @@ test.describe('Capital Expense Classification Rule', () => {
     expect(testResult.matching_transactions).toBeGreaterThan(0);
 
     // Check transactions directly
-    const transactionsResponse = await request.get('http://localhost:8000/api/transactions', {
+    const transactionsResponse = await request.get(`${API_BASE_URL}/api/transactions`, {
       params: {
         search_text: '100 S Stratford Maint',
         limit: 100

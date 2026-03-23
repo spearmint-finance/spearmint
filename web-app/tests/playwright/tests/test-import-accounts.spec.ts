@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -43,7 +44,7 @@ test.describe("Import with auto-account creation", () => {
     }
 
     // Verify accounts exist via API
-    const response = await page.request.get("http://localhost:8000/api/accounts");
+    const response = await page.request.get(`${API_BASE_URL}/api/accounts`);
     const accounts = await response.json();
     const accountList = Array.isArray(accounts) ? accounts : accounts.accounts || accounts.data || [];
     // Should have at least the 19 Tiller accounts

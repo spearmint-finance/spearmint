@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe('Expense Analysis - Capital Expense Exclusion', () => {
 
@@ -10,7 +11,7 @@ test.describe('Expense Analysis - Capital Expense Exclusion', () => {
 
     // Test ANALYSIS mode (should exclude capital expenses)
     console.log('\n--- ANALYSIS Mode (should exclude capital expenses) ---');
-    const analysisResponse = await request.get('http://localhost:8000/api/analysis/expenses', {
+    const analysisResponse = await request.get(`${API_BASE_URL}/api/analysis/expenses`, {
       params: {
         start_date: startDate,
         end_date: endDate,
@@ -30,7 +31,7 @@ test.describe('Expense Analysis - Capital Expense Exclusion', () => {
 
     // Test COMPLETE mode (should include everything)
     console.log('\n--- COMPLETE Mode (should include all expenses) ---');
-    const completeResponse = await request.get('http://localhost:8000/api/analysis/expenses', {
+    const completeResponse = await request.get(`${API_BASE_URL}/api/analysis/expenses`, {
       params: {
         start_date: startDate,
         end_date: endDate,
@@ -48,7 +49,7 @@ test.describe('Expense Analysis - Capital Expense Exclusion', () => {
 
     // Get actual capital expenses for this period
     console.log('\n--- Checking Actual Capital Expenses ---');
-    const transactionsResponse = await request.get('http://localhost:8000/api/transactions', {
+    const transactionsResponse = await request.get(`${API_BASE_URL}/api/transactions`, {
       params: {
         start_date: startDate,
         end_date: endDate,

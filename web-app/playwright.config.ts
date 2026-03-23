@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { BASE_URL } from "./tests/fixtures/env";
 
 /**
  * Playwright configuration for Financial Analysis Tool E2E tests
@@ -39,7 +40,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: "http://localhost:5173",
+    baseURL: BASE_URL,
 
     /* Disable cache to ensure fresh content */
     serviceWorkers: "block",

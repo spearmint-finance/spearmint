@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe("Transaction splitting", () => {
   test("split endpoint creates and clears splits via API", async ({ page }) => {
     // Get a transaction
     const txRes = await page.request.get(
-      "http://localhost:8000/api/transactions?limit=1"
+      `${API_BASE_URL}/api/transactions?limit=1`
     );
     const txData = await txRes.json();
     const transactions = txData.transactions || txData.data || [];
@@ -20,7 +21,7 @@ test.describe("Transaction splitting", () => {
     const amt2 = Math.round((amount - amt1) * 100) / 100;
 
     const splitRes = await page.request.put(
-      `http://localhost:8000/api/transactions/${txId}/splits`,
+      `${API_BASE_URL}/api/transactions/${txId}/splits`,
       {
         data: [
           { amount: amt1, category_id: catId, description: "Split A" },
@@ -39,14 +40,14 @@ test.describe("Transaction splitting", () => {
 
     // Verify splits persist on re-fetch
     const refetchRes = await page.request.get(
-      `http://localhost:8000/api/transactions/${txId}`
+      `${API_BASE_URL}/api/transactions/${txId}`
     );
     const refetched = await refetchRes.json();
     expect(refetched.splits?.length ?? 0).toBe(2);
 
     // Clear splits
     const clearRes = await page.request.put(
-      `http://localhost:8000/api/transactions/${txId}/splits`,
+      `${API_BASE_URL}/api/transactions/${txId}/splits`,
       {
         data: [],
         headers: { "Content-Type": "application/json" },
@@ -60,7 +61,7 @@ test.describe("Transaction splitting", () => {
 
   test("splits with different categories", async ({ page }) => {
     // Get categories
-    const catRes = await page.request.get("http://localhost:8000/api/categories");
+    const catRes = await page.request.get(`${API_BASE_URL}/api/categories`);
     const catData = await catRes.json();
     const categories = Array.isArray(catData)
       ? catData
@@ -72,7 +73,7 @@ test.describe("Transaction splitting", () => {
 
     // Get a transaction
     const txRes = await page.request.get(
-      "http://localhost:8000/api/transactions?limit=1&offset=10"
+      `${API_BASE_URL}/api/transactions?limit=1&offset=10`
     );
     const txData = await txRes.json();
     const tx = (txData.transactions || [])[0];
@@ -84,7 +85,7 @@ test.describe("Transaction splitting", () => {
     const other = Math.round((amount - half) * 100) / 100;
 
     const splitRes = await page.request.put(
-      `http://localhost:8000/api/transactions/${txId}/splits`,
+      `${API_BASE_URL}/api/transactions/${txId}/splits`,
       {
         data: [
           { amount: half, category_id: cat1Id },
@@ -102,7 +103,7 @@ test.describe("Transaction splitting", () => {
 
     // Clean up
     await page.request.put(
-      `http://localhost:8000/api/transactions/${txId}/splits`,
+      `${API_BASE_URL}/api/transactions/${txId}/splits`,
       { data: [], headers: { "Content-Type": "application/json" } }
     );
   });

@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test("bulk assign entity to selected transactions", async ({ page }) => {
   // Get entity info
-  const entRes = await page.request.get("http://localhost:8000/api/entities");
+  const entRes = await page.request.get(`${API_BASE_URL}/api/entities`);
   const entities = await entRes.json();
   const entityList = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
   const entity = entityList[0];
@@ -78,18 +79,18 @@ test("bulk assign entity to selected transactions", async ({ page }) => {
 
 test("bulk update API works", async ({ page }) => {
   // Get some transaction IDs
-  const txRes = await page.request.get("http://localhost:8000/api/transactions?limit=5&offset=30");
+  const txRes = await page.request.get(`${API_BASE_URL}/api/transactions?limit=5&offset=30`);
   const txData = await txRes.json();
   const ids = txData.transactions.map((t: any) => t.transaction_id);
 
   // Get entity
-  const entRes = await page.request.get("http://localhost:8000/api/entities");
+  const entRes = await page.request.get(`${API_BASE_URL}/api/entities`);
   const entities = await entRes.json();
   const entityList = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
   const entityId = entityList[0].entity_id ?? entityList[0].entityId;
 
   // Bulk assign
-  const res = await page.request.put("http://localhost:8000/api/transactions/bulk-update", {
+  const res = await page.request.put(`${API_BASE_URL}/api/transactions/bulk-update`, {
     data: { transaction_ids: ids, updates: { entity_id: entityId } },
     headers: { "Content-Type": "application/json" },
   });
@@ -99,13 +100,13 @@ test("bulk update API works", async ({ page }) => {
 
   // Verify
   for (const id of ids) {
-    const txRes = await page.request.get(`http://localhost:8000/api/transactions/${id}`);
+    const txRes = await page.request.get(`${API_BASE_URL}/api/transactions/${id}`);
     const tx = await txRes.json();
     expect(tx.entity_id).toBe(entityId);
   }
 
   // Bulk clear
-  const clearRes = await page.request.put("http://localhost:8000/api/transactions/bulk-update", {
+  const clearRes = await page.request.put(`${API_BASE_URL}/api/transactions/bulk-update`, {
     data: { transaction_ids: ids, updates: { entity_id: null } },
     headers: { "Content-Type": "application/json" },
   });

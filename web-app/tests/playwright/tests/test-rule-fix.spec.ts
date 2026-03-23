@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE_URL } from '../../fixtures/env';
 
 test.describe('Capital Expense Rule - Complete Test', () => {
 
@@ -6,7 +7,7 @@ test.describe('Capital Expense Rule - Complete Test', () => {
     console.log('\n=== STEP 1: Test Rule via API ===');
 
     // Test the rule to see how many transactions match
-    const testRuleResponse = await request.post('http://localhost:8000/api/classification-rules/test', {
+    const testRuleResponse = await request.post(`${API_BASE_URL}/api/classification-rules/test`, {
       data: {
         category_pattern: '100 S Stratford Maint',
         amount_max: -2000,
@@ -23,7 +24,7 @@ test.describe('Capital Expense Rule - Complete Test', () => {
     console.log('\n=== STEP 2: Get Transactions Before Classification ===');
 
     // Get all transactions with this category
-    const beforeResponse = await request.get('http://localhost:8000/api/transactions', {
+    const beforeResponse = await request.get(`${API_BASE_URL}/api/transactions`, {
       params: {
         search_text: '100 S Stratford Maint',
         limit: 100
@@ -46,7 +47,7 @@ test.describe('Capital Expense Rule - Complete Test', () => {
     console.log('\n=== STEP 3: Apply Classification Rules ===');
 
     // Apply the rule (dry run first)
-    const dryRunResponse = await request.post('http://localhost:8000/api/classification-rules/apply', {
+    const dryRunResponse = await request.post(`${API_BASE_URL}/api/classification-rules/apply`, {
       data: {
         dry_run: true,
         rule_ids: [24] // The rule ID we just fixed
@@ -65,7 +66,7 @@ test.describe('Capital Expense Rule - Complete Test', () => {
 
     // Actually apply the rule
     console.log('\n=== STEP 4: Applying Rules (For Real) ===');
-    const applyResponse = await request.post('http://localhost:8000/api/classification-rules/apply', {
+    const applyResponse = await request.post(`${API_BASE_URL}/api/classification-rules/apply`, {
       data: {
         dry_run: false,
         rule_ids: [24]
@@ -82,7 +83,7 @@ test.describe('Capital Expense Rule - Complete Test', () => {
     console.log('\n=== STEP 5: Verify Transactions After Classification ===');
 
     // Get transactions again
-    const afterResponse = await request.get('http://localhost:8000/api/transactions', {
+    const afterResponse = await request.get(`${API_BASE_URL}/api/transactions`, {
       params: {
         search_text: '100 S Stratford Maint',
         limit: 100

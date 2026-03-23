@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { API_BASE_URL } from '../../fixtures/env';
 
 test("inline entity selector works in transaction grid", async ({ page }) => {
-  const entRes = await page.request.get("http://localhost:8000/api/entities");
+  const entRes = await page.request.get(`${API_BASE_URL}/api/entities`);
   const entities = await entRes.json();
   const entityList = Array.isArray(entities) ? entities : entities.entities || entities.data || [];
   const entity = entityList[0];
