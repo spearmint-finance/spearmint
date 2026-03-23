@@ -44,4 +44,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy marketing-site/out --project-name=memnexus-marketing-site --branch=${{ github.ref_name }}
+          command: pages deploy marketing-site/out --project-name=spearmint-marketing-site --branch=${{ github.ref_name }}

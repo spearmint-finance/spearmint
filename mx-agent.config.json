@@ -1,8 +1,0 @@
-{
-  "baseBranch": "main",
-  "worktreeDir": ".worktrees",
-  "configSource": "mx-agent-system/agent-config",
-  "teamsDir": "mx-agent-system/teams",
-  "roleguidesDir": "mx-agent-system/roleguides",
-  "projectSlug": "spearmint"
-}
