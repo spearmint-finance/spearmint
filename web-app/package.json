@@ -1,7 +1,7 @@
 {
   "name": "financial-analysis-frontend",
   "private": true,
-  "version": "0.0.119",
+  "version": "0.0.120",
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
