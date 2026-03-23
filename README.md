@@ -44,32 +44,89 @@ Built-in chat assistant with action execution — ask questions about your finan
 4. **Verify** — Review uncategorized items
 5. **Report** — Data flows into dashboards, analysis, and forecasts
 
-## Quick Start
+## Getting Started
 
-### Docker (Recommended)
+### Prerequisites
+
+- **Docker** (recommended): Docker Engine 20+ and Docker Compose v2+
+- **Local dev**: Python 3.10+, Node.js 18+, npm 9+
+
+### Option 1: Docker Compose (Recommended)
 
 ```bash
 git clone https://github.com/spearmint-finance/spearmint.git
 cd spearmint
+cp .env.example .env        # optional — customize ports
 docker-compose up -d
 ```
 
-Open http://localhost:5173 in your browser.
+This starts the full stack:
 
-### Local Development
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost:7173 | Main application UI |
+| API Gateway | http://localhost:7080 | Entry point for all API calls |
+| API Docs (Swagger) | http://localhost:7080/api/docs | Interactive API documentation |
+| MCP Server | http://localhost:7001 | AI assistant integration |
+
+Data is persisted in a Docker volume (`database/data/`). To start fresh, run `docker-compose down -v`.
+
+#### Customizing Ports
+
+Edit `.env` to change default ports (useful if you have other services running):
 
 ```bash
-# One-command setup
+GATEWAY_PORT=8080
+WEB_PORT=5173
+MCP_PORT=3001
+DB_PORT=5432
+```
+
+#### AI Assistant (Optional)
+
+To enable the AI financial assistant, add your API key to `.env`:
+
+```bash
+OPENAI_KEY=sk-...        # OpenAI
+# or
+ANTHROPIC_KEY=sk-ant-... # Anthropic
+```
+
+The assistant works without these keys — it just won't be able to generate responses.
+
+### Option 2: Local Development
+
+```bash
+git clone https://github.com/spearmint-finance/spearmint.git
+cd spearmint
+
+# One-command setup (installs Python + Node dependencies)
 ./scripts/setup-local-dev.sh    # Linux/macOS
 .\scripts\setup-local-dev.ps1  # Windows
-
-# Start servers
-# Terminal 1 — Backend (http://localhost:8000)
-cd core-api && python run_api.py
-
-# Terminal 2 — Frontend (http://localhost:5173)
-cd web-app && npm run dev
 ```
+
+Then start both servers:
+
+```bash
+# Terminal 1 — Backend
+cd core-api
+python run_api.py              # http://localhost:8000
+
+# Terminal 2 — Frontend
+cd web-app
+npm run dev                    # http://localhost:5173
+```
+
+The backend creates a SQLite database automatically on first run — no migration step needed.
+
+#### Verify It's Working
+
+1. Open http://localhost:5173 (local) or http://localhost:7173 (Docker)
+2. You should see an empty dashboard
+3. Navigate to **Accounts** → **Add Account** to create your first account
+4. Go to **Transactions** → **Import** to upload a bank CSV
+
+See [docs/LOCAL_DEVELOPMENT_QUICKSTART.md](docs/LOCAL_DEVELOPMENT_QUICKSTART.md) for detailed setup and troubleshooting.
 
 ## Project Structure
 
