@@ -41,6 +41,7 @@ import DateRangePicker, {
 import ExpenseViewToggle, {
   ExpenseView,
 } from "../Analysis/ExpenseViewToggle";
+import ExportButton from "../Analysis/ExportButton";
 
 function Dashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -139,6 +140,11 @@ function Dashboard() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
           <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
           <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <ExportButton
+            dateRange={dateRange}
+            viewMode={viewMode}
+            summaryData={summary}
+          />
         </Box>
       </Box>
       {isFetching && !isLoading && (
