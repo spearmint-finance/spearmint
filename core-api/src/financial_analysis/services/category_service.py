@@ -581,6 +581,11 @@ class CategoryService:
             if hasattr(rule, key):
                 setattr(rule, key, value)
 
+        # Validate rule still has at least one assignment target
+        if not rule.category_id and not rule.entity_id:
+            self.db.rollback()
+            raise ValidationError("Rule must have at least one of category_id or entity_id")
+
         self.db.commit()
         self.db.refresh(rule)
 
@@ -711,7 +716,7 @@ class CategoryService:
         # Create a temporary rule object for testing
         temp_rule = CategoryRule(
             rule_name="Test Rule",
-            category_id=1,  # Dummy value
+            category_id=None,  # Not needed for pattern matching
             description_pattern=description_pattern,
             source_pattern=source_pattern,
             amount_min=amount_min,
@@ -776,22 +781,24 @@ class CategoryService:
         skipped_count = 0
 
         for transaction in transactions:
-            # Skip if already fully assigned and not forcing
-            if transaction.category_id and transaction.entity_id and not force_recategorize:
-                skipped_count += 1
-                continue
-
             # Try to match with rules
             matched = False
             for rule in rules:
                 if self._rule_matches(transaction, rule):
+                    applied = False
+                    # Assign category if rule has one and transaction needs it
                     if rule.category_id and (not transaction.category_id or force_recategorize):
                         transaction.category_id = rule.category_id
                         categorized_count += 1
+                        applied = True
+                    # Assign entity if rule has one and transaction needs it
                     if rule.entity_id and (not transaction.entity_id or force_recategorize):
                         transaction.entity_id = rule.entity_id
                         entity_assigned_count += 1
+                        applied = True
                     matched = True
+                    if not applied:
+                        skipped_count += 1
                     break  # Stop at first matching rule
 
             if not matched:
