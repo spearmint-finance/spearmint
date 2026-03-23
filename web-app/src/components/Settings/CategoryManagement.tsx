@@ -428,7 +428,7 @@ export default function CategoryManagement() {
           sx={{ borderBottom: 1, borderColor: "divider" }}
         >
           <Tab icon={<CategoryIcon />} label="Categories" />
-          <Tab icon={<RuleIcon />} label="Category Rules" />
+          <Tab icon={<RuleIcon />} label="Transaction Rules" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
