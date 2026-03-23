@@ -86,10 +86,6 @@ echo "Installing AI coding assistants..."
 sudo npm install -g @augmentcode/auggie || echo "Note: auggie install failed"
 sudo npm install -g @github/copilot || echo "Note: copilot install failed"
 
-# Install MemNexus CLI
-echo "Installing MemNexus CLI..."
-sudo npm install -g @memnexus-ai/cli || echo "Note: mx install failed"
-
 # Add user to docker group for Docker-outside-of-Docker
 if [ -S /var/run/docker.sock ]; then
     echo "Configuring Docker access..."
