@@ -36,6 +36,7 @@ function ApplyCategoryRulesDialog({
   const [result, setResult] = useState<{
     total_processed: number;
     categorized_count: number;
+    entity_assigned_count?: number;
     skipped_count: number;
     rules_applied: number;
   } | null>(null);
@@ -103,11 +104,20 @@ function ApplyCategoryRulesDialog({
               <strong>Categorized:</strong> {result.categorized_count}
             </Typography>
             <Typography variant="body2" paragraph>
+              <strong>Entities Assigned:</strong> {result.entity_assigned_count || 0}
+            </Typography>
+            <Typography variant="body2" paragraph>
               <strong>Skipped:</strong> {result.skipped_count}
             </Typography>
             <Typography variant="body2" paragraph>
               <strong>Rules Applied:</strong> {result.rules_applied}
             </Typography>
+            {result.categorized_count === 0 && (result.entity_assigned_count || 0) === 0 && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                No transactions were updated. Try using "Test Rule" on individual rules
+                to verify your patterns match the expected transactions.
+              </Alert>
+            )}
           </Box>
         )}
       </DialogContent>
