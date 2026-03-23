@@ -165,6 +165,10 @@ Spearmint is in active development. Core financial tracking, analysis, and repor
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and guidelines.
 
+## Disclaimer
+
+Spearmint is a tracking and reporting tool — **not a financial advisor**. It may contain bugs that affect calculations. Do not rely solely on this software for financial decisions. Always verify against your bank statements and consult a qualified professional for financial, tax, or legal advice. See [DISCLAIMER.md](DISCLAIMER.md) for full details.
+
 ## License
 
 PolyForm Noncommercial — free for personal use, contributions welcome, no commercial use. See [LICENSE](LICENSE).
