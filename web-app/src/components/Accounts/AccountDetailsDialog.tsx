@@ -53,6 +53,7 @@ import {
   getReconciliations,
   createReconciliation,
   addHolding,
+  updateHolding,
   deleteHolding,
   addBalanceSnapshot,
   updateAccount,
@@ -110,6 +111,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const [reconDate, setReconDate] = useState(new Date().toISOString().split('T')[0]);
   const [reconBalance, setReconBalance] = useState('');
   const [showHoldingForm, setShowHoldingForm] = useState(false);
+  const [editingHoldingId, setEditingHoldingId] = useState<number | null>(null);
   const [holdingForm, setHoldingForm] = useState({
     symbol: '',
     quantity: '',
@@ -201,6 +203,25 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
       setShowHoldingForm(false);
+      setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+  });
+
+  // Update holding mutation
+  const updateHoldingMutation = useMutation({
+    mutationFn: () =>
+      updateHolding(editingHoldingId!, {
+        symbol: holdingForm.symbol,
+        quantity: parseFloat(holdingForm.quantity),
+        as_of_date: holdingForm.as_of_date,
+        cost_basis: holdingForm.cost_basis ? parseFloat(holdingForm.cost_basis) : null,
+        current_value: holdingForm.current_value ? parseFloat(holdingForm.current_value) : null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      setShowHoldingForm(false);
+      setEditingHoldingId(null);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
     },
   });
@@ -604,7 +625,9 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
 
             {showHoldingForm && (
               <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>New Holding</Typography>
+                <Typography variant="subtitle2" gutterBottom>
+                  {editingHoldingId ? 'Edit Holding' : 'New Holding'}
+                </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={4}>
                     <TextField
@@ -661,14 +684,20 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   </Grid>
                 </Grid>
                 <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-                  <Button size="small" onClick={() => setShowHoldingForm(false)}>Cancel</Button>
+                  <Button size="small" onClick={() => {
+                    setShowHoldingForm(false);
+                    setEditingHoldingId(null);
+                    setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+                  }}>Cancel</Button>
                   <Button
                     size="small"
                     variant="contained"
-                    onClick={() => addHoldingMutation.mutate()}
-                    disabled={!holdingForm.symbol || !holdingForm.quantity || addHoldingMutation.isPending}
+                    onClick={() => editingHoldingId ? updateHoldingMutation.mutate() : addHoldingMutation.mutate()}
+                    disabled={!holdingForm.symbol || !holdingForm.quantity || addHoldingMutation.isPending || updateHoldingMutation.isPending}
                   >
-                    {addHoldingMutation.isPending ? 'Adding...' : 'Add'}
+                    {editingHoldingId
+                      ? (updateHoldingMutation.isPending ? 'Saving...' : 'Save')
+                      : (addHoldingMutation.isPending ? 'Adding...' : 'Add')}
                   </Button>
                 </Box>
               </Card>
@@ -714,18 +743,37 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     <ListItem
                       key={holding.holding_id}
                       secondaryAction={
-                        <IconButton
-                          edge="end"
-                          size="small"
-                          onClick={() => {
-                            if (window.confirm(`Delete holding ${holding.symbol}?`)) {
-                              deleteHoldingMutation.mutate(holding.holding_id);
-                            }
-                          }}
-                          title="Delete holding"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        <Box>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setEditingHoldingId(holding.holding_id);
+                              setHoldingForm({
+                                symbol: holding.symbol,
+                                quantity: String(holding.quantity),
+                                as_of_date: holding.as_of_date || new Date().toISOString().split('T')[0],
+                                cost_basis: holding.cost_basis != null ? String(holding.cost_basis) : '',
+                                current_value: holding.current_value != null ? String(holding.current_value) : '',
+                              });
+                              setShowHoldingForm(true);
+                            }}
+                            title="Edit holding"
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            onClick={() => {
+                              if (window.confirm(`Delete holding ${holding.symbol}?`)) {
+                                deleteHoldingMutation.mutate(holding.holding_id);
+                              }
+                            }}
+                            title="Delete holding"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       }
                     >
                       <ListItemText

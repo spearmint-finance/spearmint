@@ -453,6 +453,20 @@ class AccountService:
 
         return holdings
 
+    def update_holding(self, holding_id: int, updates: dict) -> Optional[InvestmentHolding]:
+        """Update an existing investment holding."""
+        holding = self.db.query(InvestmentHolding).filter(
+            InvestmentHolding.holding_id == holding_id
+        ).first()
+        if not holding:
+            return None
+        for key, value in updates.items():
+            if value is not None and hasattr(holding, key):
+                setattr(holding, key, value)
+        self.db.commit()
+        self.db.refresh(holding)
+        return holding
+
     def delete_holding(self, holding_id: int) -> bool:
         """Delete an investment holding by ID."""
         holding = self.db.query(InvestmentHolding).filter(
