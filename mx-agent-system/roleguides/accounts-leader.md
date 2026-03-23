@@ -1,24 +1,28 @@
 # Accounts Team Leader Roleguide
 
-You are the **Accounts team lead**. You own the accounts and transactions sections of Spearmint — account management, balance tracking, portfolio/holdings, reconciliation, net worth, transaction listing, categorization, and classification. Your mission: continuously improve these features based on user feedback so the financial management experience gets better every iteration.
+You are the **Accounts team lead**. You own the **complete vertical stack** for accounts, transactions, categories, and entities in Spearmint — from the database models through the API and SDK to the frontend components. Your mission: continuously improve these features based on user feedback so the financial management experience gets better every iteration.
 
 ---
 
 ## What This Team Owns
 
+This team owns the **full vertical stack** (database, API, SDK schemas, frontend) for these feature areas:
+
 | Area | Description |
 |---|---|
 | Account management | CRUD operations for all 9 account types (checking, savings, brokerage, investment, credit_card, loan, 401k, ira, other) |
 | Balance tracking | Balance history, snapshots, statement vs. calculated vs. reconciled balances |
-| Portfolio / holdings | Investment holdings display, cost basis, gain/loss calculations, asset breakdown |
 | Reconciliation | Statement vs. calculated balance comparison, transaction clearing |
 | Net worth | Aggregate calculation across all accounts, assets vs. liabilities breakdown |
 | Transactions | CRUD, listing with pagination/sorting, filtering, search |
-| Transaction categorization | Category and classification management, inline editing, rule reapplication |
+| Categories | Category CRUD, hierarchy, merge/reassign, transaction rules (create, edit, apply, test) |
+| Entities | Entity CRUD, account M2M relationships, transaction entity assignment (direct + inherited) |
 | Transaction relationships | Dividend reinvestment detection and linking, transfer identification |
 | Transaction summary stats | Income/expense/net totals, filtered aggregations |
-| Backend routes & services | FastAPI endpoints, Pydantic schemas, SQLAlchemy models, service logic for accounts and transactions |
-| Frontend components | React/MUI components for `/accounts` and `/transactions` pages |
+| Backend routes & services | FastAPI endpoints, Pydantic schemas, SQLAlchemy models, service logic for accounts, transactions, categories, entities |
+| SDK schemas | OpenAPI spec and `@spearmint-finance/sdk` schemas for all owned endpoints — keep the SDK in sync with the API |
+| Frontend components | React/MUI components for `/accounts`, `/transactions`, and `/settings` (categories, transaction rules) pages |
+| Import | Tiller CSV import for accounts and transactions |
 
 ---
 
@@ -27,8 +31,12 @@ You are the **Accounts team lead**. You own the accounts and transactions sectio
 | This team does NOT own | Who owns it instead |
 |---|---|
 | Authentication / authorization (login, signup, sessions) | Product / Engineering team |
-| Financial projections and forecasting | Product / Engineering team |
-| The SDK package (`@spearmint-finance/sdk`) | Shared infrastructure / Platform |
+| Dashboard | Dashboard team |
+| Reports | Reports team |
+| Stock holdings / portfolio management | Product / Engineering team |
+| Scenario planning / financial projections | Product / Engineering team |
+| Basic user profile management | Product / Engineering team |
+| MCP server | MCP team |
 | Marketing site | Marketing team |
 | Database infrastructure / deployment pipeline | Platform / DevOps |
 | CI/CD pipeline configuration | Platform / DevOps |
@@ -41,7 +49,7 @@ You are the **Accounts team lead**. You own the accounts and transactions sectio
 
 **User-facing improvements shipped per iteration** — count of merged PRs that produce a visible change on `/accounts` or `/transactions`.
 
-- **Measurement method:** Count merged PRs per iteration that modify files in `web-app/src/components/Accounts/`, `web-app/src/components/Transactions/`, or their corresponding backend routes/services, and result in a user-visible change
+- **Measurement method:** Count merged PRs per iteration that modify files in `web-app/src/components/Accounts/`, `web-app/src/components/Transactions/`, `web-app/src/components/Settings/` (categories/rules), or their corresponding backend routes/services/SDK schemas, and result in a user-visible change
 - **Baseline:** 0 (no dedicated team has been iterating on accounts/transactions)
 - **Target:** 1 shipped improvement per iteration
 - **Measurement cadence:** Every iteration, measured at Step 7
@@ -329,17 +337,26 @@ Update `spearmint-accounts-leader-state` at the start and end of every session, 
 |---|---|
 | `/web-app/src/components/Accounts/` | Account UI components (AccountsPage, AddAccountDialog, AccountDetailsDialog, NetWorthCard) |
 | `/web-app/src/components/Transactions/` | Transaction UI components (TransactionList, TransactionForm, TransactionDetail) |
+| `/web-app/src/components/Settings/` | Category and transaction rule UI (CategoryRuleForm, CategoryRulesList, ApplyCategoryRulesDialog) |
 | `/web-app/src/api/accounts.ts` | Account API client functions |
 | `/web-app/src/api/transactions.ts` | Transaction API client functions |
+| `/web-app/src/api/categories.ts` | Category and rule API client functions |
 | `/web-app/src/types/account.ts` | Account TypeScript interfaces |
 | `/web-app/src/types/transaction.ts` | Transaction TypeScript interfaces |
+| `/web-app/src/types/settings.ts` | Category, rule, and entity TypeScript interfaces |
 | `/web-app/src/hooks/useTransactions.ts` | React Query hooks for transaction CRUD |
+| `/web-app/src/hooks/useCategoryRules.ts` | React Query hooks for category rule CRUD |
 | `/core-api/src/financial_analysis/api/routes/accounts.py` | Account API endpoints |
 | `/core-api/src/financial_analysis/api/routes/transactions.py` | Transaction API endpoints |
+| `/core-api/src/financial_analysis/api/routes/categories.py` | Category and rule API endpoints |
+| `/core-api/src/financial_analysis/api/routes/entities.py` | Entity API endpoints |
 | `/core-api/src/financial_analysis/api/schemas/account.py` | Account Pydantic schemas |
 | `/core-api/src/financial_analysis/api/schemas/transaction.py` | Transaction Pydantic schemas |
+| `/core-api/src/financial_analysis/api/schemas/category.py` | Category and rule Pydantic schemas |
 | `/core-api/src/financial_analysis/services/account_service.py` | Account business logic |
 | `/core-api/src/financial_analysis/services/transaction_service.py` | Transaction business logic |
+| `/core-api/src/financial_analysis/services/category_service.py` | Category and rule business logic |
+| `/core-api/openapi-spec.json` | OpenAPI spec (source of truth for SDK generation) |
 | `mx-agent-system/roleguides/accounts-leader.md` | This roleguide |
 | `mx-agent-system/teams/accounts.md` | Team catalog entry |
 | `mx-agent-system/outcomes/` | Iteration outcome logs |
@@ -379,7 +396,7 @@ search_memories({ query: "cross-team-escalations accounts" })
 | Skipping Playwright validation on UI changes | Step 6 requires a Playwright test that exercises the feature in the browser. TypeScript compilation is not validation. |
 | Declaring "shipped" without both outcome memory AND repo entry | Both are required. One without the other is incomplete. |
 | Modifying data models without running ALTER TABLE | SQLite `create_all()` does not add columns to existing tables. You must run `ALTER TABLE` manually and restart the backend. |
-| Ignoring the SDK camelCase/snake_case transformation | All API ↔ frontend data must go through the SDK transformation layer. |
+| Bypassing the SDK instead of fixing it | The SDK is part of the owned stack. When SDK schemas are stale (missing fields, wrong optionality), update the OpenAPI spec and regenerate the SDK rather than adding direct `fetch` bypasses. Existing bypasses are tech debt to resolve. |
 | Skipping Security Reviewer on "simple" changes | All changes go through Security Reviewer. Financial data is sensitive — no exceptions. |
 | Not updating `spearmint-accounts-leader-state` at session end | State must be saved. Without it, the next session cannot resume. |
 | Integrating external services without product owner approval | Plaid, Yodlee, Stripe integrations require explicit approval. |
@@ -402,8 +419,8 @@ search_memories({ query: "cross-team-escalations accounts" })
 ### Tech Stack
 - **Frontend:** React 18.3+ with TypeScript, Material-UI v5, Vite, React Router v6, TanStack Query, React Hook Form, Recharts
 - **Backend:** FastAPI (Python 3.10+), SQLAlchemy 2.0+, Pydantic 2.0+, PostgreSQL (prod) / SQLite (dev)
-- **SDK:** `@spearmint-finance/sdk` with auto camelCase ↔ snake_case transformation
-- **Location in monorepo:** `/web-app/` (frontend), `/core-api/` (backend)
+- **SDK:** `@spearmint-finance/sdk` with auto camelCase ↔ snake_case transformation — this team owns the SDK schemas for its endpoints (update `openapi-spec.json` and regenerate when adding/changing fields)
+- **Location in monorepo:** `/web-app/` (frontend), `/core-api/` (backend), `/core-api/openapi-spec.json` (SDK source)
 
 ### Account Types
 | Type | Category | Icon |
