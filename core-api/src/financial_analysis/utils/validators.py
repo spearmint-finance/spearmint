@@ -63,7 +63,10 @@ class DataValidator:
             parsed_date = value
         else:
             raise ValidationError(f"{field_name} must be a date, got {type(value)}")
-        
+
+        if parsed_date > date.today():
+            raise ValidationError(f"{field_name} cannot be in the future")
+
         return parsed_date
     
     @staticmethod
