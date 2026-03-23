@@ -38,12 +38,21 @@ import ExpenseStackedBarChart from "../Charts/ExpenseStackedBarChart";
 import DateRangePicker, {
   DateRange,
 } from "../Analysis/DateRangePicker";
+import ExpenseViewToggle, {
+  ExpenseView,
+} from "../Analysis/ExpenseViewToggle";
 
 function Dashboard() {
   const [dateRange, setDateRange] = useState<DateRange>({
     start_date: "",
     end_date: "",
   });
+  const [expenseView, setExpenseView] = useState<ExpenseView>("operating");
+
+  // Convert expense view to API mode
+  const viewMode = expenseView === "operating" ? "analysis" :
+                   expenseView === "with-capital" ? "with_capital" :
+                   "complete";
 
   // Fetch comprehensive dashboard data using the summary endpoint
   const {
@@ -53,7 +62,7 @@ function Dashboard() {
     error,
     refetch,
   } = useFinancialSummary({
-    mode: "analysis",
+    mode: viewMode,
     top_n: 5,
     recent_count: 5,
     start_date: dateRange.start_date || undefined,
@@ -62,7 +71,7 @@ function Dashboard() {
 
   // Fetch cash flow trends for charts
   const { data: trendsData } = useCashFlowTrends({
-    mode: "analysis",
+    mode: viewMode,
     period: "monthly",
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
@@ -71,7 +80,7 @@ function Dashboard() {
   // Fetch expense category trends for stacked bar chart
   const { data: categoryTrends } = useExpenseCategoryTrends({
     period: "monthly",
-    mode: "analysis",
+    mode: viewMode,
     top_n: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
@@ -122,10 +131,15 @@ function Dashboard() {
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          flexWrap: "wrap",
+          gap: 2,
         }}
       >
         <Typography variant="h4">Dashboard</Typography>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+        </Box>
       </Box>
       {isFetching && !isLoading && (
         <LinearProgress sx={{ mb: 1, borderRadius: 1 }} />
