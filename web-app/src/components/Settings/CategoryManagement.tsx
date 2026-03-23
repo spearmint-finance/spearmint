@@ -18,8 +18,6 @@ import {
   TextField,
   MenuItem,
   IconButton,
-  Tabs,
-  Tab,
   Paper,
   InputAdornment,
 } from "@mui/material";
@@ -29,8 +27,6 @@ import {
   Edit as EditIcon,
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
-  Rule as RuleIcon,
-  Category as CategoryIcon,
   Search as SearchIcon,
   MergeType as MergeIcon,
 } from "@mui/icons-material";
@@ -49,7 +45,6 @@ import {
 import { Autocomplete } from "@mui/material";
 import { useEntities } from "../../hooks/useEntities";
 import type { Category, CategoryCreate } from "../../types/settings";
-import CategoryRulesList from "./CategoryRulesList";
 import { useSnackbar } from "notistack";
 
 interface CategoryFormData {
@@ -69,7 +64,6 @@ const emptyFormData: CategoryFormData = {
 };
 
 export default function CategoryManagement() {
-  const [currentTab, setCurrentTab] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CategoryFormData>(emptyFormData);
@@ -83,10 +77,6 @@ export default function CategoryManagement() {
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [entityFilter, setEntityFilter] = useState<string>("All");
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
-  };
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -421,19 +411,7 @@ export default function CategoryManagement() {
   return (
     <Box>
       <Paper sx={{ width: "100%" }}>
-        <Tabs
-          value={currentTab}
-          onChange={handleTabChange}
-          aria-label="category management tabs"
-          sx={{ borderBottom: 1, borderColor: "divider" }}
-        >
-          <Tab icon={<CategoryIcon />} label="Categories" />
-          <Tab icon={<RuleIcon />} label="Transaction Rules" />
-        </Tabs>
-
         <Box sx={{ p: 3 }}>
-          {/* Categories Tab */}
-          {currentTab === 0 && (
             <Box>
               <Box
                 display="flex"
@@ -529,10 +507,6 @@ export default function CategoryManagement() {
                 />
               </Box>
             </Box>
-          )}
-
-          {/* Category Rules Tab */}
-          {currentTab === 1 && <CategoryRulesList />}
         </Box>
       </Paper>
 
