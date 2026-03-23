@@ -39,6 +39,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
 import DownloadIcon from "@mui/icons-material/Download";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
   useTransactions,
   useUpdateTransaction,
@@ -274,6 +275,20 @@ function TransactionList() {
 
   // Define columns for DataGrid
   const columns: GridColDef[] = [
+    {
+      field: "is_cleared",
+      headerName: "",
+      width: 40,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) =>
+        params.row.is_cleared ? (
+          <Tooltip title={`Cleared${params.row.cleared_date ? ` on ${params.row.cleared_date}` : ''}`}>
+            <CheckCircleIcon fontSize="small" color="success" />
+          </Tooltip>
+        ) : null,
+    },
     {
       field: "date",
       headerName: "Date",

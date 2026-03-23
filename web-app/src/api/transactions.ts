@@ -79,6 +79,10 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     backendTransaction.excludeFromIncome ?? backendTransaction.exclude_from_income ?? false;
   const excludeFromExpenses =
     backendTransaction.excludeFromExpenses ?? backendTransaction.exclude_from_expenses ?? false;
+  const isCleared =
+    backendTransaction.isCleared ?? backendTransaction.is_cleared ?? false;
+  const clearedDate =
+    backendTransaction.clearedDate ?? backendTransaction.cleared_date;
 
   // Handle nested category object (supports both camelCase and snake_case)
   // Normalize "nan" (from pandas NaN serialization during import) to undefined
@@ -118,6 +122,8 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     is_reimbursable: isReimbursable,
     exclude_from_income: excludeFromIncome,
     exclude_from_expenses: excludeFromExpenses,
+    is_cleared: isCleared,
+    cleared_date: clearedDate ? new Date(clearedDate).toISOString().split("T")[0] : undefined,
     entity_id: backendTransaction.entityId ?? backendTransaction.entity_id ?? null,
     splits: (backendTransaction.splits || []).map((s: any) => ({
       split_id: s.splitId ?? s.split_id,

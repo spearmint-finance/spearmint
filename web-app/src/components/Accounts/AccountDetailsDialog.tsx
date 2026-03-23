@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -27,6 +27,8 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Checkbox,
+  LinearProgress,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -52,6 +54,7 @@ import {
   getPortfolioSummary,
   getReconciliations,
   createReconciliation,
+  completeReconciliation,
   addHolding,
   updateHolding,
   deleteHolding,
@@ -59,6 +62,9 @@ import {
   updateAccount,
   deleteAccount,
 } from '../../api/accounts';
+import { getTransactions } from '../../api/transactions';
+import type { Transaction } from '../../types/transaction';
+import type { Reconciliation } from '../../types/account';
 import BalanceHistoryChart from './BalanceHistoryChart';
 import { formatCurrency } from '../../utils/formatters';
 import { useEntityContext } from '../../contexts/EntityContext';
@@ -119,6 +125,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     cost_basis: '',
     current_value: '',
   });
+  const [activeRecon, setActiveRecon] = useState<Reconciliation | null>(null);
+  const [clearedIds, setClearedIds] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -150,6 +158,84 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     queryFn: () => getReconciliations(account.account_id),
     enabled: open && tabValue === 3,
   });
+
+  // Fetch account transactions for reconciliation clearing
+  const { data: reconTransactions, isLoading: reconTxLoading } = useQuery({
+    queryKey: ['reconTransactions', account.account_id, activeRecon?.statement_date],
+    queryFn: () =>
+      getTransactions({
+        account_id: account.account_id,
+        end_date: activeRecon!.statement_date,
+        limit: 1000,
+        sort_by: 'transaction_date',
+        sort_order: 'desc',
+      }),
+    enabled: !!activeRecon,
+  });
+
+  // Compute running cleared balance
+  const clearedBalance = useMemo(() => {
+    if (!reconTransactions?.transactions) return 0;
+    return reconTransactions.transactions
+      .filter((t: Transaction) => clearedIds.has(t.id))
+      .reduce((sum: number, t: Transaction) => {
+        return sum + (t.transaction_type === 'Income' ? t.amount : -t.amount);
+      }, account.opening_balance || 0);
+  }, [reconTransactions, clearedIds, account.opening_balance]);
+
+  const discrepancy = activeRecon
+    ? activeRecon.statement_balance - clearedBalance
+    : 0;
+
+  // Complete reconciliation mutation
+  const completeReconMutation = useMutation({
+    mutationFn: () =>
+      completeReconciliation(activeRecon!.reconciliation_id, {
+        reconciled_by: 'user',
+        cleared_transaction_ids: Array.from(clearedIds),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setActiveRecon(null);
+      setClearedIds(new Set());
+    },
+  });
+
+  const handleToggleCleared = (txId: number) => {
+    setClearedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(txId)) {
+        next.delete(txId);
+      } else {
+        next.add(txId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllCleared = () => {
+    if (!reconTransactions?.transactions) return;
+    const allIds = reconTransactions.transactions.map((t: Transaction) => t.id);
+    setClearedIds(new Set(allIds));
+  };
+
+  const handleDeselectAllCleared = () => {
+    setClearedIds(new Set());
+  };
+
+  const handleStartClearing = (recon: Reconciliation) => {
+    setActiveRecon(recon);
+    // Pre-select already-cleared transactions
+    if (reconTransactions?.transactions) {
+      const alreadyCleared = reconTransactions.transactions
+        .filter((t: Transaction) => t.is_cleared)
+        .map((t: Transaction) => t.id);
+      setClearedIds(new Set(alreadyCleared));
+    } else {
+      setClearedIds(new Set());
+    }
+  };
 
   // Add balance mutation
   const addBalanceMutation = useMutation({
@@ -868,10 +954,132 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
             </Card>
           )}
 
+          {/* Active reconciliation clearing UI */}
+          {activeRecon && (
+            <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2">
+                  Clearing Transactions — Statement {new Date(activeRecon.statement_date).toLocaleDateString()}
+                </Typography>
+                <Button size="small" onClick={() => { setActiveRecon(null); setClearedIds(new Set()); }}>
+                  Cancel
+                </Button>
+              </Box>
+
+              {/* Running totals */}
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Statement Balance</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatCurrency(activeRecon.statement_balance)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Cleared Balance</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatCurrency(clearedBalance)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Difference</Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color={Math.abs(discrepancy) < 0.01 ? 'success.main' : 'warning.main'}
+                  >
+                    {formatCurrency(discrepancy)}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              {reconTxLoading && <LinearProgress sx={{ mb: 1 }} />}
+
+              {reconTransactions?.transactions && reconTransactions.transactions.length > 0 && (
+                <>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      {clearedIds.size} of {reconTransactions.transactions.length} transactions cleared
+                    </Typography>
+                    <Box>
+                      <Button size="small" onClick={handleSelectAllCleared}>Select All</Button>
+                      <Button size="small" onClick={handleDeselectAllCleared}>Clear All</Button>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <List dense disablePadding>
+                      {reconTransactions.transactions.map((tx: Transaction) => (
+                        <ListItem
+                          key={tx.id}
+                          dense
+                          sx={{
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
+                            bgcolor: clearedIds.has(tx.id) ? 'action.selected' : 'transparent',
+                          }}
+                        >
+                          <Checkbox
+                            checked={clearedIds.has(tx.id)}
+                            onChange={() => handleToggleCleared(tx.id)}
+                            size="small"
+                          />
+                          <ListItemText
+                            primary={
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" noWrap sx={{ maxWidth: '60%' }}>
+                                  {tx.description || 'No description'}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color={tx.transaction_type === 'Income' ? 'success.main' : 'error.main'}
+                                >
+                                  {tx.transaction_type === 'Income' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={tx.date}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                </>
+              )}
+
+              {reconTransactions?.transactions && reconTransactions.transactions.length === 0 && (
+                <Typography color="text.secondary" variant="body2">
+                  No transactions found for this account up to {new Date(activeRecon.statement_date).toLocaleDateString()}.
+                </Typography>
+              )}
+
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => completeReconMutation.mutate()}
+                  disabled={completeReconMutation.isPending}
+                >
+                  {completeReconMutation.isPending ? 'Completing...' : 'Finish Reconciliation'}
+                </Button>
+              </Box>
+              {completeReconMutation.isError && (
+                <Alert severity="error" sx={{ mt: 1 }}>Failed to complete reconciliation.</Alert>
+              )}
+            </Card>
+          )}
+
           {reconciliations && reconciliations.length > 0 ? (
             <List>
               {reconciliations.map((recon) => (
-                <ListItem key={recon.reconciliation_id}>
+                <ListItem
+                  key={recon.reconciliation_id}
+                  sx={{ cursor: recon.is_reconciled ? 'default' : 'pointer' }}
+                  onClick={() => {
+                    if (!recon.is_reconciled && !activeRecon) {
+                      handleStartClearing(recon);
+                    }
+                  }}
+                >
                   <ListItemText
                     primary={new Date(recon.statement_date).toLocaleDateString()}
                     secondary={`Statement: ${formatCurrency(
@@ -889,8 +1097,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     />
                   ) : (
                     <Chip
-                      label={`${formatCurrency(recon.discrepancy_amount || 0)} off`}
-                      color={recon.discrepancy_amount && Math.abs(recon.discrepancy_amount) > 0.01 ? 'warning' : 'success'}
+                      label={activeRecon?.reconciliation_id === recon.reconciliation_id ? 'Clearing...' : 'Click to clear'}
+                      color={activeRecon?.reconciliation_id === recon.reconciliation_id ? 'info' : 'warning'}
                       size="small"
                     />
                   )}

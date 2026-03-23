@@ -99,6 +99,8 @@ class TransactionResponse(TransactionBase):
     tags: List[TagInfo] = Field(default_factory=list, description="Associated tags")
     splits: List[TransactionSplitResponse] = Field(default_factory=list, description="Line-item splits")
     split_portion: Optional[bool] = Field(None, description="True when the displayed amount is a split portion, not the full transaction amount")
+    is_cleared: bool = Field(default=False, description="Whether the transaction has been cleared/reconciled")
+    cleared_date: Optional[date] = Field(None, description="Date the transaction was cleared")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
