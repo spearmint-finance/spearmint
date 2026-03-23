@@ -54,9 +54,20 @@ data/*.xls
 *.log
 logs/
 
+# Secrets & credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+credentials.json
+secrets.json
+**/api-keys/
+
 # Environment variables
 .env
-.env.local
+.env.*
+!.env.example
 
 # Testing
 .pytest_cache/
@@ -131,11 +142,19 @@ web-app/.env
 web-app/.env.local
 web-app/.env.production
 
-#claude
-.claude
-.claude/settings.local.json
+# Claude Code
+.claude/
+CLAUDE.md
+CLAUDE.local.md
 
-# Worktrees (managed by worktree CLI)
+# MemNexus / mx-agent tooling
+mx-agent-system/
+mx-agent.config.json
+.mcp.json
+worktree.toml
+worktree-cli/
+
+# Worktrees
 .worktrees/
 .dev-logs/
 .mx/

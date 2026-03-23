@@ -1,6 +1,6 @@
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
-  "https://memnexus-marketing-site.pages.dev";
+  "https://spearmint-marketing-site.pages.dev";
 
 export const GITHUB_URL =
   "https://github.com/spearmint-finance/spearmint";
