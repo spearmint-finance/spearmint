@@ -1638,17 +1638,23 @@ function TransactionList() {
                     </Box>
                     <FormControl size="small" sx={{ minWidth: 160 }}>
                       <Select
-                        value={smartCatOverrides[i] ?? r.category_id ?? ""}
+                        value={smartCatOverrides[i] ?? r.category_id ?? (r.suggested_category && !r.category_id ? "__new__" : "")}
                         onChange={(e) => {
-                          setSmartCatOverrides(prev => ({ ...prev, [i]: Number(e.target.value) }));
+                          const val = e.target.value;
+                          if (val === "__new__") {
+                            // Keep as __new__ — will auto-create on apply
+                            setSmartCatOverrides(prev => { const next = { ...prev }; delete next[i]; return next; });
+                          } else {
+                            setSmartCatOverrides(prev => ({ ...prev, [i]: Number(val) }));
+                          }
                           setSmartCatApproved(prev => { const next = new Set(prev); next.add(i); return next; });
                         }}
                         displayEmpty
                         size="small"
                       >
-                        {r.suggested_category && !r.category_id && (
-                          <MenuItem value="" disabled>
-                            {r.suggested_category} (new)
+                        {r.suggested_category && !(smartCatOverrides[i] ?? r.category_id) && (
+                          <MenuItem value="__new__" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                            {r.suggested_category} (create new)
                           </MenuItem>
                         )}
                         {categoriesData?.categories?.map((cat) => (
@@ -1800,40 +1806,59 @@ function TransactionList() {
                 startIcon={smartCatApplying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
                 onClick={async () => {
                   setSmartCatApplying(true);
-                  // Build the list of approved descriptions with their final category IDs
-                  const toApply = Array.from(smartCatApproved).map(i => {
-                    const r = smartCatResults[i];
-                    const catId = smartCatOverrides[i] ?? r.category_id;
-                    return { description: r.description, category_id: catId, suggested_pattern: r.suggested_pattern, merchant_name: r.merchant_name };
-                  }).filter(item => item.category_id);
-
                   try {
-                    // Apply each approved classification
-                    const res = await fetch("/api/transactions/classify-batch", {
+                    // Step 1: Create any new categories that the LLM suggested
+                    const updatedOverrides = { ...smartCatOverrides };
+                    for (const i of Array.from(smartCatApproved)) {
+                      const r = smartCatResults[i];
+                      const hasOverride = updatedOverrides[i] !== undefined;
+                      const catId = hasOverride ? updatedOverrides[i] : r.category_id;
+                      if (!catId && r.suggested_category) {
+                        // Need to create this category
+                        const created = await createCategory.mutateAsync({
+                          category_name: r.suggested_category,
+                          category_type: r.transaction_type === "Income" ? "Income" : "Expense",
+                        });
+                        updatedOverrides[i] = created.category_id;
+                      }
+                    }
+                    setSmartCatOverrides(updatedOverrides);
+
+                    // Step 2: Build assignments with resolved category IDs
+                    const assignments = Array.from(smartCatApproved).map(i => {
+                      const r = smartCatResults[i];
+                      const catId = updatedOverrides[i] ?? r.category_id;
+                      return {
+                        description: r.description,
+                        category_id: catId,
+                        suggested_pattern: r.suggested_pattern,
+                        rule_name: `Auto: ${r.merchant_name || r.description.slice(0, 30)}`,
+                      };
+                    }).filter(a => a.category_id);
+
+                    // Step 3: Apply via backend (no LLM call — just DB updates)
+                    const res = await fetch("/api/transactions/apply-categories", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        descriptions: toApply.map(a => a.description),
-                        mode: "apply",
-                        create_rules: true,
-                      }),
+                      body: JSON.stringify({ assignments, create_rules: true }),
                     });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.detail || "Failed");
 
-                    // Move applied results to the applied list
+                    // Step 4: Move to applied list
                     const appliedItems = Array.from(smartCatApproved).map(i => {
                       const r = smartCatResults[i];
-                      const catId = smartCatOverrides[i] ?? r.category_id;
-                      const catName = categoriesData?.categories?.find(c => c.category_id === catId)?.category_name;
-                      return { ...r, applied_category: catName || r.suggested_category };
+                      const catId = updatedOverrides[i] ?? r.category_id;
+                      const catName = categoriesData?.categories?.find(c => c.category_id === catId)?.category_name || r.suggested_category;
+                      return { ...r, applied_category: catName };
                     });
                     setSmartCatApplied(prev => [...prev, ...appliedItems]);
                     setSmartCatResults([]);
                     setSmartCatApproved(new Set());
                     setSmartCatOverrides({});
                     queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                    enqueueSnackbar(`Applied ${appliedItems.length} classifications, ${data.rules_created} rules created`, { variant: "success" });
+                    queryClient.invalidateQueries({ queryKey: ["categories"] });
+                    enqueueSnackbar(`Applied ${appliedItems.length} classifications (${data.total_updated} transactions updated, ${data.rules_created} rules created)`, { variant: "success" });
 
                     // Reload descriptions
                     const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=${smartCatPage * 20}&limit=20`);

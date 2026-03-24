@@ -481,3 +481,70 @@ def classify_batch(
         "categories_created": categories_created,
     }
 
+
+class ApplyCategoryAssignment(BaseModel):
+    description: str
+    category_id: int
+    suggested_pattern: Optional[str] = None
+    rule_name: Optional[str] = None
+
+
+class ApplyCategoriesRequest(BaseModel):
+    """Apply pre-approved category assignments without calling LLM."""
+    assignments: List[ApplyCategoryAssignment]
+    create_rules: bool = Field(default=True)
+
+
+@router.post("/transactions/apply-categories")
+def apply_categories(
+    request: ApplyCategoriesRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Apply user-approved category assignments directly.
+    No LLM call — just updates transactions and optionally creates rules.
+    """
+    from ...database.models import Transaction as TxModel, Category as CatModel, CategoryRule
+    from sqlalchemy import or_
+
+    nan_cat = db.query(CatModel).filter(CatModel.category_name == "nan").first()
+    rules_created = 0
+    total_updated = 0
+
+    for a in request.assignments:
+        cat_conditions = []
+        if nan_cat:
+            cat_conditions.append(TxModel.category_id == nan_cat.category_id)
+        cat_conditions.append(TxModel.category_id.is_(None))
+
+        updated = db.query(TxModel).filter(
+            TxModel.description == a.description,
+            or_(*cat_conditions),
+        ).update(
+            {TxModel.category_id: a.category_id},
+            synchronize_session="fetch",
+        )
+        total_updated += updated
+
+        if request.create_rules and a.suggested_pattern:
+            existing = db.query(CategoryRule).filter(
+                CategoryRule.description_pattern == a.suggested_pattern
+            ).first()
+            if not existing:
+                db.add(CategoryRule(
+                    rule_name=a.rule_name or f"Auto: {a.description[:30]}",
+                    description_pattern=a.suggested_pattern,
+                    category_id=a.category_id,
+                    rule_priority=5,
+                    is_active=True,
+                ))
+                rules_created += 1
+
+    db.commit()
+
+    return {
+        "total_updated": total_updated,
+        "rules_created": rules_created,
+        "assignments_processed": len(request.assignments),
+    }
+
