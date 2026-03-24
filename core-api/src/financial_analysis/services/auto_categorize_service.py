@@ -173,7 +173,7 @@ Transactions to categorize:
 
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
-            max_tokens=4096,
+            max_tokens=16384,
             messages=[
                 {"role": "system", "content": "You are a financial transaction categorizer. Always respond with valid JSON only."},
                 {"role": "user", "content": prompt},
@@ -204,6 +204,7 @@ Transactions to categorize:
         mode: str = "preview",
         confidence_threshold: float = 0.7,
         create_rules: bool = True,
+        max_descriptions: int = 100,
     ) -> AutoCategorizeResponse:
         """
         Run the full auto-categorization pipeline.
@@ -228,12 +229,16 @@ Transactions to categorize:
             )
 
         categories = self.get_existing_categories()
-        descriptions = list(desc_map.values())
-        total_transactions = sum(d["count"] for d in descriptions)
+        all_descriptions = list(desc_map.values())
+        total_transactions = sum(d["count"] for d in all_descriptions)
+
+        # Sort by count (most impactful first) and limit
+        all_descriptions.sort(key=lambda d: d["count"], reverse=True)
+        descriptions = all_descriptions[:max_descriptions]
 
         # Step 2: Classify in batches of 50
         all_classifications: List[Dict] = []
-        batch_size = 50
+        batch_size = 20
         for i in range(0, len(descriptions), batch_size):
             batch = descriptions[i : i + batch_size]
             try:

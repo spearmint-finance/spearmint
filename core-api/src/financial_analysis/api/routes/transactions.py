@@ -358,6 +358,7 @@ class AutoCategorizeRequest(BaseModel):
     mode: str = Field(default="preview", description="'preview' for dry-run, 'apply' to commit changes")
     confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum confidence to auto-apply")
     create_rules: bool = Field(default=True, description="Auto-create transaction rules for high-confidence matches")
+    max_descriptions: int = Field(default=100, ge=1, le=5000, description="Max unique descriptions to process per call")
 
 
 @router.post("/transactions/auto-categorize")
@@ -381,6 +382,7 @@ def auto_categorize_transactions(
                 mode=request.mode,
                 confidence_threshold=request.confidence_threshold,
                 create_rules=request.create_rules,
+                max_descriptions=request.max_descriptions,
             )
         )
         return {
