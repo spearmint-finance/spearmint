@@ -10,7 +10,7 @@
 
 **Goal:** Be the best self-hosted personal finance ledger on the market.
 
-**Status:** 85% complete (11/13 items done) — core transaction, account, reporting, import, and split workflows are production-ready. Key remaining items are authentication (#141) and budget management (#144). Transaction relationships are functional (auto-detection + linking) but need UI polish. Since last update: accounts team shipped category merge/reassign, holdings CRUD, reconciliation creation form, transaction rules with entity auto-assignment, and snackbar error feedback across major flows.
+**Status:** 92% complete (12/13 items done) — only authentication (#141) remains. Since last update (2026-03-24): accounts team shipped budget management (full CRUD + bar chart + inline editing), transaction relationship UI (type labels, icons, click navigation), demo data package (DEMO_MODE), multi-currency display (Phase 1 — locale detection, currency selector, account component display), and smart categorization (LLM-powered batch categorization).
 
 ### G1 Checklist
 
@@ -26,8 +26,8 @@
 | 8 | Dashboard with charts | Done | Category pie chart, trends, cash flow, net worth card |
 | 9 | Multi-entity support | Done | Entity CRUD, entity-scoped accounts and P&L |
 | 10 | **Authentication & authorization** | **Not Started** | **P0 blocker — no auth on any endpoint (#141)** |
-| 11 | **Budget management UI** | **Not Started** | DB model exists, no frontend implementation (#144) |
-| 12 | Transaction relationships (transfers, reimbursements) | Partial | Auto-detection + linking works; UI shows link icon + tooltip. Missing: relationship type display, manual link form, bidirectional navigation (#147) |
+| 11 | Budget management UI | Done | Full CRUD API, progress bars, month navigation, bar chart, inline editing, entity-scoped (#144, PR #17/#22/#23) |
+| 12 | Transaction relationships (transfers, reimbursements) | Done | Auto-detection + linking, type-specific labels and icons, click-to-navigate linked transactions (#147, PR #16) |
 | 13 | Transaction splits | Done | Full split form, "Split Evenly", inline entity selector, grid indicator, amount validation. Shipped by accounts team (iterations 58-66) |
 
 ### G1 Completion Criteria
@@ -75,15 +75,15 @@ These are the items that should be worked on NOW, in priority order:
 | Rank | Item | Target Team | Rationale |
 |------|------|-------------|-----------|
 | 1 | **Authentication & authorization** | Accounts / Platform | Directive: #141. PRD: [authentication-authorization.md](feature-planning/authentication-authorization.md). Without auth, the app cannot be exposed to a network. Single biggest blocker to real-world adoption. |
-| 2 | **Budget management UI** | Accounts team | Directive: #144. PRD: [budget-management-ui.md](feature-planning/budget-management-ui.md). Budgeting is the #1 reason people use personal finance apps. |
-| 3 | **Demo data package** | Accounts team | Directive: #273. PRD: [demo-data-package.md](feature-planning/demo-data-package.md). Prerequisite for README screenshots (#253). Empty app = zero star conversion. Every high-star OSS finance app has screenshots. |
-| 4 | **README screenshots** | Accounts + Dashboard | Directive: #253. Blocked by #273 (demo data). Once demo data ships, capture screenshots of populated dashboard, transactions, reports. |
+| 2 | ~~Budget management UI~~ | Accounts team | **DONE** (PR #17/#22/#23). Full CRUD API, progress bars, bar chart, inline editing, entity scoping. |
+| 3 | ~~Demo data package~~ | Accounts team | **DONE** (PR #15/#21). DEMO_MODE=true seeds 693 txns, 2 entities, 6 accounts, 9 budgets, rules, holdings. |
+| 4 | **README screenshots** | Accounts + Dashboard | Directive: #253. UNBLOCKED by #273. Capture screenshots of populated dashboard, transactions, reports, budgets. |
 | 5 | **Analysis page export fix** | Dashboard team | Directive: #221. Export button downloads empty placeholder CSV — zero actual data. Quick fix: pass analysis data to ExportButton. |
-| 6 | **Transaction relationships UI** | Accounts team | Directive: #147. Backend detection exists — needs frontend polish for transfers, reimbursements, CC payments. |
+| 6 | ~~Transaction relationships UI~~ | Accounts team | **DONE** (PR #16). Type-specific labels, icons, bidirectional click navigation. |
 | 7 | **Dashboard green color palette** | Dashboard team | Directive: #148. User feedback: match monochrome green to Spearmint branding. |
 | 8 | **Scenario builder completion** | Dashboard team | Directive: #150. PRD: [scenario-builder-completion.md](feature-planning/scenario-builder-completion.md). Save/load, charts, all adjuster types. |
 | 9 | **Confidence intervals in scenarios** | Dashboard team | Directive: #208. PRD: [confidence-based-forecasting.md](feature-planning/confidence-based-forecasting.md). First-mover differentiator — no competitor offers this. |
-| 10 | **Multi-currency display** | Accounts team | Directive: #217. PRD: [multi-currency-display.md](feature-planning/multi-currency-display.md). Read currency from account data instead of hardcoding USD. Enables international adoption. |
+| 10 | ~~Multi-currency display~~ | Accounts team | **DONE Phase 1** (PR #18/#19/#20). Locale-aware formatting, currency selector, account component display. Phase 2 (exchange rates) is G2. |
 | 11 | **Error feedback (snackbar)** | Accounts + Dashboard | Directive: #224. ~86% done — 77 snackbar calls across major flows (PR #244). 7 edge-case gaps remain (scenario builder, export, rule testing). |
 | 12 | **Multi-entity on marketing site** | Marketing team | Directive: #152. Shipped feature not yet marketed. |
 
@@ -113,6 +113,14 @@ These are the items that should be worked on NOW, in priority order:
 - Searchable category filter with Autocomplete on transactions page
 - Enhanced "Create New Category" dialog with parent and entity info
 - Duplicate transaction action, bulk category assignment
+- **Smart categorization**: LLM-powered batch categorization with GPT-4o-mini, three-step review flow, inline category/rule creation
+- **Reconciliation completion**: Transaction clearing UI, cleared indicators, real-time balance tracking
+- **Entity auto-inheritance**: Transactions auto-inherit entity from single-entity accounts
+- **Demo data package**: DEMO_MODE=true seeds 693 txns, 2 entities, 6 accounts, rules, holdings, budgets
+- **Budget management**: Full CRUD API, progress bars, bar chart, inline editing, month navigation, entity scoping
+- **Transaction relationship UI**: Type-specific labels (Transfer, CC Payment, Reimbursement), icons, click-to-navigate
+- **Multi-currency Phase 1**: Locale-aware formatting, currency selector (20 ISO 4217), account component display
+- **Transfer exclusion**: Auto-exclude Transfer-category transactions from analysis
 
 ### Dashboard Team (8 iterations)
 - Category pie chart with responsive layout
