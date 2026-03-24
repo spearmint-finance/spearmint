@@ -13,6 +13,7 @@ import ImportPage from "./components/Import/ImportPage";
 import SettingsPage from "./components/Settings/SettingsPage";
 import ScenarioBuilder from "./components/Scenarios/ScenarioBuilder";
 import ReportsPage from "./components/Reports/ReportsPage";
+import BudgetsPage from "./components/Budgets/BudgetsPage";
 import { EntityProvider } from "./contexts/EntityContext";
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
           <Route path="analysis/expenses" element={<ExpenseDeepDivePage />} />
           <Route path="scenarios" element={<ScenarioBuilder />} />
           <Route path="projections" element={<ProjectionsPage />} />
+          <Route path="budgets" element={<BudgetsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="settings" element={<SettingsPage />} />
