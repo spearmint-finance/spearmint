@@ -225,18 +225,61 @@ After classification, for each unique description with confidence > threshold:
 | `AMAZON MKTPL*BD5Y44LM0` | `AMAZON MKTPL` | Shopping |
 | `OPENAI SAN FRANCISCO CA` | `OPENAI` | Software / Subscriptions |
 
-### Phase 2: User Review Interface
+### Phase 2: User Interface
 
-#### P2.1: Categorization Review Page
+#### P2.1: Entry Points
 
-A dedicated page or dialog showing:
-- Proposed categorizations grouped by confidence tier
-- Merchant name identification (what the LLM thinks the merchant is)
-- Approve/reject buttons per group (not per transaction)
-- Ability to change the suggested category before approving
-- Count of transactions that would be affected
+**Transaction List Toolbar:**
+A "Smart Categorize" button in the transaction list toolbar (alongside "Detect Relationships" and "Export CSV"). Clicking it launches the categorization pipeline on all uncategorized transactions and opens a review dialog with results.
 
-#### P2.2: Correction Feedback Loop
+**Post-Import Flow (Phase 3):**
+After importing transactions, auto-run the pipeline on uncategorized imports. Show notification: "42 imported, 38 auto-categorized, 4 need review" with a link to the review dialog.
+
+#### P2.2: Smart Categorize Review Dialog
+
+A full-screen dialog showing results in three sections:
+
+```
+Smart Categorization Results
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Processing: 847 unique descriptions from 6,706 transactions
+
+✅ Auto-Applied (523 descriptions, 4,102 transactions)
+These were high-confidence matches. Rules have been created.
+
+  ACME.COM → Groceries (47 txns)                    [Undo]
+  OPENAI → Software Subscriptions (12 txns)          [Undo]
+  AMAZON MKTPL → Shopping (89 txns)                  [Undo]
+  WAWA → Gas & Convenience (23 txns)                 [Undo]
+  ...show more
+
+⚠️ Needs Review (198 descriptions, 1,847 transactions)
+These need your confirmation. Click to approve or change the category.
+
+  AplPay ACTBLUE* → Political Donation? (3 txns)    [✓ Accept] [Change ▾]
+  FEE CHARGED Fidelity → Bank Fees? (8 txns)        [✓ Accept] [Change ▾]
+  Check Paid # → ??? (15 txns)                       [Assign ▾]
+  ...
+
+❓ Unclassified (126 descriptions, 757 transactions)
+Could not determine category. Assign manually or skip.
+
+  PLVCC6H2K3 → Unknown (2 txns)                     [Assign ▾] [Skip]
+  ...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Accept All Reviewed]  [Close]
+```
+
+**Key interactions:**
+- Each row represents a unique description, not individual transactions
+- "Change" opens a category dropdown (with inline create, reusing existing pattern)
+- "Accept" creates the rule and applies to all matching transactions
+- "Accept All Reviewed" bulk-applies all medium-confidence suggestions
+- "Undo" on auto-applied items removes the category and deletes the rule
+- Progress bar during processing with live updates
+
+#### P2.3: Correction Feedback Loop
 
 When a user corrects a categorization:
 1. Update the transaction's category

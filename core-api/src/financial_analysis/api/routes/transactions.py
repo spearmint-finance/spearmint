@@ -1,9 +1,12 @@
 """Transaction API endpoints."""
 
+import asyncio
 from typing import Optional, List
 from datetime import date
 from decimal import Decimal
+from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
@@ -346,4 +349,52 @@ def delete_transaction(
         raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
     
     return SuccessResponse(message=f"Transaction {transaction_id} deleted successfully")
+
+
+# ==================== Smart Auto-Categorization ====================
+
+class AutoCategorizeRequest(BaseModel):
+    """Request body for auto-categorization."""
+    mode: str = Field(default="preview", description="'preview' for dry-run, 'apply' to commit changes")
+    confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum confidence to auto-apply")
+    create_rules: bool = Field(default=True, description="Auto-create transaction rules for high-confidence matches")
+
+
+@router.post("/transactions/auto-categorize")
+def auto_categorize_transactions(
+    request: AutoCategorizeRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Auto-categorize uncategorized transactions using LLM.
+
+    Groups transactions by unique description, classifies each group,
+    and optionally creates transaction rules for future imports.
+    """
+    from ...services.auto_categorize_service import AutoCategorizeService
+
+    service = AutoCategorizeService(db)
+
+    try:
+        result = asyncio.run(
+            service.auto_categorize(
+                mode=request.mode,
+                confidence_threshold=request.confidence_threshold,
+                create_rules=request.create_rules,
+            )
+        )
+        return {
+            "total_transactions": result.total_transactions,
+            "unique_descriptions": result.unique_descriptions,
+            "high_confidence": result.high_confidence,
+            "medium_confidence": result.medium_confidence,
+            "low_confidence": result.low_confidence,
+            "categories_created": result.categories_created,
+            "rules_created": result.rules_created,
+            "results": [asdict(r) for r in result.results],
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Auto-categorization failed: {str(e)}")
 
