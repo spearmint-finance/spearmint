@@ -137,19 +137,18 @@ class ToolOrchestrator:
 
         start_date, end_date = self._get_date_range(period, date_from, date_to)
 
-        # Get category ID if specified
-        category_id = None
+        # Validate category exists if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
-            if category:
-                category_id = category.category_id
-            else:
+            if not category:
                 return {
                     "error": f"Category '{category_name}' not found",
                     "suggestion": "Try searching for transactions to see available categories"
                 }
+            # Use the canonical name from DB
+            category_name = category.category_name
 
         # Query expenses
         result = self.analysis_service.analyze_expenses(
@@ -157,17 +156,31 @@ class ToolOrchestrator:
             mode=AnalysisMode.ANALYSIS
         )
 
+        period_info = {
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+            "label": period,
+        }
+
+        # Filter to specific category if requested
+        if category_name:
+            breakdown = _convert_decimals(result.breakdown_by_category)
+            cat_data = breakdown.get(category_name, {})
+            return {
+                "total": cat_data.get("total", 0),
+                "count": cat_data.get("count", 0),
+                "average": round(cat_data.get("total", 0) / max(cat_data.get("count", 1), 1), 2),
+                "period": period_info,
+                "category": category_name,
+            }
+
         return {
             "total": float(result.total_expenses),
             "count": result.transaction_count,
             "average": float(result.average_transaction),
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat(),
-                "label": period
-            },
-            "category": category_name,
-            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
+            "period": period_info,
+            "category": None,
+            "breakdown": _convert_decimals(result.breakdown_by_category),
         }
 
     async def _execute_get_income_summary(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -179,14 +192,13 @@ class ToolOrchestrator:
 
         start_date, end_date = self._get_date_range(period, date_from, date_to)
 
-        # Get category ID if specified
-        category_id = None
+        # Validate category exists if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
             if category:
-                category_id = category.category_id
+                category_name = category.category_name
 
         # Query income
         result = self.analysis_service.analyze_income(
@@ -194,17 +206,31 @@ class ToolOrchestrator:
             mode=AnalysisMode.ANALYSIS
         )
 
+        period_info = {
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+            "label": period,
+        }
+
+        # Filter to specific category if requested
+        if category_name:
+            breakdown = _convert_decimals(result.breakdown_by_category)
+            cat_data = breakdown.get(category_name, {})
+            return {
+                "total": cat_data.get("total", 0),
+                "count": cat_data.get("count", 0),
+                "average": round(cat_data.get("total", 0) / max(cat_data.get("count", 1), 1), 2),
+                "period": period_info,
+                "category": category_name,
+            }
+
         return {
             "total": float(result.total_income),
             "count": result.transaction_count,
             "average": float(result.average_transaction),
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat(),
-                "label": period
-            },
-            "category": category_name,
-            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
+            "period": period_info,
+            "category": None,
+            "breakdown": _convert_decimals(result.breakdown_by_category),
         }
 
     async def _execute_get_top_categories(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -396,6 +422,12 @@ class ToolOrchestrator:
 
         return result
 
+    def _extract_category_value(self, breakdown: Dict, category_name: str, value_key: str = "total") -> float:
+        """Extract a specific category's value from a breakdown dict."""
+        converted = _convert_decimals(breakdown)
+        cat_data = converted.get(category_name, {})
+        return cat_data.get(value_key, 0)
+
     async def _execute_compare_periods(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Compare metrics between two periods."""
         metric = args["metric"]
@@ -406,14 +438,13 @@ class ToolOrchestrator:
         start_1, end_1 = self._get_date_range(period_1)
         start_2, end_2 = self._get_date_range(period_2)
 
-        # Get category ID if specified
-        category_id = None
+        # Resolve canonical category name if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
             if category:
-                category_id = category.category_id
+                category_name = category.category_name
 
         # Get values for each period
         if metric == "spending":
@@ -425,8 +456,12 @@ class ToolOrchestrator:
                 date_range=DateRange(start_date=start_2, end_date=end_2),
                 mode=AnalysisMode.ANALYSIS
             )
-            value_1 = float(result_1.total_expenses)
-            value_2 = float(result_2.total_expenses)
+            if category_name:
+                value_1 = self._extract_category_value(result_1.breakdown_by_category, category_name)
+                value_2 = self._extract_category_value(result_2.breakdown_by_category, category_name)
+            else:
+                value_1 = float(result_1.total_expenses)
+                value_2 = float(result_2.total_expenses)
         elif metric == "income":
             result_1 = self.analysis_service.analyze_income(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
@@ -436,8 +471,12 @@ class ToolOrchestrator:
                 date_range=DateRange(start_date=start_2, end_date=end_2),
                 mode=AnalysisMode.ANALYSIS
             )
-            value_1 = float(result_1.total_income)
-            value_2 = float(result_2.total_income)
+            if category_name:
+                value_1 = self._extract_category_value(result_1.breakdown_by_category, category_name)
+                value_2 = self._extract_category_value(result_2.breakdown_by_category, category_name)
+            else:
+                value_1 = float(result_1.total_income)
+                value_2 = float(result_2.total_income)
         else:  # net_cash_flow
             cf_1 = self.analysis_service.analyze_cash_flow(
                 date_range=DateRange(start_date=start_1, end_date=end_1),

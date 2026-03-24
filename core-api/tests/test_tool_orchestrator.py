@@ -501,3 +501,69 @@ class TestGetAccountBalance:
             "account_name": "Empty Account",
         })
         assert result["balance"] == 0.0
+
+
+class TestSpendingSummary:
+    """Tests for spending summary tool with category filtering."""
+
+    @pytest.mark.asyncio
+    async def test_total_spending_no_filter(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_spending_summary", {
+            "period": "this_month",
+        })
+        assert "total" in result
+        assert result["category"] is None
+        assert "breakdown" in result
+
+    @pytest.mark.asyncio
+    async def test_spending_filtered_by_category(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_spending_summary", {
+            "category": "Groceries",
+            "period": "this_month",
+        })
+        assert result["category"] == "Groceries"
+        # Should only return Groceries total, not all expenses
+        assert result["total"] == pytest.approx(125.50)
+        assert result["count"] == 2
+        # No breakdown when filtered
+        assert "breakdown" not in result
+
+    @pytest.mark.asyncio
+    async def test_spending_unknown_category(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_spending_summary", {
+            "category": "NonExistent",
+        })
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_spending_category_case_insensitive(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_spending_summary", {
+            "category": "groceries",
+            "period": "this_month",
+        })
+        assert result["category"] == "Groceries"
+        assert result["total"] == pytest.approx(125.50)
+
+
+class TestIncomeSummary:
+    """Tests for income summary tool with category filtering."""
+
+    @pytest.mark.asyncio
+    async def test_total_income_no_filter(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_income_summary", {
+            "period": "this_month",
+        })
+        assert "total" in result
+        assert result["category"] is None
+        assert "breakdown" in result
+
+    @pytest.mark.asyncio
+    async def test_income_filtered_by_category(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("get_income_summary", {
+            "category": "Salary",
+            "period": "this_month",
+        })
+        assert result["category"] == "Salary"
+        assert result["total"] == pytest.approx(5000.00)
+        assert result["count"] == 1
+        assert "breakdown" not in result
