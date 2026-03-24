@@ -92,10 +92,12 @@ function Dashboard() {
     entity_id: selectedEntityId ?? undefined,
   });
 
-  // Fetch net worth data
+  // Fetch net worth data (entity-scoped)
   const { data: netWorth, isLoading: netWorthLoading } = useQuery({
-    queryKey: ["netWorth"],
-    queryFn: () => getNetWorth(),
+    queryKey: ["netWorth", selectedEntityId],
+    queryFn: () => getNetWorth(
+      selectedEntityId ? { entity_id: selectedEntityId } : undefined
+    ),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
