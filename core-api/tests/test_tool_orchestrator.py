@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
 from financial_analysis.database.models import (
-    Transaction, Category, Account,
+    Transaction, Category, Account, AccountBalance,
 )
 from financial_analysis.database.assistant_models import AssistantActionLog
 from financial_analysis.services.assistant.tool_orchestrator import (
@@ -383,3 +383,121 @@ class TestProposeCategoryRule:
             "rule_name": "Trader Joe's Rule",
         })
         assert result["preview"]["rule_name"] == "Trader Joe's Rule"
+
+
+@pytest.fixture
+def sample_accounts(db_session):
+    """Seed sample accounts with balance snapshots for testing."""
+    today = date.today()
+
+    checking = Account(
+        account_name="Chase Checking",
+        account_type="checking",
+        institution_name="Chase",
+        is_active=True,
+    )
+    savings = Account(
+        account_name="Ally Savings",
+        account_type="savings",
+        institution_name="Ally",
+        is_active=True,
+    )
+    inactive = Account(
+        account_name="Old Account",
+        account_type="checking",
+        institution_name="OldBank",
+        is_active=False,
+    )
+    db_session.add_all([checking, savings, inactive])
+    db_session.commit()
+
+    # Add balance snapshots
+    db_session.add_all([
+        AccountBalance(
+            account_id=checking.account_id,
+            balance_date=today - timedelta(days=30),
+            total_balance=Decimal("1000.00"),
+            balance_type="statement",
+        ),
+        AccountBalance(
+            account_id=checking.account_id,
+            balance_date=today,
+            total_balance=Decimal("2500.50"),
+            balance_type="statement",
+        ),
+        AccountBalance(
+            account_id=savings.account_id,
+            balance_date=today,
+            total_balance=Decimal("10000.00"),
+            balance_type="statement",
+        ),
+    ])
+    db_session.commit()
+
+    return {"checking": checking, "savings": savings, "inactive": inactive}
+
+
+class TestGetAccountBalance:
+    """Tests for account balance tool (uses AccountBalance snapshots)."""
+
+    @pytest.mark.asyncio
+    async def test_get_all_accounts(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "include_all": True,
+        })
+        assert "accounts" in result
+        assert len(result["accounts"]) == 2  # Only active accounts
+        assert result["total_balance"] == pytest.approx(12500.50)
+
+    @pytest.mark.asyncio
+    async def test_get_specific_account(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "account_name": "Chase Checking",
+        })
+        assert result["name"] == "Chase Checking"
+        assert result["balance"] == pytest.approx(2500.50)  # Most recent snapshot
+        assert result["type"] == "checking"
+
+    @pytest.mark.asyncio
+    async def test_get_account_case_insensitive(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "account_name": "chase checking",
+        })
+        assert result["name"] == "Chase Checking"
+
+    @pytest.mark.asyncio
+    async def test_get_unknown_account(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "account_name": "NonExistent",
+        })
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_default_returns_all(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {})
+        assert "accounts" in result
+        assert len(result["accounts"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_excludes_inactive_accounts(self, orchestrator, sample_accounts):
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "include_all": True,
+        })
+        account_names = [a["name"] for a in result["accounts"]]
+        assert "Old Account" not in account_names
+
+    @pytest.mark.asyncio
+    async def test_account_without_balance_returns_zero(self, db_session, orchestrator):
+        no_balance_account = Account(
+            account_name="Empty Account",
+            account_type="checking",
+            institution_name="TestBank",
+            is_active=True,
+        )
+        db_session.add(no_balance_account)
+        db_session.commit()
+
+        result = await orchestrator.execute_tool("get_account_balance", {
+            "account_name": "Empty Account",
+        })
+        assert result["balance"] == 0.0

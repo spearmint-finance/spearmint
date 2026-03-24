@@ -315,6 +315,13 @@ class ToolOrchestrator:
             "limit": limit
         }
 
+    def _get_account_balance_value(self, account_id: int) -> float:
+        """Get the current balance for an account from the most recent snapshot."""
+        balance = self.account_service.get_current_balance(account_id)
+        if balance:
+            return float(balance.total_balance)
+        return 0.0
+
     async def _execute_get_account_balance(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Get account balance(s)."""
         account_name = args.get("account_name")
@@ -325,20 +332,21 @@ class ToolOrchestrator:
                 Account.is_active == True
             ).all()
 
+            account_data = []
+            total = 0.0
+            for a in accounts:
+                bal = self._get_account_balance_value(a.account_id)
+                total += bal
+                account_data.append({
+                    "name": a.account_name,
+                    "type": a.account_type,
+                    "balance": bal,
+                    "institution": a.institution_name,
+                })
+
             return {
-                "accounts": [
-                    {
-                        "name": a.account_name,
-                        "type": a.account_type,
-                        "balance": float(a.current_balance) if a.current_balance else 0,
-                        "institution": a.institution_name
-                    }
-                    for a in accounts
-                ],
-                "total_balance": sum(
-                    float(a.current_balance) if a.current_balance else 0
-                    for a in accounts
-                )
+                "accounts": account_data,
+                "total_balance": total,
             }
         else:
             account = self.db.query(Account).filter(
@@ -351,8 +359,8 @@ class ToolOrchestrator:
             return {
                 "name": account.account_name,
                 "type": account.account_type,
-                "balance": float(account.current_balance) if account.current_balance else 0,
-                "institution": account.institution_name
+                "balance": self._get_account_balance_value(account.account_id),
+                "institution": account.institution_name,
             }
 
     async def _execute_get_cash_flow(self, args: Dict[str, Any]) -> Dict[str, Any]:
