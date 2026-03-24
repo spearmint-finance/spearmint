@@ -77,7 +77,7 @@ function Dashboard() {
   });
 
   // Fetch cash flow trends for charts
-  const { data: trendsData } = useCashFlowTrends({
+  const { data: trendsData, isLoading: trendsLoading } = useCashFlowTrends({
     mode: viewMode,
     period: trendPeriod,
     start_date: dateRange.start_date || undefined,
@@ -86,7 +86,7 @@ function Dashboard() {
   });
 
   // Fetch expense category trends for stacked bar chart
-  const { data: categoryTrends } = useExpenseCategoryTrends({
+  const { data: categoryTrends, isLoading: categoryTrendsLoading } = useExpenseCategoryTrends({
     period: trendPeriod,
     mode: viewMode,
     top_n: 5,
@@ -501,7 +501,7 @@ function Dashboard() {
         </Grid>
 
         {/* Charts Section */}
-        {trendsData && trendsData.trends.length > 0 && (
+        {(trendsLoading || (trendsData && trendsData.trends.length > 0)) && (
           <>
             {/* Cash Flow Trend Chart */}
             <Grid item xs={12}>
@@ -541,37 +541,45 @@ function Dashboard() {
                     </ToggleButton>
                   </ToggleButtonGroup>
                 </Box>
-                <TrendLineChart
-                  data={trendsData.trends.map((t) => ({
-                    date: t.period,
-                    income: Number(t.income),
-                    expense: Number(t.expenses),
-                    netCashFlow: Number(t.net_cash_flow),
-                  }))}
-                  height={350}
-                  showIncome={true}
-                  showExpense={true}
-                  showNetCashFlow={true}
-                />
+                {trendsLoading ? (
+                  <Skeleton variant="rectangular" height={350} sx={{ borderRadius: 1 }} />
+                ) : trendsData && trendsData.trends.length > 0 ? (
+                  <TrendLineChart
+                    data={trendsData.trends.map((t) => ({
+                      date: t.period,
+                      income: Number(t.income),
+                      expense: Number(t.expenses),
+                      netCashFlow: Number(t.net_cash_flow),
+                    }))}
+                    height={350}
+                    showIncome={true}
+                    showExpense={true}
+                    showNetCashFlow={true}
+                  />
+                ) : null}
               </Paper>
             </Grid>
           </>
         )}
 
         {/* Expense Category Trends - Stacked Bar Chart */}
-        {categoryTrends &&
+        {(categoryTrendsLoading || (categoryTrends &&
           categoryTrends.categories.length > 0 &&
-          categoryTrends.data.length > 0 && (
+          categoryTrends.data.length > 0)) && (
             <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
                   Expense Categories ({trendPeriod.charAt(0).toUpperCase() + trendPeriod.slice(1)})
                 </Typography>
-                <ExpenseStackedBarChart
-                  data={categoryTrends.data}
-                  categories={categoryTrends.categories}
-                  height={400}
-                />
+                {categoryTrendsLoading ? (
+                  <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 1 }} />
+                ) : (
+                  <ExpenseStackedBarChart
+                    data={categoryTrends!.data}
+                    categories={categoryTrends!.categories}
+                    height={400}
+                  />
+                )}
               </Paper>
             </Grid>
           )}
