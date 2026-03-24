@@ -13,6 +13,8 @@ import {
   Skeleton,
   Button,
   LinearProgress,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -51,6 +53,7 @@ function Dashboard() {
     end_date: "",
   });
   const [expenseView, setExpenseView] = useState<ExpenseView>("operating");
+  const [trendPeriod, setTrendPeriod] = useState<"daily" | "weekly" | "monthly" | "quarterly" | "yearly">("monthly");
 
   // Convert expense view to API mode
   const viewMode = expenseView === "operating" ? "analysis" :
@@ -76,7 +79,7 @@ function Dashboard() {
   // Fetch cash flow trends for charts
   const { data: trendsData } = useCashFlowTrends({
     mode: viewMode,
-    period: "monthly",
+    period: trendPeriod,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
     entity_id: selectedEntityId ?? undefined,
@@ -84,7 +87,7 @@ function Dashboard() {
 
   // Fetch expense category trends for stacked bar chart
   const { data: categoryTrends } = useExpenseCategoryTrends({
-    period: "monthly",
+    period: trendPeriod,
     mode: viewMode,
     top_n: 5,
     start_date: dateRange.start_date || undefined,
@@ -493,6 +496,41 @@ function Dashboard() {
             {/* Cash Flow Trend Chart */}
             <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                    flexWrap: "wrap",
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="h6">Income & Expense Trends</Typography>
+                  <ToggleButtonGroup
+                    value={trendPeriod}
+                    exclusive
+                    onChange={(_e, val) => val && setTrendPeriod(val)}
+                    size="small"
+                    aria-label="trend period"
+                  >
+                    <ToggleButton value="daily" aria-label="daily">
+                      Daily
+                    </ToggleButton>
+                    <ToggleButton value="weekly" aria-label="weekly">
+                      Weekly
+                    </ToggleButton>
+                    <ToggleButton value="monthly" aria-label="monthly">
+                      Monthly
+                    </ToggleButton>
+                    <ToggleButton value="quarterly" aria-label="quarterly">
+                      Quarterly
+                    </ToggleButton>
+                    <ToggleButton value="yearly" aria-label="yearly">
+                      Yearly
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
                 <TrendLineChart
                   data={trendsData.trends.map((t) => ({
                     date: t.period,
@@ -500,7 +538,6 @@ function Dashboard() {
                     expense: Number(t.expenses),
                     netCashFlow: Number(t.net_cash_flow),
                   }))}
-                  title="Income & Expense Trends"
                   height={350}
                   showIncome={true}
                   showExpense={true}
