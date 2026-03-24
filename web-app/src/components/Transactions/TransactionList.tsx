@@ -180,8 +180,6 @@ function TransactionList() {
     transaction_type: "",
     category_id: initialCategoryId,
     account_id: initialAccountId,
-    include_in_analysis: "",
-    is_transfer: "",
     include_capital_expenses: true,
     include_transfers: true,
   });
@@ -194,12 +192,6 @@ function TransactionList() {
     transaction_type: filters.transaction_type || undefined,
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
     account_id: filters.account_id ? Number(filters.account_id) : undefined,
-    include_in_analysis: filters.include_in_analysis
-      ? filters.include_in_analysis === "true"
-      : undefined,
-    is_transfer: filters.is_transfer
-      ? filters.is_transfer === "true"
-      : undefined,
     entity_id: selectedEntityId ?? undefined,
     include_capital_expenses: filters.include_capital_expenses,
     include_transfers: filters.include_transfers,
@@ -668,8 +660,6 @@ function TransactionList() {
     filters.transaction_type,
     filters.category_id,
     filters.account_id,
-    filters.include_in_analysis,
-    filters.is_transfer,
     !filters.include_capital_expenses ? "on" : "",
     !filters.include_transfers ? "on" : "",
   ].filter(Boolean).length;
@@ -690,12 +680,6 @@ function TransactionList() {
           ? Number(filters.account_id)
           : undefined,
         entity_id: selectedEntityId ?? undefined,
-        include_in_analysis: filters.include_in_analysis
-          ? filters.include_in_analysis === "true"
-          : undefined,
-        is_transfer: filters.is_transfer
-          ? filters.is_transfer === "true"
-          : undefined,
         include_capital_expenses: filters.include_capital_expenses,
         include_transfers: filters.include_transfers,
         limit: 10000,
@@ -902,8 +886,6 @@ function TransactionList() {
                       transaction_type: "",
                       category_id: "",
                       account_id: "",
-                      include_in_analysis: "",
-                      is_transfer: "",
                       include_capital_expenses: true,
                       include_transfers: true,
                     });
@@ -1447,13 +1429,7 @@ function TransactionList() {
                 isOptionEqualToValue={(option, value) =>
                   option.category_id === value.category_id
                 }
-                groupBy={(option) =>
-                  option.parent_category_id
-                    ? categoriesData?.categories?.find(
-                        (c) => c.category_id === option.parent_category_id
-                      )?.category_name || "Other"
-                    : option.category_name
-                }
+                groupBy={(option) => option.category_type || "Other"}
               />
             </Grid>
             <Grid item xs={12}>
@@ -1481,64 +1457,11 @@ function TransactionList() {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Include in Analysis</InputLabel>
-                <Select
-                  value={filters.include_in_analysis}
-                  label="Include in Analysis"
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      include_in_analysis: e.target.value,
-                    })
-                  }
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="true">Yes</MenuItem>
-                  <MenuItem value="false">No</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Is Transfer</InputLabel>
-                <Select
-                  value={filters.is_transfer}
-                  label="Is Transfer"
-                  onChange={(e) =>
-                    setFilters({ ...filters, is_transfer: e.target.value })
-                  }
-                >
-                  <MenuItem value="">All</MenuItem>
-                  <MenuItem value="true">Yes</MenuItem>
-                  <MenuItem value="false">No</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
             <Grid item xs={12}>
-              <Box sx={{ mt: 2, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
-                <Typography
-                  variant="subtitle2"
-                  gutterBottom
-                  sx={{ fontWeight: 600 }}
-                >
-                  Quick Filters
+              <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                  Include
                 </Typography>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={filters.include_capital_expenses}
-                      onChange={(e) =>
-                        setFilters({
-                          ...filters,
-                          include_capital_expenses: e.target.checked,
-                        })
-                      }
-                    />
-                  }
-                  label="Include Non-Operating Expenses (Capital, Refunds, Reimbursements, etc.)"
-                />
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -1551,7 +1474,21 @@ function TransactionList() {
                       }
                     />
                   }
-                  label="Include Transfers"
+                  label="Transfers & Investment Trades"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={filters.include_capital_expenses}
+                      onChange={(e) =>
+                        setFilters({
+                          ...filters,
+                          include_capital_expenses: e.target.checked,
+                        })
+                      }
+                    />
+                  }
+                  label="Capital Expenses, Refunds & Reimbursements"
                 />
               </Box>
             </Grid>
