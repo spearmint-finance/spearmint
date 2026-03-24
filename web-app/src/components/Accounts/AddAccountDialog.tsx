@@ -191,6 +191,21 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
           </Grid>
 
           <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Currency</InputLabel>
+              <Select
+                value={formData.currency || 'USD'}
+                onChange={(e) => handleInputChange('currency', e.target.value)}
+                label="Currency"
+              >
+                {['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'CNY', 'INR', 'BRL', 'MXN', 'KRW', 'SEK', 'NOK', 'DKK', 'NZD', 'SGD', 'HKD', 'TWD', 'ZAR'].map((code) => (
+                  <MenuItem key={code} value={code}>{code}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               label="Last 4 Digits"
               fullWidth
