@@ -122,18 +122,18 @@ class AutoCategorizeService:
         categories: List[Dict],
     ) -> List[Dict]:
         """
-        Classify a batch of descriptions using Claude API.
+        Classify a batch of descriptions using OpenAI GPT-4o-mini.
         Returns list of classification dicts.
         """
-        import anthropic
+        import openai
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_KEY")
+        api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise ValueError(
-                "ANTHROPIC_API_KEY not set. Set it in your environment to use smart categorization."
+                "OPENAI_API_KEY not set. Set it in your environment to use smart categorization."
             )
 
-        client = anthropic.AsyncAnthropic(api_key=api_key)
+        client = openai.AsyncOpenAI(api_key=api_key)
 
         category_list = "\n".join(
             f"- {c['category_name']} (type: {c['category_type']}, id: {c['category_id']})"
@@ -171,14 +171,18 @@ Return ONLY a valid JSON array, no other text.
 Transactions to categorize:
 {transaction_list}"""
 
-        response = await client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
             max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": "You are a financial transaction categorizer. Always respond with valid JSON only."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.1,
         )
 
         # Parse the response
-        text = response.content[0].text.strip()
+        text = response.choices[0].message.content.strip()
         # Handle potential markdown code blocks
         if text.startswith("```"):
             text = text.split("\n", 1)[1]

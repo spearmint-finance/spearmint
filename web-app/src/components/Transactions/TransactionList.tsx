@@ -1560,12 +1560,12 @@ function TransactionList() {
             const autoApplied = results.filter((r: any) => r.action === "auto_applied");
             const needsReview = results.filter((r: any) => r.action === "needs_review");
             const unclassified = results.filter((r: any) => r.action === "unclassified");
-            const apiKeyMissing = results.length > 0 && results[0]?.reasoning?.includes("ANTHROPIC_API_KEY");
+            const apiKeyMissing = results.length > 0 && results[0]?.reasoning?.includes("API_KEY");
 
             if (apiKeyMissing) {
               return (
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                  ANTHROPIC_API_KEY is not configured. Set it in your environment to enable LLM-powered categorization.
+                  OPENAI_API_KEY is not configured. Set it in your environment to enable LLM-powered categorization.
                 </Alert>
               );
             }
