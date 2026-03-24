@@ -291,21 +291,32 @@ class Budget(Base):
     """
     Budgets table (PRD Section 3.2.8).
 
-    Budget tracking by category (future enhancement).
+    Budget tracking by category with entity scoping.
     """
     __tablename__ = "budgets"
 
     budget_id = Column(Integer, primary_key=True, autoincrement=True)
     category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=False)
     budget_amount = Column(Numeric(10, 2), nullable=False)
-    period_type = Column(String(20), nullable=False)
+    period_type = Column(String(20), nullable=False, default='Monthly')
     start_date = Column(Date, nullable=False)
     end_date = Column(Date)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+    is_active = Column(Boolean, default=True)
+    notes = Column(Text)
     created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    category = relationship("Category")
+    entity = relationship("Entity")
 
     # Constraints
     __table_args__ = (
         CheckConstraint("period_type IN ('Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly')", name='check_period_type'),
+        Index('idx_budget_category', 'category_id'),
+        Index('idx_budget_entity', 'entity_id'),
+        Index('idx_budget_active', 'is_active'),
     )
 
     def __repr__(self):

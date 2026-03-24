@@ -27,6 +27,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import SavingsIcon from "@mui/icons-material/Savings";
 
 interface SidebarProps {
   drawerWidth: number;
@@ -39,6 +40,7 @@ const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
   { text: "Accounts", icon: <AccountBalanceIcon />, path: "/accounts" },
   { text: "Transactions", icon: <ReceiptIcon />, path: "/transactions" },
+  { text: "Budgets", icon: <SavingsIcon />, path: "/budgets" },
   { text: "Analysis", icon: <BarChartIcon />, path: "/analysis" },
   { text: "Reports", icon: <AssessmentIcon />, path: "/reports" },
   { text: "Scenarios", icon: <PsychologyIcon />, path: "/scenarios" },

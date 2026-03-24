@@ -66,7 +66,7 @@ async def health_check():
 # Import routers
 from .routes import (
     transactions, categories, import_routes, analysis, relationships, projections, reports,
-    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator, entities
+    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator, entities, budgets
 )
 
 # Register routers
@@ -82,6 +82,7 @@ app.include_router(splits.router, prefix="/api", tags=["splits"])
 app.include_router(scenarios.router, prefix="/api", tags=["scenarios"])
 app.include_router(accounts.router, prefix="/api", tags=["accounts"])
 app.include_router(entities.router, prefix="/api", tags=["entities"])
+app.include_router(budgets.router, prefix="/api", tags=["budgets"])
 app.include_router(maintenance.router, prefix="/api", tags=["maintenance"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(assistant.router, prefix="/api", tags=["assistant"])
@@ -196,6 +197,22 @@ def ensure_database_tables():
                     "SELECT account_id, entity_id FROM accounts "
                     "WHERE entity_id IS NOT NULL"
                 ))
+
+    # Migration: add new columns to budgets table
+    if inspector.has_table("budgets"):
+        columns = [c["name"] for c in inspector.get_columns("budgets")]
+        budget_additions = [
+            ("entity_id", "INTEGER REFERENCES entities(entity_id)"),
+            ("is_active", "BOOLEAN DEFAULT 1"),
+            ("notes", "TEXT"),
+            ("updated_at", "DATETIME"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in budget_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE budgets ADD COLUMN {col_name} {col_def}"
+                    ))
 
     # DEMO_MODE: seed demo data on first startup if database is empty
     import os
