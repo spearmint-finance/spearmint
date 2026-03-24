@@ -168,6 +168,7 @@ class CategoryRule(Base):
     rule_priority = Column(Integer, default=100)
     category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=True)
     entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+    account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)
     is_active = Column(Boolean, default=True)
 
     # Pattern matching criteria
@@ -184,6 +185,7 @@ class CategoryRule(Base):
     # Relationships
     category = relationship("Category", backref="category_rules")
     entity = relationship("Entity")
+    account = relationship("Account")
 
     # Indexes
     __table_args__ = (
@@ -191,6 +193,7 @@ class CategoryRule(Base):
         Index('idx_category_rule_active', 'is_active'),
         Index('idx_category_rule_category', 'category_id'),
         Index('idx_category_rule_entity', 'entity_id'),
+        Index('idx_category_rule_account', 'account_id'),
     )
 
     def __repr__(self):
