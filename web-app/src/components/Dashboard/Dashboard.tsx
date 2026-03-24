@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { useEntityContext } from "../../contexts/EntityContext";
 import {
   Box,
   Typography,
@@ -44,6 +45,7 @@ import ExpenseViewToggle, {
 import ExportButton from "../Analysis/ExportButton";
 
 function Dashboard() {
+  const { selectedEntityId } = useEntityContext();
   const [dateRange, setDateRange] = useState<DateRange>({
     start_date: "",
     end_date: "",
@@ -68,6 +70,7 @@ function Dashboard() {
     recent_count: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
   // Fetch cash flow trends for charts
@@ -76,6 +79,7 @@ function Dashboard() {
     period: "monthly",
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
   // Fetch expense category trends for stacked bar chart
@@ -85,6 +89,7 @@ function Dashboard() {
     top_n: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
   // Fetch net worth data

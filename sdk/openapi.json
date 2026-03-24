@@ -3,7 +3,7 @@
   "info": {
     "title": "Financial Analysis API",
     "description": "\n# Financial Analysis API\n\nA comprehensive REST API for financial transaction analysis and management.\n\n## Features\n\n### Transaction Management\n- Import transactions from CSV files\n- CRUD operations for transactions and categories\n- Advanced filtering and search capabilities\n\n### Analysis & Insights\n- Income and expense analysis with category breakdowns\n- Cash flow analysis and trends\n- Financial health indicators\n- Time-series analysis (daily, weekly, monthly, quarterly, yearly)\n\n### Relationship Detection\n- Automatic transfer pair detection\n- Credit card payment/receipt matching\n- Reimbursement pair detection\n- Manual relationship management\n\n### Projections & Forecasting\n- Income and expense projections\n- Cash flow forecasting\n- Multiple projection algorithms (linear regression, moving average, exponential smoothing, weighted average)\n- Scenario analysis (best case, worst case, expected)\n- Accuracy metrics (MAPE, RMSE, MAE, R-squared)\n\n### Reporting & Export\n- Summary reports with key metrics\n- Detailed income/expense reports\n- Reconciliation reports\n- Export to JSON and CSV formats\n\n### Classification System\n- 10 system classifications for transaction types\n- Custom user-defined classifications\n- Pattern-based classification rules\n- Bulk and automatic classification\n- Classification-aware calculations\n\n### Error Handling & Logging\n- Standardized error responses with detailed error codes\n- Comprehensive request/response logging\n- Performance monitoring\n- Audit trail for data modifications\n\n## Analysis Modes\n\nThe API supports two analysis modes:\n\n- **ANALYSIS** (default) - Excludes transfers, reimbursements, and other non-income/expense transactions for accurate financial analysis\n- **COMPLETE** - Includes all transactions for reconciliation and complete transaction history\n\n## Authentication\n\nCurrently, the API does not require authentication. Authentication will be added in a future release.\n\n## Rate Limiting\n\nCurrently, there are no rate limits. Rate limiting will be added in a future release.\n\n## Support\n\nFor issues, questions, or feature requests, please contact the development team.\n",
-    "version": "0.0.117"
+    "version": "0.0.120"
   },
   "servers": [
     {
@@ -2003,7 +2003,7 @@
           "analysis"
         ],
         "summary": "Get Income Analysis",
-        "description": "Get income analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n    \nReturns:\n    IncomeAnalysisResponse: Income analysis results",
+        "description": "Get income analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    IncomeAnalysisResponse: Income analysis results",
         "operationId": "getIncomeAnalysis",
         "parameters": [
           {
@@ -2054,6 +2054,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2086,7 +2104,7 @@
           "analysis"
         ],
         "summary": "Get Income Trends",
-        "description": "Get income trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    TrendsResponse: Income trend data",
+        "description": "Get income trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    TrendsResponse: Income trend data",
         "operationId": "getIncomeTrends",
         "parameters": [
           {
@@ -2148,6 +2166,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2180,7 +2216,7 @@
           "analysis"
         ],
         "summary": "Get Expense Analysis",
-        "description": "Get expense analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    db: Database session\n    \nReturns:\n    ExpenseAnalysisResponse: Expense analysis results",
+        "description": "Get expense analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    ExpenseAnalysisResponse: Expense analysis results",
         "operationId": "getExpenseAnalysis",
         "parameters": [
           {
@@ -2245,6 +2281,24 @@
               "title": "Top N"
             },
             "description": "Number of top categories to return"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2277,7 +2331,7 @@
           "analysis"
         ],
         "summary": "Get Expense Trends",
-        "description": "Get expense trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    TrendsResponse: Expense trend data",
+        "description": "Get expense trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    TrendsResponse: Expense trend data",
         "operationId": "getExpenseTrends",
         "parameters": [
           {
@@ -2339,6 +2393,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2371,7 +2443,7 @@
           "analysis"
         ],
         "summary": "Get Cash Flow Analysis",
-        "description": "Get cash flow analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n    \nReturns:\n    CashFlowResponse: Cash flow analysis results",
+        "description": "Get cash flow analysis for a period.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    CashFlowResponse: Cash flow analysis results",
         "operationId": "getCashFlowAnalysis",
         "parameters": [
           {
@@ -2422,6 +2494,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2454,7 +2544,7 @@
           "analysis"
         ],
         "summary": "Get Cash Flow Trends",
-        "description": "Get cash flow trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    db: Database session\n    \nReturns:\n    CashFlowTrendsResponse: Cash flow trend data",
+        "description": "Get cash flow trends over time.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    period: Period granularity (daily, weekly, monthly, etc.)\n    mode: Analysis mode\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    CashFlowTrendsResponse: Cash flow trend data",
         "operationId": "getCashFlowTrends",
         "parameters": [
           {
@@ -2516,6 +2606,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2548,7 +2656,7 @@
           "analysis"
         ],
         "summary": "Get Financial Health",
-        "description": "Get financial health indicators.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis, with_capital, or complete)\n    db: Database session\n\nReturns:\n    FinancialHealthResponse: Financial health indicators",
+        "description": "Get financial health indicators.\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis, with_capital, or complete)\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    FinancialHealthResponse: Financial health indicators",
         "operationId": "getFinancialHealth",
         "parameters": [
           {
@@ -2599,6 +2707,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2631,7 +2757,7 @@
           "analysis"
         ],
         "summary": "Get Financial Summary",
-        "description": "Get comprehensive financial summary.\n\nThis endpoint provides a complete financial overview including:\n- Total income, expenses, and net cash flow\n- Top income and expense categories\n- Recent transactions\n- Financial health indicators\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    recent_count: Number of recent transactions to return\n    db: Database session\n\nReturns:\n    FinancialSummaryResponse: Comprehensive financial summary",
+        "description": "Get comprehensive financial summary.\n\nThis endpoint provides a complete financial overview including:\n- Total income, expenses, and net cash flow\n- Top income and expense categories\n- Recent transactions\n- Financial health indicators\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    recent_count: Number of recent transactions to return\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    FinancialSummaryResponse: Comprehensive financial summary",
         "operationId": "getFinancialSummary",
         "parameters": [
           {
@@ -2710,6 +2836,24 @@
               "title": "Recent Count"
             },
             "description": "Number of recent transactions to return"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2742,7 +2886,7 @@
           "analysis"
         ],
         "summary": "Get Income Expense Comparison",
-        "description": "Get combined income and expense comparison.\n\nThis endpoint provides a side-by-side comparison of income and expenses including:\n- Detailed income analysis\n- Detailed expense analysis\n- Cash flow summary\n- Comparison metrics (ratios, percentages)\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    db: Database session\n\nReturns:\n    IncomeExpenseComparisonResponse: Income vs expense comparison",
+        "description": "Get combined income and expense comparison.\n\nThis endpoint provides a side-by-side comparison of income and expenses including:\n- Detailed income analysis\n- Detailed expense analysis\n- Cash flow summary\n- Comparison metrics (ratios, percentages)\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    top_n: Number of top categories to return\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    IncomeExpenseComparisonResponse: Income vs expense comparison",
         "operationId": "getIncomeExpenseComparison",
         "parameters": [
           {
@@ -2807,6 +2951,24 @@
               "title": "Top N"
             },
             "description": "Number of top categories to return"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2839,7 +3001,7 @@
           "analysis"
         ],
         "summary": "Get Category Breakdown",
-        "description": "Get detailed category breakdown for income and expenses.\n\nThis endpoint provides a comprehensive breakdown of all categories including:\n- Income categories with totals, counts, and percentages\n- Expense categories with totals, counts, and percentages\n- Percentage of total for each category type\n- Percentage of all transactions\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    db: Database session\n\nReturns:\n    CategoryBreakdownResponse: Detailed category breakdown",
+        "description": "Get detailed category breakdown for income and expenses.\n\nThis endpoint provides a comprehensive breakdown of all categories including:\n- Income categories with totals, counts, and percentages\n- Expense categories with totals, counts, and percentages\n- Percentage of total for each category type\n- Percentage of all transactions\n\nArgs:\n    start_date: Start date for analysis\n    end_date: End date for analysis\n    mode: Analysis mode (analysis or complete)\n    entity_id: Entity ID to filter by\n    db: Database session\n\nReturns:\n    CategoryBreakdownResponse: Detailed category breakdown",
         "operationId": "getCategoryBreakdown",
         "parameters": [
           {
@@ -2890,6 +3052,24 @@
               "default": "analysis"
             },
             "description": "Analysis mode"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -2996,6 +3176,24 @@
               "title": "Top N"
             },
             "description": "Number of top categories to include"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity ID to filter by",
+              "title": "Entity Id"
+            },
+            "description": "Entity ID to filter by"
           }
         ],
         "responses": {
@@ -5302,7 +5500,7 @@
               "type": "string",
               "format": "date",
               "description": "Calculate balance as of this date",
-              "default": "2026-03-23",
+              "default": "2026-03-24",
               "title": "As Of Date"
             },
             "description": "Calculate balance as of this date"

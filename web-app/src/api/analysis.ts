@@ -87,6 +87,7 @@ export interface AnalysisParams {
   start_date?: string;
   end_date?: string;
   mode?: "analysis" | "with_capital" | "complete";
+  entity_id?: number;
 }
 
 export interface CashFlowTrendPoint {
@@ -127,6 +128,7 @@ export const getIncomeAnalysis = async (
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
+    entityId: params?.entity_id,
   });
   if (!data) {
     throw new Error("Empty response from income analysis API");
@@ -165,6 +167,7 @@ export const getExpenseAnalysis = async (
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
     topN: params?.top_n,
+    entityId: params?.entity_id,
   });
   if (!data) {
     throw new Error("Empty response from expense analysis API");
@@ -208,6 +211,7 @@ export const getCashFlowAnalysis = async (
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
+    entityId: params?.entity_id,
   });
   if (!data) {
     throw new Error("Empty response from cash flow analysis API");
@@ -234,6 +238,7 @@ export const getFinancialHealth = async (
     startDate: params?.start_date,
     endDate: params?.end_date,
     mode: toModeEnum(params?.mode),
+    entityId: params?.entity_id,
   });
   if (!data) {
     throw new Error("Empty response from financial health API");
@@ -261,6 +266,7 @@ export const getFinancialSummary = async (
     mode: toModeEnum(params?.mode),
     topN: params?.top_n,
     recentCount: params?.recent_count,
+    entityId: params?.entity_id,
   });
   if (!data) {
     throw new Error("Empty response from financial summary API");
@@ -318,6 +324,7 @@ export const getCashFlowTrends = async (
       endDate: params?.end_date,
       mode: toModeEnum(params?.mode),
       period: params?.period as any, // Cast to TimePeriodEnum if available
+      entityId: params?.entity_id,
     });
   if (!data) {
     throw new Error("Empty response from cash flow trends API");
@@ -345,6 +352,7 @@ export interface CategoryTrendsParams {
   period?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
   mode?: "analysis" | "with_capital" | "complete";
   top_n?: number;
+  entity_id?: number;
 }
 
 export interface CategoryTrendsResponse {
@@ -369,6 +377,7 @@ export const getExpenseCategoryTrends = async (
         period: params.period as any,
         mode: toModeEnum(params.mode),
         topN: params.top_n,
+        entityId: params.entity_id,
       }
     );
   if (!data) {
