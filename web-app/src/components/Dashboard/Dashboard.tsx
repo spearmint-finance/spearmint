@@ -297,7 +297,7 @@ function Dashboard() {
                 }
               >
                 {summary.financial_health.savings_rate !== null
-                  ? formatPercentage(summary.financial_health.savings_rate)
+                  ? formatPercentage(summary.financial_health.savings_rate * 100)
                   : "N/A"}
               </Typography>
               <Typography variant="caption" color="text.secondary">
