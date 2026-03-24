@@ -192,12 +192,12 @@ class AnalysisService:
     ) -> List[TrendDataPoint]:
         """
         Get income trends over time.
-        
+
         Args:
             date_range: Date range for analysis
             period: Time period granularity
             mode: Analysis mode
-            
+
         Returns:
             List[TrendDataPoint]: Trend data points
         """
@@ -213,7 +213,10 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False
+            # Exclude transfers by category type (must match analyze_income)
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
             query = query.filter(
                 or_(Transaction.exclude_from_income == False, Transaction.exclude_from_income == None)
             )
@@ -323,13 +326,13 @@ class AnalysisService:
         # Get transactions
         transactions = query.all()
 
-        # Calculate totals
-        total_expenses = sum(t.amount for t in transactions)
+        # Calculate totals — use abs() since expense amounts may be stored as negative
+        total_expenses = sum(abs(t.amount) for t in transactions)
         transaction_count = len(transactions)
         average_transaction = total_expenses / transaction_count if transaction_count > 0 else Decimal(0)
 
-        # Breakdown by category
-        breakdown = self._breakdown_by_category(transactions)
+        # Breakdown by category (use abs for consistency)
+        breakdown = self._breakdown_by_category(transactions, use_abs=True)
 
         # Get top categories
         top_categories = sorted(
@@ -387,7 +390,10 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False
+            # Exclude transfers by category type (must match analyze_expenses)
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses
@@ -420,7 +426,7 @@ class AnalysisService:
         df = pd.DataFrame([
             {
                 'date': t.transaction_date,
-                'amount': float(t.amount)
+                'amount': float(abs(t.amount))  # Use abs for expenses (may be stored as negative)
             }
             for t in transactions
         ])
@@ -593,12 +599,13 @@ class AnalysisService:
 
     # ==================== Helper Methods ====================
 
-    def _breakdown_by_category(self, transactions: List[Transaction]) -> Dict[str, Dict[str, Any]]:
+    def _breakdown_by_category(self, transactions: List[Transaction], use_abs: bool = False) -> Dict[str, Dict[str, Any]]:
         """
         Break down transactions by category.
 
         Args:
             transactions: List of transactions
+            use_abs: If True, use absolute values for amounts (for expense breakdowns)
 
         Returns:
             Dict: Category breakdown with totals and percentages
@@ -618,15 +625,15 @@ class AnalysisService:
                     'average': Decimal(0)
                 }
 
-            category_totals[category_name]['total'] += tx.amount
+            amount = abs(tx.amount) if use_abs else tx.amount
+            category_totals[category_name]['total'] += amount
             category_totals[category_name]['count'] += 1
 
         # Calculate averages and percentages
-        grand_total = sum(t.amount for t in transactions)
+        grand_total = sum(abs(t.amount) if use_abs else t.amount for t in transactions)
 
         for data in category_totals.values():
             data['average'] = data['total'] / data['count'] if data['count'] > 0 else Decimal(0)
-            # Use absolute value for percentage calculation since expenses are negative
             data['percentage'] = float(abs(data['total']) / abs(grand_total) * 100) if grand_total != 0 else 0.0
 
         return category_totals
@@ -1057,8 +1064,9 @@ class AnalysisService:
             if date_range.end_date:
                 query = query.filter(Transaction.transaction_date <= date_range.end_date)
 
-        # Join with Category to get category names
-        query = query.join(Category, Transaction.category_id == Category.category_id)
+        # Join with Category to get category names (only if not already joined above)
+        if mode not in (AnalysisMode.ANALYSIS, AnalysisMode.WITH_CAPITAL):
+            query = query.join(Category, Transaction.category_id == Category.category_id)
 
         # Get all transactions with category info
         transactions = query.add_columns(
