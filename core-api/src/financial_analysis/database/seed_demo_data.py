@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 
 from .base import SessionLocal
 from .models import (
-    Account, AccountBalance, Category, CategoryRule, Entity,
+    Account, AccountBalance, Budget, Category, CategoryRule, Entity,
     InvestmentHolding, Transaction, TransactionRelationship,
     TransactionSplit, account_entities,
 )
@@ -325,6 +325,23 @@ DEMO_HOLDINGS = [
     {"symbol": "VTIAX", "description": "Vanguard Total International", "quantity": Decimal("100.000"), "cost_basis": Decimal("10000.00"), "current_value": Decimal("11200.00"), "asset_class": "etf"},
     {"symbol": "BND", "description": "Vanguard Total Bond Market", "quantity": Decimal("80.000"), "cost_basis": Decimal("6400.00"), "current_value": Decimal("6100.00"), "asset_class": "bond"},
     {"symbol": "AAPL", "description": "Apple Inc.", "quantity": Decimal("25.000"), "cost_basis": Decimal("3750.00"), "current_value": Decimal("4800.00"), "asset_class": "stock"},
+]
+
+
+# =============================================================================
+# Demo Budgets
+# =============================================================================
+
+DEMO_BUDGETS = [
+    {"category_name": "Rent/Mortgage", "amount": Decimal("1900.00")},
+    {"category_name": "Groceries", "amount": Decimal("400.00")},
+    {"category_name": "Dining & Restaurants", "amount": Decimal("300.00")},
+    {"category_name": "Transportation", "amount": Decimal("200.00")},
+    {"category_name": "Subscriptions", "amount": Decimal("150.00")},
+    {"category_name": "Shopping", "amount": Decimal("250.00")},
+    {"category_name": "Entertainment", "amount": Decimal("100.00")},
+    {"category_name": "Healthcare", "amount": Decimal("150.00")},
+    {"category_name": "Utilities", "amount": Decimal("350.00")},
 ]
 
 
@@ -652,6 +669,43 @@ def seed_demo_balance_snapshots(db: Session, accounts: dict[str, int], months: i
 
     db.commit()
     print(f"\n[OK] Balance snapshots: {added} added")
+    return added
+
+
+def seed_demo_budgets(db: Session, categories: dict[str, int]) -> int:
+    """Seed demo monthly budgets for expense categories."""
+    print("\n" + "=" * 60)
+    print("Seeding Demo Budgets")
+    print("=" * 60)
+
+    today = date.today()
+    start = today.replace(day=1)
+    added = 0
+
+    for b in DEMO_BUDGETS:
+        cat_id = categories.get(b["category_name"])
+        if not cat_id:
+            continue
+
+        existing = db.query(Budget).filter_by(
+            category_id=cat_id, start_date=start,
+        ).first()
+        if existing:
+            continue
+
+        budget = Budget(
+            category_id=cat_id,
+            budget_amount=b["amount"],
+            period_type="Monthly",
+            start_date=start,
+            is_active=True,
+        )
+        db.add(budget)
+        added += 1
+        print(f"  [ADDED] {b['category_name']}: ${b['amount']}/month")
+
+    db.commit()
+    print(f"\n[OK] Budgets: {added} added")
     return added
 
 
@@ -1144,6 +1198,9 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
 
     # 5. Seed investment holdings
     seed_demo_holdings(db, accounts)
+
+    # 5b. Seed demo budgets
+    seed_demo_budgets(db, categories)
 
     # 6. Generate transactions for each month (idempotent — skip if demo txns exist)
     existing_demo_count = db.query(Transaction).filter(
