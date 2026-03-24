@@ -983,6 +983,9 @@ function TransactionList() {
           sortModel={sortModel}
           onSortModelChange={(newModel) => setSortModel(newModel)}
           loading={isLoading}
+          localeText={{
+            noRowsLabel: "No transactions match your filters. Try adjusting your search or filters.",
+          }}
           onCellClick={handleCellClick}
           disableColumnMenu={false}
           columnVisibilityModel={columnVisibilityModel}
@@ -1551,7 +1554,7 @@ function TransactionList() {
         <DialogActions>
           <Button onClick={() => setRuleDialogOpen(false)}>Cancel</Button>
           <Button
-            variant="contained"
+            variant="outlined"
             disabled={!ruleForm.rule_name.trim() || !ruleForm.description_pattern.trim()}
             onClick={async () => {
               try {
@@ -1570,7 +1573,37 @@ function TransactionList() {
               }
             }}
           >
-            Create Rule
+            Create Only
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!ruleForm.rule_name.trim() || !ruleForm.description_pattern.trim()}
+            onClick={async () => {
+              try {
+                const rule = await categoryRulesApi.create({
+                  rule_name: ruleForm.rule_name.trim(),
+                  description_pattern: ruleForm.description_pattern.trim(),
+                  category_id: ruleForm.category_id,
+                  entity_id: ruleForm.entity_id,
+                  is_active: true,
+                  rule_priority: 10,
+                });
+                const result = await categoryRulesApi.apply({
+                  rule_ids: [rule.rule_id],
+                  force_recategorize: true,
+                });
+                queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                enqueueSnackbar(
+                  `Rule created — ${result.categorized_count} categorized, ${result.entity_assigned_count} entities assigned`,
+                  { variant: "success" }
+                );
+                setRuleDialogOpen(false);
+              } catch {
+                enqueueSnackbar("Failed to create or apply rule", { variant: "error" });
+              }
+            }}
+          >
+            Create & Apply
           </Button>
         </DialogActions>
       </Dialog>
