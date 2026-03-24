@@ -40,6 +40,7 @@ import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
 import DownloadIcon from "@mui/icons-material/Download";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RuleIcon from "@mui/icons-material/Rule";
 import {
   useTransactions,
   useUpdateTransaction,
@@ -52,6 +53,7 @@ import { useSnackbar } from "notistack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { detectAllRelationships } from "../../api/relationships";
 import CircularProgress from "@mui/material/CircularProgress";
+import { categoryRulesApi } from "../../api/categories";
 import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
@@ -104,6 +106,15 @@ function TransactionList() {
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState<"Income" | "Expense" | "Transfer">("Expense");
   const [pendingCatTxId, setPendingCatTxId] = useState<number | null>(null);
+
+  // Create Rule inline state
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
+  const [ruleForm, setRuleForm] = useState({
+    rule_name: "",
+    description_pattern: "",
+    category_id: null as number | null,
+    entity_id: null as number | null,
+  });
 
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
@@ -563,12 +574,40 @@ function TransactionList() {
         />
       ),
     })) as GridColDef[]),
+    {
+      field: "actions",
+      headerName: "",
+      width: 50,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Tooltip title="Create rule from this transaction">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              const tx = params.row;
+              setRuleForm({
+                rule_name: (tx.description || "").slice(0, 50),
+                description_pattern: tx.description || "",
+                category_id: tx.category_id || null,
+                entity_id: tx.entity_id || null,
+              });
+              setRuleDialogOpen(true);
+            }}
+          >
+            <RuleIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
 
   const handleCellClick = useCallback((params: any, event: any) => {
     // Don't open detail dialog when clicking on editable or boolean toggle cells
     const nonClickableFields = [
-      "__check__", "description", "category_id",
+      "__check__", "description", "category_id", "actions",
       "is_capital_expense", "is_tax_deductible", "is_recurring",
       "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
     ];
@@ -1455,6 +1494,83 @@ function TransactionList() {
             variant="contained"
           >
             Apply Filters
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Rule from Transaction Dialog */}
+      <Dialog open={ruleDialogOpen} onClose={() => setRuleDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Transaction Rule</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Rule Name"
+            value={ruleForm.rule_name}
+            onChange={(e) => setRuleForm({ ...ruleForm, rule_name: e.target.value })}
+            sx={{ mt: 1, mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Description Pattern (matches transactions containing this text)"
+            value={ruleForm.description_pattern}
+            onChange={(e) => setRuleForm({ ...ruleForm, description_pattern: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Assign Category</InputLabel>
+            <Select
+              value={ruleForm.category_id ?? ""}
+              label="Assign Category"
+              onChange={(e) => setRuleForm({ ...ruleForm, category_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <MenuItem value="">None</MenuItem>
+              {categoriesData?.categories?.map((cat) => (
+                <MenuItem key={cat.category_id} value={cat.category_id}>
+                  {cat.category_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Assign Entity</InputLabel>
+            <Select
+              value={ruleForm.entity_id ?? ""}
+              label="Assign Entity"
+              onChange={(e) => setRuleForm({ ...ruleForm, entity_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <MenuItem value="">None</MenuItem>
+              {entitiesData?.map((entity: any) => (
+                <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                  {entity.entity_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRuleDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!ruleForm.rule_name.trim() || !ruleForm.description_pattern.trim()}
+            onClick={async () => {
+              try {
+                await categoryRulesApi.create({
+                  rule_name: ruleForm.rule_name.trim(),
+                  description_pattern: ruleForm.description_pattern.trim(),
+                  category_id: ruleForm.category_id,
+                  entity_id: ruleForm.entity_id,
+                  is_active: true,
+                  rule_priority: 10,
+                });
+                enqueueSnackbar(`Rule "${ruleForm.rule_name}" created`, { variant: "success" });
+                setRuleDialogOpen(false);
+              } catch {
+                enqueueSnackbar("Failed to create rule", { variant: "error" });
+              }
+            }}
+          >
+            Create Rule
           </Button>
         </DialogActions>
       </Dialog>
