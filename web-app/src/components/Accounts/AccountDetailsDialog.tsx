@@ -446,17 +446,27 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                 )}
               </Grid>
 
-              {account.institution_name && (
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Institution
-                  </Typography>
-                  <Typography variant="body1">{account.institution_name}</Typography>
-                  {account.account_number_last4 && (
-                    <Typography variant="caption">****{account.account_number_last4}</Typography>
-                  )}
-                </Grid>
-              )}
+              <Grid item xs={12} sm={6}>
+                {account.institution_name && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Institution
+                    </Typography>
+                    <Typography variant="body1">{account.institution_name}</Typography>
+                    {account.account_number_last4 && (
+                      <Typography variant="caption">****{account.account_number_last4}</Typography>
+                    )}
+                  </>
+                )}
+                {acctCurrency !== "USD" && (
+                  <Box sx={{ mt: account.institution_name ? 1 : 0 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Currency
+                    </Typography>
+                    <Typography variant="body1">{acctCurrency}</Typography>
+                  </Box>
+                )}
+              </Grid>
 
               {account.has_cash_component && account.cash_balance !== undefined && (
                 <Grid item xs={6}>
