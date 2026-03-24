@@ -252,16 +252,47 @@ def list_transactions(
     stats = service.count_and_summarize(filters)
     total = stats['total']
 
-    # When entity-filtered, recalculate summary from adjusted transaction amounts
-    # (split portions may differ from raw SQL aggregation)
+    # When entity-filtered, recalculate summary from ALL matching transactions
+    # (not just the current page), because split portions may differ from raw
+    # SQL aggregation.
     total_income = stats['total_income']
     total_expenses = stats['total_expenses']
     if entity_id:
+        # Fetch ALL entity-filtered transactions (no pagination) for accurate totals
+        all_filters = TransactionFilter(
+            start_date=start_date,
+            end_date=end_date,
+            transaction_type=transaction_type,
+            category_id=category_id,
+            include_in_analysis=include_in_analysis,
+            is_transfer=resolved_is_transfer,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search_text=search_text,
+            account_id=account_id,
+            tag_ids=tag_ids,
+            entity_id=entity_id,
+            limit=total,  # fetch all matching
+            offset=0,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        all_txns = service.list_transactions(all_filters)
+        # Apply the same split-portion adjustment
+        for tx in all_txns:
+            splits = tx.splits or []
+            entity_assigned_splits = [s for s in splits if s.entity_id is not None]
+            if not entity_assigned_splits:
+                continue
+            matching_splits = [s for s in splits if s.entity_id == entity_id]
+            if matching_splits:
+                split_total = sum(s.amount for s in matching_splits)
+                tx.amount = split_total if tx.amount >= 0 else -abs(split_total)
         total_income = sum(
-            tx.amount for tx in transactions if tx.transaction_type == 'Income'
+            tx.amount for tx in all_txns if tx.transaction_type == 'Income'
         )
         total_expenses = sum(
-            abs(tx.amount) for tx in transactions if tx.transaction_type == 'Expense'
+            abs(tx.amount) for tx in all_txns if tx.transaction_type == 'Expense'
         )
 
     summary = {
