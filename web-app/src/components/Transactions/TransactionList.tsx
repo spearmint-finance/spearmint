@@ -66,6 +66,7 @@ import { useEntities } from "../../hooks/useEntities";
 function TransactionList() {
   const [searchParams] = useSearchParams();
   const initialAccountId = searchParams.get("account_id") || "";
+  const initialCategoryId = searchParams.get("category_id") || "";
   const { selectedEntityId } = useEntityContext();
   const { data: entitiesData = [] } = useEntities();
 
@@ -177,7 +178,7 @@ function TransactionList() {
     start_date: "",
     end_date: "",
     transaction_type: "",
-    category_id: "",
+    category_id: initialCategoryId,
     account_id: initialAccountId,
     include_in_analysis: "",
     is_transfer: "",

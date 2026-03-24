@@ -33,6 +33,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SavingsIcon from "@mui/icons-material/Savings";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import { useEntityContext } from "../../contexts/EntityContext";
@@ -92,6 +93,7 @@ const deleteBudget = async (id: number) => {
 };
 
 function BudgetsPage() {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
   const { selectedEntityId } = useEntityContext();
@@ -389,6 +391,13 @@ function BudgetsPage() {
                       Over budget by {formatCurrency(Math.abs(item.remaining))}
                     </Typography>
                   )}
+                  <Button
+                    size="small"
+                    sx={{ mt: 1, p: 0, minWidth: 0, textTransform: "none" }}
+                    onClick={() => navigate(`/transactions?category_id=${item.category_id}`)}
+                  >
+                    View transactions
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>
