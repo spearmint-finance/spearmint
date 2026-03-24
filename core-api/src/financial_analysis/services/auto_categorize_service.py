@@ -72,33 +72,26 @@ class AutoCategorizeService:
         from sqlalchemy import or_
         transactions = self.db.query(
             Transaction.description,
-            Transaction.transaction_type,
-            Transaction.amount,
-            Transaction.account_id,
             func.count(Transaction.transaction_id).label("count"),
+            func.min(Transaction.transaction_type).label("transaction_type"),
+            func.avg(Transaction.amount).label("avg_amount"),
         ).filter(
             or_(*conditions)
         ).group_by(
             Transaction.description,
-            Transaction.transaction_type,
-            Transaction.amount,
-            Transaction.account_id,
         ).all()
 
-        # Group by description
         desc_map: Dict[str, Dict] = {}
         for row in transactions:
             desc = row.description or ""
             if not desc.strip():
                 continue
-            if desc not in desc_map:
-                desc_map[desc] = {
-                    "description": desc,
-                    "transaction_type": row.transaction_type,
-                    "sample_amount": float(row.amount) if row.amount else 0,
-                    "count": 0,
-                }
-            desc_map[desc]["count"] += row.count
+            desc_map[desc] = {
+                "description": desc,
+                "transaction_type": row.transaction_type,
+                "sample_amount": float(row.avg_amount) if row.avg_amount else 0,
+                "count": row.count,
+            }
 
         return desc_map
 

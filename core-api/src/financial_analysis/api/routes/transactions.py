@@ -517,6 +517,7 @@ def apply_categories(
             cat_conditions.append(TxModel.category_id == nan_cat.category_id)
         cat_conditions.append(TxModel.category_id.is_(None))
 
+        # Update by exact description match first
         updated = db.query(TxModel).filter(
             TxModel.description == a.description,
             or_(*cat_conditions),
@@ -524,6 +525,18 @@ def apply_categories(
             {TxModel.category_id: a.category_id},
             synchronize_session="fetch",
         )
+
+        # Also update all transactions matching the suggested pattern (catches variants)
+        if a.suggested_pattern:
+            pattern_updated = db.query(TxModel).filter(
+                TxModel.description.contains(a.suggested_pattern),
+                or_(*cat_conditions),
+            ).update(
+                {TxModel.category_id: a.category_id},
+                synchronize_session="fetch",
+            )
+            updated += pattern_updated
+
         total_updated += updated
 
         if request.create_rules and a.suggested_pattern:
