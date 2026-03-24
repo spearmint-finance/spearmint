@@ -685,6 +685,11 @@ class CategoryService:
             if not re.search(pattern, transaction.payment_method, re.IGNORECASE):
                 return False
 
+        # Check account_id match
+        if rule.account_id is not None:
+            if transaction.account_id != rule.account_id:
+                return False
+
         # All conditions matched
         return True
 

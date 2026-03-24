@@ -31,12 +31,15 @@ import {
 } from "../../hooks/useCategoryRules";
 import { useCategories } from "../../hooks/useCategories";
 import { useEntities } from "../../hooks/useEntities";
+import { useQuery } from "@tanstack/react-query";
+import { getAccounts } from "../../api/accounts";
 
 interface CategoryRuleFormData {
   rule_name: string;
   rule_priority: number;
   category_id: number | "";
   entity_id: number | "";
+  account_id: number | "";
   is_active: boolean;
   description_pattern: string;
   source_pattern: string;
@@ -74,6 +77,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
       rule_priority: 100,
       category_id: "" as any,
       entity_id: "" as any,
+      account_id: "" as any,
       is_active: true,
       description_pattern: "",
       source_pattern: "",
@@ -84,6 +88,11 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
     },
   });
 
+  const { data: accountsData } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => getAccounts(),
+  });
+
   // Reset form when rule changes
   useEffect(() => {
     if (rule) {
@@ -92,6 +101,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
         rule_priority: rule.rule_priority,
         category_id: rule.category_id || ("" as any),
         entity_id: rule.entity_id || ("" as any),
+        account_id: (rule as any).account_id || ("" as any),
         is_active: rule.is_active,
         description_pattern: rule.description_pattern || "",
         source_pattern: rule.source_pattern || "",
@@ -106,6 +116,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
         rule_priority: 100,
         category_id: "" as any,
         entity_id: "" as any,
+        account_id: "" as any,
         is_active: true,
         description_pattern: "",
         source_pattern: "",
@@ -131,7 +142,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
 
     // Validate at least one pattern is provided
     if (!data.description_pattern && !data.source_pattern && !data.payment_method_pattern
-        && !data.amount_min && !data.amount_max && !data.transaction_type_pattern) {
+        && !data.amount_min && !data.amount_max && !data.transaction_type_pattern && !data.account_id) {
       setFormError("At least one matching pattern is required.");
       return;
     }
@@ -148,6 +159,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
         rule_priority: data.rule_priority,
         category_id: data.category_id ? Number(data.category_id) : null,
         entity_id: data.entity_id ? Number(data.entity_id) : null,
+        account_id: data.account_id ? Number(data.account_id) : null,
         is_active: data.is_active,
         description_pattern: data.description_pattern || null,
         source_pattern: data.source_pattern || null,
@@ -302,6 +314,27 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
                         {entities.map((e: any) => (
                           <MenuItem key={e.entity_id} value={e.entity_id}>
                             {e.entity_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+
+              {/* Account Filter */}
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="account_id"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth>
+                      <InputLabel>Account</InputLabel>
+                      <Select {...field} label="Account">
+                        <MenuItem value="">Any account</MenuItem>
+                        {(accountsData || []).map((a: any) => (
+                          <MenuItem key={a.account_id} value={a.account_id}>
+                            {a.account_name}{a.institution_name ? ` (${a.institution_name})` : ""}
                           </MenuItem>
                         ))}
                       </Select>

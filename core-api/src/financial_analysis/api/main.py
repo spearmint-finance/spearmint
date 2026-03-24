@@ -198,6 +198,16 @@ def ensure_database_tables():
                     "WHERE entity_id IS NOT NULL"
                 ))
 
+    # Migration: add account_id to category_rules
+    if inspector.has_table("category_rules"):
+        columns = [c["name"] for c in inspector.get_columns("category_rules")]
+        if "account_id" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE category_rules ADD COLUMN account_id INTEGER "
+                    "REFERENCES accounts(account_id)"
+                ))
+
     # Migration: add new columns to budgets table
     if inspector.has_table("budgets"):
         columns = [c["name"] for c in inspector.get_columns("budgets")]
