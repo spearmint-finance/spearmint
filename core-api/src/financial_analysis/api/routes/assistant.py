@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
 from ...services.assistant import AssistantService, OpenAIAdapter
+from ...services.assistant.tool_orchestrator import ToolOrchestrator
 from ...database.assistant_models import AssistantPreferences
 
 logger = logging.getLogger(__name__)
@@ -265,20 +266,30 @@ async def execute_action(
     Actions like categorization or rule creation require user confirmation
     before execution. This endpoint executes the confirmed action.
     """
-    # TODO: Implement action execution with undo logging
-    # This is Phase 2 functionality
+    if not request.confirmed:
+        return {"success": False, "message": "Action was not confirmed"}
 
-    return {
-        "success": True,
-        "message": "Action executed",
-        "action_log_id": "placeholder",
-        "undo_available": True
-    }
+    orchestrator = ToolOrchestrator(db)
+    result = await orchestrator.confirm_action(
+        action_type=request.action_type,
+        payload=request.payload,
+        message_id=request.message_id,
+    )
+
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    return result
+
+
+class UndoRequest(BaseModel):
+    """Request body for undo endpoint."""
+    action_log_id: str
 
 
 @router.post("/actions/undo")
 async def undo_action(
-    action_log_id: str,
+    request: UndoRequest,
     db: Session = Depends(get_db),
 ):
     """
@@ -286,13 +297,13 @@ async def undo_action(
 
     Restores the previous state before the action was executed.
     """
-    # TODO: Implement undo functionality
-    # This is Phase 2 functionality
+    orchestrator = ToolOrchestrator(db)
+    result = await orchestrator.undo_action(request.action_log_id)
 
-    return {
-        "success": True,
-        "message": "Action undone"
-    }
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    return result
 
 
 @router.get("/insights", response_model=List[InsightResponse])

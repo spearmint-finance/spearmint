@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
 from financial_analysis.database.models import (
-    Transaction, Category, Account, AccountBalance,
+    Transaction, Category, CategoryRule, Account, AccountBalance,
 )
 from financial_analysis.database.assistant_models import AssistantActionLog
 from financial_analysis.services.assistant.tool_orchestrator import (
@@ -567,3 +567,315 @@ class TestIncomeSummary:
         assert result["total"] == pytest.approx(5000.00)
         assert result["count"] == 1
         assert "breakdown" not in result
+
+
+class TestConfirmCategorize:
+    """Tests for categorization action execution."""
+
+    @pytest.mark.asyncio
+    async def test_confirm_categorize_updates_transactions(self, orchestrator, db_session, sample_transactions):
+        """Confirming a categorization should update transaction categories."""
+        tx = sample_transactions[4]  # Amazon - currently Uncategorized
+        rent = db_session.query(Category).filter_by(category_name="Rent").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "category_id": rent.category_id,
+                "category_name": "Rent",
+            },
+            message_id="msg-123",
+        )
+
+        assert result["success"] is True
+        assert result["updated_count"] == 1
+        assert result["category"] == "Rent"
+        assert result["undo_available"] is True
+        assert len(result["action_log_ids"]) == 1
+
+        # Verify the transaction was actually updated
+        db_session.refresh(tx)
+        assert tx.category_id == rent.category_id
+
+    @pytest.mark.asyncio
+    async def test_confirm_categorize_multiple(self, orchestrator, db_session, sample_transactions):
+        """Should update multiple transactions at once."""
+        tx_ids = [sample_transactions[0].transaction_id, sample_transactions[1].transaction_id]
+        rent = db_session.query(Category).filter_by(category_name="Rent").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": tx_ids,
+                "category_id": rent.category_id,
+                "category_name": "Rent",
+            },
+        )
+
+        assert result["success"] is True
+        assert result["updated_count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_confirm_categorize_creates_action_log(self, orchestrator, db_session, sample_transactions):
+        """Should create an undo log entry for each transaction."""
+        tx = sample_transactions[0]
+        original_category_id = tx.category_id
+        rent = db_session.query(Category).filter_by(category_name="Rent").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "category_id": rent.category_id,
+                "category_name": "Rent",
+            },
+            message_id="msg-456",
+        )
+
+        log = db_session.query(AssistantActionLog).filter_by(id=result["action_log_ids"][0]).first()
+        assert log is not None
+        assert log.action_type == "categorize_transaction"
+        assert log.entity_type == "transaction"
+        assert log.entity_id == str(tx.transaction_id)
+        assert log.previous_state["category_id"] == original_category_id
+        assert log.new_state["category_id"] == rent.category_id
+        assert log.message_id == "msg-456"
+        assert log.undone_at is None
+
+    @pytest.mark.asyncio
+    async def test_confirm_categorize_missing_payload(self, orchestrator):
+        """Should error when payload is incomplete."""
+        result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={"transaction_ids": []},
+        )
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_confirm_categorize_nonexistent_category(self, orchestrator, sample_transactions):
+        """Should error when category no longer exists."""
+        result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": [sample_transactions[0].transaction_id],
+                "category_id": 99999,
+                "category_name": "Gone",
+            },
+        )
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_confirm_unknown_action_type(self, orchestrator):
+        """Should error for unknown action types."""
+        result = await orchestrator.confirm_action(
+            action_type="unknown_action",
+            payload={},
+        )
+        assert "error" in result
+
+
+class TestConfirmCreateRule:
+    """Tests for category rule creation action execution."""
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule(self, orchestrator, db_session, sample_transactions):
+        """Confirming a rule creation should create the rule."""
+        groceries = db_session.query(Category).filter_by(category_name="Groceries").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "Whole Foods",
+                "pattern_type": "contains",
+                "category_id": groceries.category_id,
+                "category_name": "Groceries",
+                "rule_name": "Whole Foods Rule",
+            },
+            message_id="msg-789",
+        )
+
+        assert result["success"] is True
+        assert result["action"] == "create_rule"
+        assert result["rule_name"] == "Whole Foods Rule"
+        assert result["undo_available"] is True
+
+        # Verify rule was actually created in DB
+        rule = db_session.query(CategoryRule).filter_by(rule_id=result["rule_id"]).first()
+        assert rule is not None
+        assert rule.source_pattern == "%Whole Foods%"
+        assert rule.category_id == groceries.category_id
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule_exact_pattern(self, orchestrator, db_session, sample_transactions):
+        """Exact pattern type should not add wildcards."""
+        groceries = db_session.query(Category).filter_by(category_name="Groceries").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "Whole Foods",
+                "pattern_type": "exact",
+                "category_id": groceries.category_id,
+                "category_name": "Groceries",
+            },
+        )
+
+        rule = db_session.query(CategoryRule).filter_by(rule_id=result["rule_id"]).first()
+        assert rule.source_pattern == "Whole Foods"
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule_starts_with(self, orchestrator, db_session, sample_transactions):
+        """starts_with pattern type should add trailing wildcard."""
+        groceries = db_session.query(Category).filter_by(category_name="Groceries").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "Trader",
+                "pattern_type": "starts_with",
+                "category_id": groceries.category_id,
+                "category_name": "Groceries",
+            },
+        )
+
+        rule = db_session.query(CategoryRule).filter_by(rule_id=result["rule_id"]).first()
+        assert rule.source_pattern == "Trader%"
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule_creates_action_log(self, orchestrator, db_session, sample_transactions):
+        """Should create an undo log entry."""
+        groceries = db_session.query(Category).filter_by(category_name="Groceries").first()
+
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "Test",
+                "pattern_type": "contains",
+                "category_id": groceries.category_id,
+                "category_name": "Groceries",
+                "rule_name": "Test Rule",
+            },
+            message_id="msg-rule",
+        )
+
+        log = db_session.query(AssistantActionLog).filter_by(id=result["action_log_id"]).first()
+        assert log is not None
+        assert log.action_type == "create_category_rule"
+        assert log.entity_type == "category_rule"
+        assert log.previous_state is None
+        assert log.new_state["rule_name"] == "Test Rule"
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule_nonexistent_category(self, orchestrator):
+        """Should error when category no longer exists."""
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "test",
+                "pattern_type": "contains",
+                "category_id": 99999,
+            },
+        )
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_confirm_create_rule_missing_pattern(self, orchestrator):
+        """Should error when pattern is missing."""
+        result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={"category_id": 1},
+        )
+        assert "error" in result
+
+
+class TestUndoAction:
+    """Tests for action undo functionality."""
+
+    @pytest.mark.asyncio
+    async def test_undo_categorize(self, orchestrator, db_session, sample_transactions):
+        """Undoing a categorization should restore the previous category."""
+        tx = sample_transactions[4]  # Amazon - Uncategorized
+        original_category_id = tx.category_id
+        rent = db_session.query(Category).filter_by(category_name="Rent").first()
+
+        # First, execute the action
+        confirm_result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "category_id": rent.category_id,
+                "category_name": "Rent",
+            },
+        )
+        assert confirm_result["success"] is True
+        db_session.refresh(tx)
+        assert tx.category_id == rent.category_id
+
+        # Now undo it
+        undo_result = await orchestrator.undo_action(confirm_result["action_log_ids"][0])
+        assert undo_result["success"] is True
+        assert undo_result["action"] == "undo_categorize"
+
+        # Verify the transaction was restored
+        db_session.refresh(tx)
+        assert tx.category_id == original_category_id
+
+    @pytest.mark.asyncio
+    async def test_undo_create_rule(self, orchestrator, db_session, sample_transactions):
+        """Undoing a rule creation should delete the rule."""
+        groceries = db_session.query(Category).filter_by(category_name="Groceries").first()
+
+        # First, create a rule
+        confirm_result = await orchestrator.confirm_action(
+            action_type="create_rule",
+            payload={
+                "pattern": "UndoTest",
+                "pattern_type": "contains",
+                "category_id": groceries.category_id,
+                "category_name": "Groceries",
+                "rule_name": "Undo Test Rule",
+            },
+        )
+        assert confirm_result["success"] is True
+        rule_id = confirm_result["rule_id"]
+
+        # Verify rule exists
+        assert db_session.query(CategoryRule).filter_by(rule_id=rule_id).first() is not None
+
+        # Undo it
+        undo_result = await orchestrator.undo_action(confirm_result["action_log_id"])
+        assert undo_result["success"] is True
+        assert undo_result["action"] == "undo_create_rule"
+
+        # Verify rule was deleted
+        assert db_session.query(CategoryRule).filter_by(rule_id=rule_id).first() is None
+
+    @pytest.mark.asyncio
+    async def test_undo_nonexistent_log(self, orchestrator):
+        """Should error when action log doesn't exist."""
+        result = await orchestrator.undo_action("nonexistent-id")
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_undo_already_undone(self, orchestrator, db_session, sample_transactions):
+        """Should error when action has already been undone."""
+        tx = sample_transactions[4]
+        rent = db_session.query(Category).filter_by(category_name="Rent").first()
+
+        confirm_result = await orchestrator.confirm_action(
+            action_type="categorize",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "category_id": rent.category_id,
+                "category_name": "Rent",
+            },
+        )
+
+        # Undo once
+        await orchestrator.undo_action(confirm_result["action_log_ids"][0])
+
+        # Try to undo again
+        result = await orchestrator.undo_action(confirm_result["action_log_ids"][0])
+        assert "error" in result
+        assert "already been undone" in result["error"]

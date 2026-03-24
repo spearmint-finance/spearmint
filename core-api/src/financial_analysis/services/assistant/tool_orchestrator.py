@@ -14,11 +14,12 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from ...database.models import Transaction, Category, Account
+from ...database.models import Transaction, Category, Account, CategoryRule
 from ...database.assistant_models import AssistantActionLog
 from ..analysis_service import AnalysisService, DateRange, AnalysisMode
 from ..transaction_service import TransactionService
 from ..account_service import AccountService
+from ..category_service import CategoryService
 from .tools import READ_ONLY_TOOLS, CONFIRMATION_REQUIRED_TOOLS
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class ToolOrchestrator:
         self.analysis_service = AnalysisService(db)
         self.transaction_service = TransactionService(db)
         self.account_service = AccountService(db)
+        self.category_service = CategoryService(db)
 
     async def execute_tool(
         self,
@@ -666,4 +668,247 @@ class ToolOrchestrator:
                 "category_name": category_name,
                 "rule_name": rule_name
             }
+        }
+
+    # ===== Action Execution (Confirmation Handlers) =====
+
+    async def confirm_action(
+        self,
+        action_type: str,
+        payload: Dict[str, Any],
+        message_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute a confirmed action and log it for undo.
+
+        Args:
+            action_type: Type of action ('categorize', 'create_rule')
+            payload: Action payload from the proposal
+            message_id: ID of the originating assistant message
+
+        Returns:
+            Execution result with action_log_id for undo
+        """
+        handler = {
+            "categorize": self._confirm_categorize,
+            "create_rule": self._confirm_create_rule,
+        }.get(action_type)
+
+        if not handler:
+            return {"error": f"Unknown action type: {action_type}"}
+
+        try:
+            return await handler(payload, message_id)
+        except Exception as e:
+            logger.error(f"Action execution error: {e}")
+            return {"error": str(e)}
+
+    async def _confirm_categorize(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute a categorization action: update transaction categories."""
+        transaction_ids = payload.get("transaction_ids", [])
+        category_id = payload.get("category_id")
+        category_name = payload.get("category_name", "")
+
+        if not transaction_ids or not category_id:
+            return {"error": "Missing transaction_ids or category_id in payload"}
+
+        # Verify category still exists
+        category = self.db.query(Category).filter(
+            Category.category_id == category_id
+        ).first()
+        if not category:
+            return {"error": f"Category ID {category_id} no longer exists"}
+
+        transactions = self.db.query(Transaction).filter(
+            Transaction.transaction_id.in_(transaction_ids)
+        ).all()
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        # Log previous state and update each transaction
+        action_log_ids = []
+        for tx in transactions:
+            previous_category_id = tx.category_id
+            previous_category_name = tx.category.category_name if tx.category else None
+
+            # Create undo log entry
+            log_entry = AssistantActionLog(
+                id=str(uuid4()),
+                message_id=message_id,
+                action_type="categorize_transaction",
+                entity_type="transaction",
+                entity_id=str(tx.transaction_id),
+                previous_state={
+                    "category_id": previous_category_id,
+                    "category_name": previous_category_name,
+                },
+                new_state={
+                    "category_id": category_id,
+                    "category_name": category_name,
+                },
+            )
+            self.db.add(log_entry)
+            action_log_ids.append(log_entry.id)
+
+            # Update the transaction
+            tx.category_id = category_id
+
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "categorize",
+            "updated_count": len(transactions),
+            "category": category_name,
+            "action_log_ids": action_log_ids,
+            "undo_available": True,
+        }
+
+    async def _confirm_create_rule(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute a category rule creation action."""
+        pattern = payload.get("pattern")
+        pattern_type = payload.get("pattern_type")
+        category_id = payload.get("category_id")
+        category_name = payload.get("category_name", "")
+        rule_name = payload.get("rule_name", f"Auto-categorize {pattern}")
+
+        if not pattern or not category_id:
+            return {"error": "Missing pattern or category_id in payload"}
+
+        # Verify category still exists
+        category = self.db.query(Category).filter(
+            Category.category_id == category_id
+        ).first()
+        if not category:
+            return {"error": f"Category ID {category_id} no longer exists"}
+
+        # Map pattern_type to source_pattern format
+        if pattern_type == "contains":
+            source_pattern = f"%{pattern}%"
+        elif pattern_type == "starts_with":
+            source_pattern = f"{pattern}%"
+        elif pattern_type == "ends_with":
+            source_pattern = f"%{pattern}"
+        elif pattern_type == "exact":
+            source_pattern = pattern
+        else:
+            source_pattern = f"%{pattern}%"
+
+        # Create the rule via CategoryService
+        rule = self.category_service.create_category_rule(
+            rule_name=rule_name,
+            category_id=category_id,
+            source_pattern=source_pattern,
+        )
+
+        # Create undo log entry
+        log_entry = AssistantActionLog(
+            id=str(uuid4()),
+            message_id=message_id,
+            action_type="create_category_rule",
+            entity_type="category_rule",
+            entity_id=str(rule.rule_id),
+            previous_state=None,
+            new_state={
+                "rule_id": rule.rule_id,
+                "rule_name": rule_name,
+                "source_pattern": source_pattern,
+                "category_id": category_id,
+                "category_name": category_name,
+            },
+        )
+        self.db.add(log_entry)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "create_rule",
+            "rule_id": rule.rule_id,
+            "rule_name": rule_name,
+            "pattern": source_pattern,
+            "category": category_name,
+            "action_log_id": log_entry.id,
+            "undo_available": True,
+        }
+
+    async def undo_action(self, action_log_id: str) -> Dict[str, Any]:
+        """
+        Undo a previously executed action.
+
+        Args:
+            action_log_id: ID of the action log entry to undo
+
+        Returns:
+            Undo result
+        """
+        log_entry = self.db.query(AssistantActionLog).filter(
+            AssistantActionLog.id == action_log_id
+        ).first()
+
+        if not log_entry:
+            return {"error": f"Action log {action_log_id} not found"}
+
+        if log_entry.undone_at is not None:
+            return {"error": "Action has already been undone"}
+
+        try:
+            if log_entry.action_type == "categorize_transaction":
+                return await self._undo_categorize(log_entry)
+            elif log_entry.action_type == "create_category_rule":
+                return await self._undo_create_rule(log_entry)
+            else:
+                return {"error": f"Cannot undo action type: {log_entry.action_type}"}
+        except Exception as e:
+            logger.error(f"Undo error: {e}")
+            return {"error": str(e)}
+
+    async def _undo_categorize(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo a categorization by restoring the previous category."""
+        tx_id = int(log_entry.entity_id)
+        previous_state = log_entry.previous_state or {}
+        previous_category_id = previous_state.get("category_id")
+
+        transaction = self.db.query(Transaction).filter(
+            Transaction.transaction_id == tx_id
+        ).first()
+
+        if not transaction:
+            return {"error": f"Transaction {tx_id} no longer exists"}
+
+        transaction.category_id = previous_category_id
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_categorize",
+            "transaction_id": tx_id,
+            "restored_category": previous_state.get("category_name"),
+        }
+
+    async def _undo_create_rule(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo a rule creation by deleting the rule."""
+        rule_id = int(log_entry.entity_id)
+
+        deleted = self.category_service.delete_category_rule(rule_id)
+        if not deleted:
+            return {"error": f"Rule {rule_id} no longer exists"}
+
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_create_rule",
+            "rule_id": rule_id,
+            "rule_name": (log_entry.new_state or {}).get("rule_name"),
         }
