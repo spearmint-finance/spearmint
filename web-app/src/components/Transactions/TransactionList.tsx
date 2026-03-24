@@ -113,9 +113,13 @@ function TransactionList() {
   // Smart Categorize state
   const [smartCatOpen, setSmartCatOpen] = useState(false);
   const [smartCatLoading, setSmartCatLoading] = useState(false);
-  const [smartCatResults, setSmartCatResults] = useState<any>(null);
-  const [smartCatAccepted, setSmartCatAccepted] = useState<Set<string>>(new Set());
-  const [smartCatOverrides, setSmartCatOverrides] = useState<Record<string, number>>({});
+  const [smartCatDescriptions, setSmartCatDescriptions] = useState<any[]>([]);
+  const [smartCatTotal, setSmartCatTotal] = useState(0);
+  const [smartCatTotalTxns, setSmartCatTotalTxns] = useState(0);
+  const [smartCatPage, setSmartCatPage] = useState(0);
+  const [smartCatClassifying, setSmartCatClassifying] = useState(false);
+  const [smartCatResults, setSmartCatResults] = useState<any[]>([]);
+  const [smartCatSelected, setSmartCatSelected] = useState<Set<number>>(new Set());
 
   // Create Rule inline state
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
@@ -774,20 +778,19 @@ function TransactionList() {
             onClick={async () => {
               setSmartCatOpen(true);
               setSmartCatLoading(true);
-              setSmartCatResults(null);
-              setSmartCatAccepted(new Set());
-              setSmartCatOverrides({});
+              setSmartCatDescriptions([]);
+              setSmartCatResults([]);
+              setSmartCatSelected(new Set());
+              setSmartCatPage(0);
               try {
-                const response = await fetch("/api/transactions/auto-categorize", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ mode: "preview" }),
-                });
+                const response = await fetch("/api/transactions/uncategorized-descriptions?offset=0&limit=20");
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.detail || "Failed");
-                setSmartCatResults(data);
+                setSmartCatDescriptions(data.descriptions);
+                setSmartCatTotal(data.total);
+                setSmartCatTotalTxns(data.total_transactions);
               } catch (err: any) {
-                enqueueSnackbar(err.message || "Smart categorization failed", { variant: "error" });
+                enqueueSnackbar(err.message || "Failed to load descriptions", { variant: "error" });
               } finally {
                 setSmartCatLoading(false);
               }
@@ -1542,7 +1545,14 @@ function TransactionList() {
       <Dialog open={smartCatOpen} onClose={() => setSmartCatOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            Smart Categorization
+            <Box>
+              Smart Categorization
+              {smartCatTotal > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  {smartCatTotal} unique descriptions, {smartCatTotalTxns} transactions
+                </Typography>
+              )}
+            </Box>
             <IconButton onClick={() => setSmartCatOpen(false)} size="small" aria-label="Close">
               <CloseIcon />
             </IconButton>
@@ -1552,154 +1562,171 @@ function TransactionList() {
           {smartCatLoading && (
             <Box display="flex" flexDirection="column" alignItems="center" py={4}>
               <CircularProgress />
-              <Typography sx={{ mt: 2 }}>Analyzing transactions...</Typography>
+              <Typography sx={{ mt: 2 }}>Loading descriptions...</Typography>
             </Box>
           )}
-          {smartCatResults && !smartCatLoading && (() => {
-            const results = smartCatResults.results || [];
-            const autoApplied = results.filter((r: any) => r.action === "auto_applied");
-            const needsReview = results.filter((r: any) => r.action === "needs_review");
-            const unclassified = results.filter((r: any) => r.action === "unclassified");
-            const apiKeyMissing = results.length > 0 && results[0]?.reasoning?.includes("API_KEY");
 
-            if (apiKeyMissing) {
-              return (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  OPENAI_API_KEY is not configured. Set it in your environment to enable LLM-powered categorization.
-                </Alert>
-              );
-            }
-
-            return (
-              <Box>
-                <Box sx={{ mb: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                  <Typography variant="body2">
-                    Analyzed <strong>{smartCatResults.unique_descriptions}</strong> unique descriptions
-                    from <strong>{smartCatResults.total_transactions}</strong> uncategorized transactions.
-                  </Typography>
-                </Box>
-
-                {/* High Confidence — Auto Applied */}
-                {autoApplied.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" color="success.main" gutterBottom>
-                      Auto-Apply ({autoApplied.length} descriptions, {autoApplied.reduce((s: number, r: any) => s + r.transaction_count, 0)} transactions)
-                    </Typography>
-                    <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                      {autoApplied.map((r: any, i: number) => (
-                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body2" noWrap>{r.merchant_name || r.description}</Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>{r.description}</Typography>
-                          </Box>
-                          <Chip label={r.suggested_category} size="small" color="success" sx={{ mx: 1 }} />
-                          <Typography variant="caption" color="text.secondary">{r.transaction_count} txns</Typography>
-                        </Box>
-                      ))}
+          {/* Classification results */}
+          {smartCatResults.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" color="success.main" gutterBottom>
+                Classified & Applied ({smartCatResults.length} descriptions)
+              </Typography>
+              <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                {smartCatResults.map((r: any, i: number) => (
+                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" noWrap>{r.merchant_name || r.description}</Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>{r.reasoning}</Typography>
                     </Box>
+                    <Chip label={r.suggested_category || "Unknown"} size="small" color={r.confidence >= 0.7 ? "success" : "warning"} sx={{ mx: 1 }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>{r.transaction_count} txns</Typography>
                   </Box>
-                )}
-
-                {/* Medium Confidence — Needs Review */}
-                {needsReview.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" color="warning.main" gutterBottom>
-                      Needs Review ({needsReview.length} descriptions, {needsReview.reduce((s: number, r: any) => s + r.transaction_count, 0)} transactions)
-                    </Typography>
-                    <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                      {needsReview.map((r: any, i: number) => (
-                        <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: smartCatAccepted.has(r.description) ? 'action.selected' : 'transparent' }}>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography variant="body2" noWrap>{r.merchant_name || r.description}</Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>{r.reasoning}</Typography>
-                          </Box>
-                          <FormControl size="small" sx={{ minWidth: 150, mx: 1 }}>
-                            <Select
-                              value={smartCatOverrides[r.description] ?? r.category_id ?? ""}
-                              onChange={(e) => {
-                                setSmartCatOverrides(prev => ({ ...prev, [r.description]: Number(e.target.value) }));
-                                setSmartCatAccepted(prev => { const next = new Set(prev); next.add(r.description); return next; });
-                              }}
-                              displayEmpty
-                              size="small"
-                            >
-                              <MenuItem value="" disabled>{r.suggested_category || "Select category"}</MenuItem>
-                              {categoriesData?.categories?.map((cat) => (
-                                <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                          <Chip
-                            label={smartCatAccepted.has(r.description) ? "Accepted" : "Accept"}
-                            size="small"
-                            color={smartCatAccepted.has(r.description) ? "success" : "default"}
-                            onClick={() => {
-                              setSmartCatAccepted(prev => {
-                                const next = new Set(prev);
-                                if (next.has(r.description)) next.delete(r.description); else next.add(r.description);
-                                return next;
-                              });
-                            }}
-                            sx={{ cursor: 'pointer' }}
-                          />
-                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1, whiteSpace: 'nowrap' }}>{r.transaction_count} txns</Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-                {/* Low Confidence — Unclassified */}
-                {unclassified.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Unclassified ({unclassified.length} descriptions, {unclassified.reduce((s: number, r: any) => s + r.transaction_count, 0)} transactions)
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      These could not be identified. You can categorize them manually in the transaction list.
-                    </Typography>
-                  </Box>
-                )}
-
-                {results.length === 0 && (
-                  <Typography color="text.secondary">No uncategorized transactions found.</Typography>
-                )}
+                ))}
               </Box>
-            );
-          })()}
+            </Box>
+          )}
+
+          {/* Uncategorized descriptions list */}
+          {!smartCatLoading && smartCatDescriptions.length > 0 && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2">
+                  Uncategorized Descriptions (showing {smartCatPage * 20 + 1}-{Math.min((smartCatPage + 1) * 20, smartCatTotal)} of {smartCatTotal})
+                </Typography>
+                <Box>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      const allIdxs = new Set(smartCatDescriptions.map((_: any, i: number) => i));
+                      setSmartCatSelected(allIdxs);
+                    }}
+                  >
+                    Select All
+                  </Button>
+                  <Button size="small" onClick={() => setSmartCatSelected(new Set())}>
+                    Clear
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                {smartCatDescriptions.map((d: any, i: number) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      display: 'flex', alignItems: 'center', px: 1, py: 0.5,
+                      borderBottom: '1px solid', borderColor: 'divider',
+                      bgcolor: smartCatSelected.has(i) ? 'action.selected' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      setSmartCatSelected(prev => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i); else next.add(i);
+                        return next;
+                      });
+                    }}
+                  >
+                    <Checkbox size="small" checked={smartCatSelected.has(i)} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" noWrap>{d.description}</Typography>
+                    </Box>
+                    <Chip
+                      label={`${d.count} txns`}
+                      size="small"
+                      variant="outlined"
+                      sx={{ ml: 1 }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Pagination */}
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Button
+                  size="small"
+                  disabled={smartCatPage === 0}
+                  onClick={async () => {
+                    const newPage = smartCatPage - 1;
+                    setSmartCatLoading(true);
+                    try {
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${newPage * 20}&limit=20`);
+                      const data = await res.json();
+                      setSmartCatDescriptions(data.descriptions);
+                      setSmartCatTotal(data.total);
+                      setSmartCatPage(newPage);
+                      setSmartCatSelected(new Set());
+                    } finally { setSmartCatLoading(false); }
+                  }}
+                >
+                  Previous
+                </Button>
+                <Typography variant="caption">Page {smartCatPage + 1} of {Math.ceil(smartCatTotal / 20)}</Typography>
+                <Button
+                  size="small"
+                  disabled={(smartCatPage + 1) * 20 >= smartCatTotal}
+                  onClick={async () => {
+                    const newPage = smartCatPage + 1;
+                    setSmartCatLoading(true);
+                    try {
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${newPage * 20}&limit=20`);
+                      const data = await res.json();
+                      setSmartCatDescriptions(data.descriptions);
+                      setSmartCatTotal(data.total);
+                      setSmartCatPage(newPage);
+                      setSmartCatSelected(new Set());
+                    } finally { setSmartCatLoading(false); }
+                  }}
+                >
+                  Next
+                </Button>
+              </Box>
+            </Box>
+          )}
+
+          {!smartCatLoading && smartCatDescriptions.length === 0 && smartCatResults.length === 0 && (
+            <Typography color="text.secondary">No uncategorized transactions found.</Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider' }}>
           <Button onClick={() => setSmartCatOpen(false)}>Close</Button>
-          {smartCatResults && !smartCatLoading && (
-            <Button
-              variant="contained"
-              disabled={smartCatLoading}
-              onClick={async () => {
-                setSmartCatLoading(true);
-                try {
-                  const response = await fetch("/api/transactions/auto-categorize", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ mode: "apply", create_rules: true }),
-                  });
-                  const data = await response.json();
-                  if (!response.ok) throw new Error(data.detail || "Failed");
-                  queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                  enqueueSnackbar(
-                    `Applied: ${data.high_confidence} auto-categorized, ${data.rules_created} rules created`,
-                    { variant: "success" }
-                  );
-                  setSmartCatOpen(false);
-                } catch (err: any) {
-                  enqueueSnackbar(err.message || "Apply failed", { variant: "error" });
-                } finally {
-                  setSmartCatLoading(false);
-                }
-              }}
-            >
-              Apply All High Confidence
-            </Button>
-          )}
+          <Button
+            variant="contained"
+            disabled={smartCatSelected.size === 0 || smartCatClassifying}
+            startIcon={smartCatClassifying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+            onClick={async () => {
+              setSmartCatClassifying(true);
+              const selectedDescs = Array.from(smartCatSelected).map(i => smartCatDescriptions[i]?.description).filter(Boolean);
+              try {
+                const res = await fetch("/api/transactions/classify-batch", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ descriptions: selectedDescs, mode: "apply", create_rules: true }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Failed");
+                setSmartCatResults(prev => [...prev, ...data.results]);
+                queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                enqueueSnackbar(
+                  `Classified ${data.results.length} descriptions, ${data.rules_created} rules created`,
+                  { variant: "success" }
+                );
+                // Reload the descriptions page to remove classified ones
+                const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=${smartCatPage * 20}&limit=20`);
+                const pageData = await pageRes.json();
+                setSmartCatDescriptions(pageData.descriptions);
+                setSmartCatTotal(pageData.total);
+                setSmartCatTotalTxns(pageData.total_transactions);
+                setSmartCatSelected(new Set());
+              } catch (err: any) {
+                enqueueSnackbar(err.message || "Classification failed", { variant: "error" });
+              } finally {
+                setSmartCatClassifying(false);
+              }
+            }}
+          >
+            {smartCatClassifying ? "Classifying..." : `Classify Selected (${smartCatSelected.size})`}
+          </Button>
         </DialogActions>
       </Dialog>
 
