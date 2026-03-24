@@ -127,10 +127,10 @@ class AutoCategorizeService:
         """
         import openai
 
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("OPENAI_KEY_CATEGORIES") or os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise ValueError(
-                "OPENAI_API_KEY not set. Set it in your environment to use smart categorization."
+                "OPENAI_KEY_CATEGORIES not set. Set it in your environment to use smart categorization."
             )
 
         client = openai.AsyncOpenAI(api_key=api_key)
