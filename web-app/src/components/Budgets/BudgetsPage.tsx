@@ -16,6 +16,17 @@ import {
   IconButton,
   Chip,
 } from "@mui/material";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -210,6 +221,38 @@ function BudgetsPage() {
             </CardContent>
           </Card>
         </Box>
+      )}
+
+      {/* Budget vs Actual Chart */}
+      {hasBudgets && budgetItems.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+              Budget vs Actual Spending
+            </Typography>
+            <ResponsiveContainer width="100%" height={Math.max(250, budgetItems.length * 40)}>
+              <BarChart
+                data={budgetItems.map((item: any) => ({
+                  name: item.category_name.length > 15
+                    ? item.category_name.slice(0, 14) + "..."
+                    : item.category_name,
+                  Budget: item.budget_amount,
+                  Actual: item.actual_spent,
+                }))}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" tickFormatter={(v) => formatCurrency(v, undefined, 0)} />
+                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="Budget" fill="#81C784" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="Actual" fill="#E57373" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       )}
 
       {/* Budget Cards */}
