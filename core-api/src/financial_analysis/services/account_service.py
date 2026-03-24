@@ -735,14 +735,26 @@ class AccountService:
             'as_of_date': as_of_date
         }
 
-    def get_account_summary(self) -> List[Dict[str, Any]]:
+    def get_account_summary(self, entity_id: int = None) -> List[Dict[str, Any]]:
         """
-        Get a summary of all accounts with current balances.
+        Get a summary of accounts with current balances.
+
+        Args:
+            entity_id: If provided, only return accounts linked to this entity.
 
         Returns:
             List of account summaries
         """
-        accounts = self.get_accounts(is_active=True)
+        if entity_id is not None:
+            from ..database.models import account_entities
+            # Get account IDs linked to this entity
+            linked = self.db.query(account_entities.c.account_id).filter(
+                account_entities.c.entity_id == entity_id
+            ).all()
+            linked_ids = {row[0] for row in linked}
+            accounts = [a for a in self.get_accounts(is_active=True) if a.account_id in linked_ids]
+        else:
+            accounts = self.get_accounts(is_active=True)
         summaries = []
 
         for account in accounts:

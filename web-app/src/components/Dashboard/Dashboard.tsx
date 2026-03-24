@@ -104,10 +104,12 @@ function Dashboard() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch account summary for quick balances view
+  // Fetch account summary for quick balances view (entity-scoped)
   const { data: accountSummary, isLoading: accountsLoading } = useQuery({
-    queryKey: ["accountSummary"],
-    queryFn: () => getAccountSummary(),
+    queryKey: ["accountSummary", selectedEntityId],
+    queryFn: () => getAccountSummary(
+      selectedEntityId ? { entity_id: selectedEntityId } : undefined
+    ),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

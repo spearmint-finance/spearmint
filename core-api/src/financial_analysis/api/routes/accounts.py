@@ -82,10 +82,13 @@ def get_net_worth(
 
 
 @router.get("/summary", response_model=List[AccountSummary])
-def get_account_summary(db: Session = Depends(get_db)):
-    """Get summary of all accounts with current balances."""
+def get_account_summary(
+    entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID"),
+    db: Session = Depends(get_db)
+):
+    """Get summary of all accounts with current balances, optionally filtered by entity."""
     service = AccountService(db)
-    summaries = service.get_account_summary()
+    summaries = service.get_account_summary(entity_id=entity_id)
     return [AccountSummary(**summary) for summary in summaries]
 
 
