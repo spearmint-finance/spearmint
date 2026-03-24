@@ -118,8 +118,12 @@ function TransactionList() {
   const [smartCatTotalTxns, setSmartCatTotalTxns] = useState(0);
   const [smartCatPage, setSmartCatPage] = useState(0);
   const [smartCatClassifying, setSmartCatClassifying] = useState(false);
-  const [smartCatResults, setSmartCatResults] = useState<any[]>([]);
+  const [smartCatApplying, setSmartCatApplying] = useState(false);
+  const [smartCatResults, setSmartCatResults] = useState<any[]>([]); // LLM suggestions (not yet applied)
+  const [smartCatApplied, setSmartCatApplied] = useState<any[]>([]); // Already applied results
   const [smartCatSelected, setSmartCatSelected] = useState<Set<number>>(new Set());
+  const [smartCatApproved, setSmartCatApproved] = useState<Set<number>>(new Set()); // Indices in smartCatResults
+  const [smartCatOverrides, setSmartCatOverrides] = useState<Record<number, number>>({}); // index → category_id override
 
   // Create Rule inline state
   const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
@@ -780,7 +784,10 @@ function TransactionList() {
               setSmartCatLoading(true);
               setSmartCatDescriptions([]);
               setSmartCatResults([]);
+              setSmartCatApplied([]);
               setSmartCatSelected(new Set());
+              setSmartCatApproved(new Set());
+              setSmartCatOverrides({});
               setSmartCatPage(0);
               try {
                 const response = await fetch("/api/transactions/uncategorized-descriptions?offset=0&limit=20");
@@ -1562,46 +1569,107 @@ function TransactionList() {
           {smartCatLoading && (
             <Box display="flex" flexDirection="column" alignItems="center" py={4}>
               <CircularProgress />
-              <Typography sx={{ mt: 2 }}>Loading descriptions...</Typography>
+              <Typography sx={{ mt: 2 }}>Loading...</Typography>
             </Box>
           )}
 
-          {/* Classification results */}
-          {smartCatResults.length > 0 && (
-            <Box sx={{ mb: 3 }}>
+          {/* Already applied results */}
+          {smartCatApplied.length > 0 && (
+            <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="success.main" gutterBottom>
-                Classified & Applied ({smartCatResults.length} descriptions)
+                Applied ({smartCatApplied.length})
               </Typography>
-              <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
-                {smartCatResults.map((r: any, i: number) => (
-                  <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+              <Box sx={{ maxHeight: 150, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                {smartCatApplied.map((r: any, i: number) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" noWrap>{r.merchant_name || r.description}</Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>{r.reasoning}</Typography>
+                      <Typography variant="body2" noWrap>{r.merchant_name}: {r.description}</Typography>
                     </Box>
-                    <Chip label={r.suggested_category || "Unknown"} size="small" color={r.confidence >= 0.7 ? "success" : "warning"} sx={{ mx: 1 }} />
-                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>{r.transaction_count} txns</Typography>
+                    <Chip label={r.applied_category || r.suggested_category} size="small" color="success" sx={{ mx: 1 }} />
+                    <Typography variant="caption" color="text.secondary">{r.transaction_count} txns</Typography>
                   </Box>
                 ))}
               </Box>
             </Box>
           )}
 
-          {/* Uncategorized descriptions list */}
-          {!smartCatLoading && smartCatDescriptions.length > 0 && (
+          {/* Step 2: Review LLM suggestions (not yet applied) */}
+          {smartCatResults.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2" color="warning.main">
+                  Review Suggestions ({smartCatResults.length})
+                </Typography>
+                <Box>
+                  <Button size="small" onClick={() => setSmartCatApproved(new Set(smartCatResults.map((_: any, i: number) => i)))}>
+                    Approve All
+                  </Button>
+                  <Button size="small" onClick={() => setSmartCatApproved(new Set())}>
+                    Clear
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                {smartCatResults.map((r: any, i: number) => (
+                  <Box key={i} sx={{
+                    display: 'flex', alignItems: 'center', px: 1, py: 1,
+                    borderBottom: '1px solid', borderColor: 'divider',
+                    bgcolor: smartCatApproved.has(i) ? 'action.selected' : 'transparent',
+                  }}>
+                    <Checkbox
+                      size="small"
+                      checked={smartCatApproved.has(i)}
+                      onChange={() => {
+                        setSmartCatApproved(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i)) next.delete(i); else next.add(i);
+                          return next;
+                        });
+                      }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+                      <Typography variant="body2" noWrap>
+                        <strong>{r.merchant_name}</strong> — {r.description}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {r.reasoning} ({Math.round(r.confidence * 100)}% confidence, {r.transaction_count} txns)
+                      </Typography>
+                    </Box>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <Select
+                        value={smartCatOverrides[i] ?? r.category_id ?? ""}
+                        onChange={(e) => {
+                          setSmartCatOverrides(prev => ({ ...prev, [i]: Number(e.target.value) }));
+                          setSmartCatApproved(prev => { const next = new Set(prev); next.add(i); return next; });
+                        }}
+                        displayEmpty
+                        size="small"
+                      >
+                        {r.suggested_category && !r.category_id && (
+                          <MenuItem value="" disabled>
+                            {r.suggested_category} (new)
+                          </MenuItem>
+                        )}
+                        {categoriesData?.categories?.map((cat) => (
+                          <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Step 1: Select descriptions to classify */}
+          {!smartCatLoading && smartCatResults.length === 0 && smartCatDescriptions.length > 0 && (
             <Box>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="subtitle2">
-                  Uncategorized Descriptions (showing {smartCatPage * 20 + 1}-{Math.min((smartCatPage + 1) * 20, smartCatTotal)} of {smartCatTotal})
+                  Select descriptions to classify ({smartCatPage * 20 + 1}-{Math.min((smartCatPage + 1) * 20, smartCatTotal)} of {smartCatTotal})
                 </Typography>
                 <Box>
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      const allIdxs = new Set(smartCatDescriptions.map((_: any, i: number) => i));
-                      setSmartCatSelected(allIdxs);
-                    }}
-                  >
+                  <Button size="small" onClick={() => setSmartCatSelected(new Set(smartCatDescriptions.map((_: any, i: number) => i)))}>
                     Select All
                   </Button>
                   <Button size="small" onClick={() => setSmartCatSelected(new Set())}>
@@ -1631,102 +1699,145 @@ function TransactionList() {
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="body2" noWrap>{d.description}</Typography>
                     </Box>
-                    <Chip
-                      label={`${d.count} txns`}
-                      size="small"
-                      variant="outlined"
-                      sx={{ ml: 1 }}
-                    />
+                    <Chip label={`${d.count} txns`} size="small" variant="outlined" sx={{ ml: 1 }} />
                   </Box>
                 ))}
               </Box>
-
-              {/* Pagination */}
               <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Button
-                  size="small"
-                  disabled={smartCatPage === 0}
+                <Button size="small" disabled={smartCatPage === 0}
                   onClick={async () => {
-                    const newPage = smartCatPage - 1;
+                    const p = smartCatPage - 1;
                     setSmartCatLoading(true);
                     try {
-                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${newPage * 20}&limit=20`);
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${p * 20}&limit=20`);
                       const data = await res.json();
-                      setSmartCatDescriptions(data.descriptions);
-                      setSmartCatTotal(data.total);
-                      setSmartCatPage(newPage);
-                      setSmartCatSelected(new Set());
+                      setSmartCatDescriptions(data.descriptions); setSmartCatTotal(data.total); setSmartCatPage(p); setSmartCatSelected(new Set());
                     } finally { setSmartCatLoading(false); }
-                  }}
-                >
-                  Previous
-                </Button>
+                  }}>Previous</Button>
                 <Typography variant="caption">Page {smartCatPage + 1} of {Math.ceil(smartCatTotal / 20)}</Typography>
-                <Button
-                  size="small"
-                  disabled={(smartCatPage + 1) * 20 >= smartCatTotal}
+                <Button size="small" disabled={(smartCatPage + 1) * 20 >= smartCatTotal}
                   onClick={async () => {
-                    const newPage = smartCatPage + 1;
+                    const p = smartCatPage + 1;
                     setSmartCatLoading(true);
                     try {
-                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${newPage * 20}&limit=20`);
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${p * 20}&limit=20`);
                       const data = await res.json();
-                      setSmartCatDescriptions(data.descriptions);
-                      setSmartCatTotal(data.total);
-                      setSmartCatPage(newPage);
-                      setSmartCatSelected(new Set());
+                      setSmartCatDescriptions(data.descriptions); setSmartCatTotal(data.total); setSmartCatPage(p); setSmartCatSelected(new Set());
                     } finally { setSmartCatLoading(false); }
-                  }}
-                >
-                  Next
-                </Button>
+                  }}>Next</Button>
               </Box>
             </Box>
           )}
 
-          {!smartCatLoading && smartCatDescriptions.length === 0 && smartCatResults.length === 0 && (
+          {!smartCatLoading && smartCatDescriptions.length === 0 && smartCatResults.length === 0 && smartCatApplied.length === 0 && (
             <Typography color="text.secondary">No uncategorized transactions found.</Typography>
           )}
         </DialogContent>
         <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider' }}>
           <Button onClick={() => setSmartCatOpen(false)}>Close</Button>
-          <Button
-            variant="contained"
-            disabled={smartCatSelected.size === 0 || smartCatClassifying}
-            startIcon={smartCatClassifying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
-            onClick={async () => {
-              setSmartCatClassifying(true);
-              const selectedDescs = Array.from(smartCatSelected).map(i => smartCatDescriptions[i]?.description).filter(Boolean);
-              try {
-                const res = await fetch("/api/transactions/classify-batch", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ descriptions: selectedDescs, mode: "apply", create_rules: true }),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.detail || "Failed");
-                setSmartCatResults(prev => [...prev, ...data.results]);
-                queryClient.invalidateQueries({ queryKey: ["transactions"] });
-                enqueueSnackbar(
-                  `Classified ${data.results.length} descriptions, ${data.rules_created} rules created`,
-                  { variant: "success" }
-                );
-                // Reload the descriptions page to remove classified ones
-                const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=${smartCatPage * 20}&limit=20`);
-                const pageData = await pageRes.json();
-                setSmartCatDescriptions(pageData.descriptions);
-                setSmartCatTotal(pageData.total);
-                setSmartCatTotalTxns(pageData.total_transactions);
-                setSmartCatSelected(new Set());
-              } catch (err: any) {
-                enqueueSnackbar(err.message || "Classification failed", { variant: "error" });
-              } finally {
-                setSmartCatClassifying(false);
-              }
-            }}
-          >
-            {smartCatClassifying ? "Classifying..." : `Classify Selected (${smartCatSelected.size})`}
-          </Button>
+
+          {/* Step 1 action: Classify selected descriptions */}
+          {smartCatResults.length === 0 && smartCatDescriptions.length > 0 && (
+            <Button
+              variant="contained"
+              disabled={smartCatSelected.size === 0 || smartCatClassifying}
+              startIcon={smartCatClassifying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+              onClick={async () => {
+                setSmartCatClassifying(true);
+                const descs = Array.from(smartCatSelected).map(i => smartCatDescriptions[i]?.description).filter(Boolean);
+                try {
+                  const res = await fetch("/api/transactions/classify-batch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ descriptions: descs, mode: "preview" }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.detail || "Failed");
+                  setSmartCatResults(data.results || []);
+                  setSmartCatApproved(new Set((data.results || []).map((_: any, i: number) => i)));
+                  setSmartCatSelected(new Set());
+                } catch (err: any) {
+                  enqueueSnackbar(err.message || "Classification failed", { variant: "error" });
+                } finally {
+                  setSmartCatClassifying(false);
+                }
+              }}
+            >
+              {smartCatClassifying ? "Classifying..." : `Classify Selected (${smartCatSelected.size})`}
+            </Button>
+          )}
+
+          {/* Step 2 actions: Apply approved or go back */}
+          {smartCatResults.length > 0 && (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSmartCatResults([]);
+                  setSmartCatApproved(new Set());
+                  setSmartCatOverrides({});
+                }}
+              >
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                disabled={smartCatApproved.size === 0 || smartCatApplying}
+                startIcon={smartCatApplying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                onClick={async () => {
+                  setSmartCatApplying(true);
+                  // Build the list of approved descriptions with their final category IDs
+                  const toApply = Array.from(smartCatApproved).map(i => {
+                    const r = smartCatResults[i];
+                    const catId = smartCatOverrides[i] ?? r.category_id;
+                    return { description: r.description, category_id: catId, suggested_pattern: r.suggested_pattern, merchant_name: r.merchant_name };
+                  }).filter(item => item.category_id);
+
+                  try {
+                    // Apply each approved classification
+                    const res = await fetch("/api/transactions/classify-batch", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        descriptions: toApply.map(a => a.description),
+                        mode: "apply",
+                        create_rules: true,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || "Failed");
+
+                    // Move applied results to the applied list
+                    const appliedItems = Array.from(smartCatApproved).map(i => {
+                      const r = smartCatResults[i];
+                      const catId = smartCatOverrides[i] ?? r.category_id;
+                      const catName = categoriesData?.categories?.find(c => c.category_id === catId)?.category_name;
+                      return { ...r, applied_category: catName || r.suggested_category };
+                    });
+                    setSmartCatApplied(prev => [...prev, ...appliedItems]);
+                    setSmartCatResults([]);
+                    setSmartCatApproved(new Set());
+                    setSmartCatOverrides({});
+                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                    enqueueSnackbar(`Applied ${appliedItems.length} classifications, ${data.rules_created} rules created`, { variant: "success" });
+
+                    // Reload descriptions
+                    const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=${smartCatPage * 20}&limit=20`);
+                    const pageData = await pageRes.json();
+                    setSmartCatDescriptions(pageData.descriptions);
+                    setSmartCatTotal(pageData.total);
+                    setSmartCatTotalTxns(pageData.total_transactions);
+                  } catch (err: any) {
+                    enqueueSnackbar(err.message || "Apply failed", { variant: "error" });
+                  } finally {
+                    setSmartCatApplying(false);
+                  }
+                }}
+              >
+                {smartCatApplying ? "Applying..." : `Apply Approved (${smartCatApproved.size})`}
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 
