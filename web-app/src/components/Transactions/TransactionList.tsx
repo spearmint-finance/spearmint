@@ -1860,12 +1860,14 @@ function TransactionList() {
                     queryClient.invalidateQueries({ queryKey: ["categories"] });
                     enqueueSnackbar(`Applied ${appliedItems.length} classifications (${data.total_updated} transactions updated, ${data.rules_created} rules created)`, { variant: "success" });
 
-                    // Reload descriptions
-                    const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=${smartCatPage * 20}&limit=20`);
+                    // Reload descriptions from page 0
+                    const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=0&limit=20`);
                     const pageData = await pageRes.json();
-                    setSmartCatDescriptions(pageData.descriptions);
+                    console.log(`[SmartCat] Reload: ${pageData.total} descriptions, ${pageData.total_transactions} txns remaining`);
+                    setSmartCatDescriptions(pageData.descriptions || []);
                     setSmartCatTotal(pageData.total);
                     setSmartCatTotalTxns(pageData.total_transactions);
+                    setSmartCatPage(0);
                   } catch (err: any) {
                     enqueueSnackbar(err.message || "Apply failed", { variant: "error" });
                   } finally {

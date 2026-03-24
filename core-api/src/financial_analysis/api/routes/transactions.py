@@ -110,7 +110,7 @@ def bulk_update_transactions(
 @router.get("/transactions/uncategorized-descriptions")
 def get_uncategorized_descriptions(
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=5000),
     db: Session = Depends(get_db),
 ):
     """Get unique uncategorized descriptions sorted by frequency."""
