@@ -15,9 +15,10 @@ import { formatCurrency } from '../../utils/formatters';
 
 interface BalanceHistoryChartProps {
   balances: Balance[];
+  currency?: string;
 }
 
-const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ balances }) => {
+const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ balances, currency = "USD" }) => {
   // Prepare data for chart
   const chartData = balances
     .sort((a, b) => new Date(a.balance_date).getTime() - new Date(b.balance_date).getTime())
@@ -28,7 +29,7 @@ const BalanceHistoryChart: React.FC<BalanceHistoryChartProps> = ({ balances }) =
       investments: balance.investment_value || 0,
     }));
 
-  const formatCompact = (value: number) => formatCurrency(value, "USD", 0);
+  const formatCompact = (value: number) => formatCurrency(value, currency, 0);
 
   const hasCashAndInvestments = balances.some(
     (b) => b.cash_balance !== null && b.investment_value !== null
