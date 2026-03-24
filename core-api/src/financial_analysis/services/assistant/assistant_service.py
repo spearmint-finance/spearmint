@@ -219,23 +219,39 @@ class AssistantService:
                 )
 
             # Get final response from LLM after tool execution
-            async for event in self.llm.chat_completion(
-                messages=messages,
-                tools=ASSISTANT_TOOLS,
-                stream=True,
-            ):
-                if event.type == "content":
-                    full_content += event.data
-                    yield {
-                        "event": "content_delta",
-                        "data": {"delta": event.data}
-                    }
+            try:
+                async for event in self.llm.chat_completion(
+                    messages=messages,
+                    tools=ASSISTANT_TOOLS,
+                    stream=True,
+                ):
+                    if event.type == "content":
+                        full_content += event.data
+                        yield {
+                            "event": "content_delta",
+                            "data": {"delta": event.data}
+                        }
 
-                elif event.type == "usage":
-                    tokens_used += event.data.get("total_tokens", 0)
+                    elif event.type == "usage":
+                        tokens_used += event.data.get("total_tokens", 0)
 
-                elif event.type == "done":
-                    model = event.data.get("model", "")
+                    elif event.type == "done":
+                        model = event.data.get("model", "")
+
+                    elif event.type == "error":
+                        yield {
+                            "event": "error",
+                            "data": {"message": event.data}
+                        }
+                        return
+
+            except Exception as e:
+                logger.error(f"LLM follow-up error: {e}")
+                yield {
+                    "event": "error",
+                    "data": {"message": f"AI service error: {str(e)}"}
+                }
+                return
 
         # Save final assistant message (response after tool execution or direct response)
         final_message = None
