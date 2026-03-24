@@ -395,7 +395,6 @@ CONFIRMATION_REQUIRED_TOOLS = {
     "propose_categorization",
     "propose_category_rule",
     "propose_entity_assignment",
-    "propose_mark_as_transfer",
 }
 
 # Tool names that are read-only (safe to execute without confirmation)
