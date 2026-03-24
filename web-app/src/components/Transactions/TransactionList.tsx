@@ -949,6 +949,7 @@ function TransactionList() {
           columnVisibilityModel={columnVisibilityModel}
           onColumnVisibilityModelChange={setColumnVisibilityModel}
           checkboxSelection
+          disableRowSelectionOnClick
           onRowSelectionModelChange={(model) => {
             // MUI DataGrid v7: model is { type, ids: Set<GridRowId> }
             const ids = model && typeof model === 'object' && 'ids' in model
