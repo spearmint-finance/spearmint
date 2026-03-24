@@ -31,9 +31,11 @@ const AGENT_TOOLS: Record<string, { label: string; color: string }> = {
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  onConfirmAction?: (messageId: string) => void;
+  onDismissAction?: (messageId: string) => void;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onConfirmAction, onDismissAction }: ChatMessageProps) {
   const navigate = useNavigate();
   const isUser = message.role === "user";
 
@@ -261,7 +263,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
               sx={{
                 mt: 1.5,
                 p: 1.5,
-                bgcolor: "action.hover",
+                bgcolor: message.actionStatus === "confirmed"
+                  ? "success.lighter"
+                  : message.actionStatus === "dismissed"
+                  ? "grey.100"
+                  : message.actionStatus === "error"
+                  ? "error.lighter"
+                  : "action.hover",
                 borderRadius: 1,
               }}
             >
@@ -271,19 +279,42 @@ export function ChatMessage({ message }: ChatMessageProps) {
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 {message.actionProposal.preview?.transaction_count && (
                   <>
-                    {message.actionProposal.preview.transaction_count as number}{" "}
+                    {String(message.actionProposal.preview.transaction_count)}{" "}
                     transactions will be affected
                   </>
                 )}
               </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                <Button variant="contained" size="small" color="primary">
-                  Confirm
-                </Button>
-                <Button variant="outlined" size="small">
-                  Cancel
-                </Button>
-              </Stack>
+              {message.actionStatus === "confirmed" ? (
+                <Typography variant="body2" color="success.main" sx={{ mt: 0.5, fontWeight: 500 }}>
+                  Action confirmed
+                </Typography>
+              ) : message.actionStatus === "dismissed" ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Action cancelled
+                </Typography>
+              ) : message.actionStatus === "error" ? (
+                <Typography variant="body2" color="error.main" sx={{ mt: 0.5 }}>
+                  Action failed — please try again
+                </Typography>
+              ) : (
+                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    onClick={() => onConfirmAction?.(message.id)}
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => onDismissAction?.(message.id)}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              )}
             </Box>
           )}
 

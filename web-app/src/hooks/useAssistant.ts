@@ -5,10 +5,11 @@
  * and action handling.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   streamChat,
+  executeAction,
   type ChatContext,
   type SSEEvent,
   type ActionCard,
@@ -23,6 +24,7 @@ export interface ChatMessage {
   isStreaming?: boolean;
   actionCard?: ActionCard;
   actionProposal?: ActionProposal;
+  actionStatus?: "pending" | "confirmed" | "dismissed" | "error";
   toolCalls?: Array<{
     id: string;
     name: string;
@@ -42,6 +44,8 @@ interface UseAssistantReturn {
   error: string | null;
   conversationId: string | null;
   sendMessage: (content: string) => Promise<void>;
+  confirmAction: (messageId: string) => Promise<void>;
+  dismissAction: (messageId: string) => void;
   clearMessages: () => void;
   startNewConversation: () => void;
 }
@@ -261,6 +265,52 @@ export function useAssistant(
   );
 
   /**
+   * Confirm an action proposal.
+   */
+  const confirmAction = useCallback(
+    async (messageId: string) => {
+      const message = messages.find((m) => m.id === messageId);
+      if (!message?.actionProposal) return;
+
+      // Mark as confirmed immediately for UI feedback
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, actionStatus: "confirmed" as const } : m
+        )
+      );
+
+      try {
+        await executeAction(
+          messageId,
+          message.actionProposal.action,
+          message.actionProposal.payload
+        );
+      } catch (err) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId ? { ...m, actionStatus: "error" as const } : m
+          )
+        );
+        setError(
+          err instanceof Error ? err.message : "Failed to execute action"
+        );
+      }
+    },
+    [messages]
+  );
+
+  /**
+   * Dismiss an action proposal.
+   */
+  const dismissAction = useCallback((messageId: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId ? { ...m, actionStatus: "dismissed" as const } : m
+      )
+    );
+  }, []);
+
+  /**
    * Clear all messages and start fresh.
    */
   const clearMessages = useCallback(() => {
@@ -283,6 +333,8 @@ export function useAssistant(
     error,
     conversationId,
     sendMessage,
+    confirmAction,
+    dismissAction,
     clearMessages,
     startNewConversation,
   };
