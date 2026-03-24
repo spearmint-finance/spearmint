@@ -13,12 +13,14 @@ import {
   CircularProgress,
   Chip,
   Stack,
+  Link,
 } from "@mui/material";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import SavingsIcon from "@mui/icons-material/Savings";
 import PersonIcon from "@mui/icons-material/Person";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Tooltip from "@mui/material/Tooltip";
+import Markdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import type { ChatMessage as ChatMessageType } from "../../hooks/useAssistant";
 
@@ -148,15 +150,61 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
           {/* Message text */}
           {message.content ? (
-            <Typography
-              variant="body2"
-              sx={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}
-            >
-              {message.content}
-            </Typography>
+            isUser ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {message.content}
+              </Typography>
+            ) : (
+              <Box
+                sx={{
+                  "& p": { m: 0, mb: 0.5, fontSize: "0.875rem", lineHeight: 1.5, "&:last-child": { mb: 0 } },
+                  "& ul, & ol": { m: 0, mb: 0.5, pl: 2.5, fontSize: "0.875rem" },
+                  "& li": { mb: 0.25 },
+                  "& strong": { fontWeight: 600 },
+                  "& code": {
+                    bgcolor: "action.hover",
+                    px: 0.5,
+                    py: 0.25,
+                    borderRadius: 0.5,
+                    fontSize: "0.8rem",
+                    fontFamily: "monospace",
+                  },
+                  "& pre": {
+                    bgcolor: "grey.100",
+                    p: 1,
+                    borderRadius: 1,
+                    overflow: "auto",
+                    mb: 0.5,
+                    "& code": { bgcolor: "transparent", p: 0 },
+                  },
+                  "& h1, & h2, & h3": { fontSize: "0.95rem", fontWeight: 600, mt: 1, mb: 0.5 },
+                  "& a": { color: "primary.main" },
+                  "& table": { borderCollapse: "collapse", fontSize: "0.8rem", mb: 0.5 },
+                  "& th, & td": { border: "1px solid", borderColor: "divider", px: 1, py: 0.5 },
+                  "& th": { bgcolor: "grey.100", fontWeight: 600 },
+                  "& blockquote": { borderLeft: 3, borderColor: "divider", pl: 1.5, ml: 0, color: "text.secondary" },
+                  wordBreak: "break-word",
+                }}
+              >
+                <Markdown
+                  components={{
+                    a: ({ href, children }) => (
+                      <Link href={href} target="_blank" rel="noopener noreferrer" underline="hover">
+                        {children}
+                      </Link>
+                    ),
+                  }}
+                >
+                  {message.content}
+                </Markdown>
+              </Box>
+            )
           ) : message.isStreaming ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <CircularProgress size={16} />
