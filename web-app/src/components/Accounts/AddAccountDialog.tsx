@@ -18,6 +18,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useMutation } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import { createAccount } from '../../api/accounts';
 import {
   AccountCreate,
@@ -49,6 +50,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { enqueueSnackbar } = useSnackbar();
   const { entities, selectedEntityId } = useEntityContext();
   const [entityIds, setEntityIds] = useState<number[]>(
     selectedEntityId != null ? [selectedEntityId] : []
@@ -57,11 +59,12 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
   const createMutation = useMutation({
     mutationFn: createAccount,
     onSuccess: () => {
+      enqueueSnackbar('Account created', { variant: 'success' });
       onAccountCreated();
       handleClose();
     },
     onError: () => {
-      // Error state is displayed via createMutation.isError Alert in the dialog
+      enqueueSnackbar('Failed to create account', { variant: 'error' });
     },
   });
 

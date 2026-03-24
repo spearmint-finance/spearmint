@@ -43,6 +43,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import {
   Account,
   AccountUpdate,
@@ -105,6 +106,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   onAccountUpdated,
 }) => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const { entities } = useEntityContext();
   const acctCurrency = account?.currency || "USD";
   const [tabValue, setTabValue] = useState(0);
@@ -198,8 +200,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      enqueueSnackbar('Reconciliation completed', { variant: 'success' });
       setActiveRecon(null);
       setClearedIds(new Set());
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to complete reconciliation', { variant: 'error' });
     },
   });
 
@@ -247,9 +253,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
         balance_type: 'statement',
       }),
     onSuccess: () => {
+      enqueueSnackbar('Balance snapshot added', { variant: 'success' });
       onAccountUpdated();
       setShowAddBalance(false);
       setNewBalance('');
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to add balance snapshot', { variant: 'error' });
     },
   });
 
@@ -257,8 +267,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const updateAccountMutation = useMutation({
     mutationFn: (data: AccountUpdate) => updateAccount(account.account_id, data),
     onSuccess: () => {
+      enqueueSnackbar('Account updated', { variant: 'success' });
       onAccountUpdated();
       setIsEditing(false);
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to update account', { variant: 'error' });
     },
   });
 
@@ -271,8 +285,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
+      enqueueSnackbar('Reconciliation started', { variant: 'success' });
       setShowReconForm(false);
       setReconBalance('');
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to create reconciliation', { variant: 'error' });
     },
   });
 
@@ -289,8 +307,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding added', { variant: 'success' });
       setShowHoldingForm(false);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to add holding', { variant: 'error' });
     },
   });
 
@@ -307,9 +329,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding updated', { variant: 'success' });
       setShowHoldingForm(false);
       setEditingHoldingId(null);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to update holding', { variant: 'error' });
     },
   });
 
@@ -319,6 +345,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding deleted', { variant: 'success' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to delete holding', { variant: 'error' });
     },
   });
 
@@ -326,8 +356,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const deleteAccountMutation = useMutation({
     mutationFn: () => deleteAccount(account.account_id),
     onSuccess: () => {
+      enqueueSnackbar('Account deleted', { variant: 'success' });
       onAccountUpdated();
       onClose();
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to delete account', { variant: 'error' });
     },
   });
 
