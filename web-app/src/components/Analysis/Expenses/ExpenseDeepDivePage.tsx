@@ -87,7 +87,7 @@ function ExpenseDeepDivePage() {
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Stack direction="row" spacing={2}>
             <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
-            <ExportButton dateRange={dateRange} viewMode={viewMode} />
+            <ExportButton dateRange={dateRange} viewMode={viewMode} expenseData={expenseData} />
           </Stack>
         </Stack>
         <Box sx={{ mt: 2 }}>
