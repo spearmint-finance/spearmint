@@ -605,6 +605,25 @@ function Dashboard() {
               </Grid>
             )}
 
+            {/* Income Breakdown - Bar Chart */}
+            {summary.top_income_categories.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3 }}>
+                  <CategoryBarChart
+                    data={summary.top_income_categories.map((cat) => ({
+                      name: cat.category,
+                      value: Number(cat.amount),
+                      count: cat.count,
+                    }))}
+                    title="Income Breakdown"
+                    height={350}
+                    horizontal={true}
+                    color="#4caf50"
+                  />
+                </Paper>
+              </Grid>
+            )}
+
             {/* Expense Breakdown - Bar Chart */}
             {summary.top_expense_categories.length > 0 && (
               <Grid item xs={12} md={6}>
