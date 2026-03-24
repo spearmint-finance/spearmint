@@ -44,7 +44,7 @@ import {
   useTransactions,
   useUpdateTransaction,
 } from "../../hooks/useTransactions";
-import { useCategories } from "../../hooks/useCategories";
+import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionForm from "./TransactionForm";
 import type { Transaction } from "../../types/transaction";
@@ -99,8 +99,15 @@ function TransactionList() {
   // Row editing state
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
 
+  // Inline category creation state
+  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatType, setNewCatType] = useState<"Income" | "Expense" | "Transfer">("Expense");
+  const [pendingCatTxId, setPendingCatTxId] = useState<number | null>(null);
+
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
+  const createCategory = useCreateCategory();
   // Fetch all categories (unfiltered) so inline editors can filter per-row by entity
   const { data: categoriesData } = useCategories();
   const { data: accountsData } = useQuery({
@@ -424,6 +431,19 @@ function TransactionList() {
                 {opt.label}
               </MenuItem>
             ))}
+            <MenuItem
+              value="__create__"
+              sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPendingCatTxId(id);
+                setNewCatType(params.row.transaction_type === 'Income' ? 'Income' : 'Expense');
+                setNewCatDialogOpen(true);
+                apiRef.current.stopCellEditMode({ id, field: "category_id" });
+              }}
+            >
+              + Create New Category
+            </MenuItem>
           </Select>
         );
       },
@@ -1434,6 +1454,63 @@ function TransactionList() {
             variant="contained"
           >
             Apply Filters
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Inline Create Category Dialog */}
+      <Dialog open={newCatDialogOpen} onClose={() => setNewCatDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create New Category</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Category Name"
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            sx={{ mt: 1, mb: 2 }}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Type</InputLabel>
+            <Select
+              value={newCatType}
+              label="Type"
+              onChange={(e) => setNewCatType(e.target.value as "Income" | "Expense" | "Transfer")}
+            >
+              <MenuItem value="Income">Income</MenuItem>
+              <MenuItem value="Expense">Expense</MenuItem>
+              <MenuItem value="Transfer">Transfer</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setNewCatDialogOpen(false); setNewCatName(""); }}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!newCatName.trim() || createCategory.isPending}
+            onClick={async () => {
+              try {
+                const created = await createCategory.mutateAsync({
+                  category_name: newCatName.trim(),
+                  category_type: newCatType,
+                });
+                // Assign the new category to the pending transaction
+                if (pendingCatTxId) {
+                  await updateTransaction.mutateAsync({
+                    id: pendingCatTxId,
+                    data: { category_id: created.category_id },
+                  });
+                }
+                enqueueSnackbar(`Category "${newCatName}" created and assigned`, { variant: "success" });
+                setNewCatDialogOpen(false);
+                setNewCatName("");
+                setPendingCatTxId(null);
+              } catch {
+                enqueueSnackbar("Failed to create category", { variant: "error" });
+              }
+            }}
+          >
+            {createCategory.isPending ? <CircularProgress size={20} /> : "Create"}
           </Button>
         </DialogActions>
       </Dialog>
