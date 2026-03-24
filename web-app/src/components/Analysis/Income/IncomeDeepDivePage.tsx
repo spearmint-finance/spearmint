@@ -13,9 +13,11 @@ import {
   useCashFlowTrends,
 } from "../../../hooks/useAnalysis";
 import { format, subMonths } from "date-fns";
+import { useEntityContext } from "../../../contexts/EntityContext";
 
 function IncomeDeepDivePage() {
   const navigate = useNavigate();
+  const { selectedEntityId } = useEntityContext();
 
   // State for filters
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -37,6 +39,7 @@ function IncomeDeepDivePage() {
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
     mode: viewMode,
+    entity_id: selectedEntityId ?? undefined,
   };
 
   // Fetch data using hooks
