@@ -109,6 +109,7 @@ function TransactionList() {
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState<"Income" | "Expense" | "Transfer">("Expense");
   const [pendingCatTxId, setPendingCatTxId] = useState<number | null>(null);
+  const [pendingCatSmartIdx, setPendingCatSmartIdx] = useState<number | null>(null);
 
   // Smart Categorize state
   const [smartCatOpen, setSmartCatOpen] = useState(false);
@@ -1653,6 +1654,19 @@ function TransactionList() {
                         {categoriesData?.categories?.map((cat) => (
                           <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
                         ))}
+                        <MenuItem
+                          value="__create__"
+                          sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingCatSmartIdx(i);
+                            setPendingCatTxId(null);
+                            setNewCatType("Expense");
+                            setNewCatDialogOpen(true);
+                          }}
+                        >
+                          + Create New Category
+                        </MenuItem>
                       </Select>
                     </FormControl>
                   </Box>
@@ -1991,10 +2005,16 @@ function TransactionList() {
                     data: { category_id: created.category_id },
                   });
                 }
-                enqueueSnackbar(`Category "${newCatName}" created and assigned`, { variant: "success" });
+                // Or assign to the smart categorize review item
+                if (pendingCatSmartIdx !== null) {
+                  setSmartCatOverrides(prev => ({ ...prev, [pendingCatSmartIdx]: created.category_id }));
+                  setSmartCatApproved(prev => { const next = new Set(prev); next.add(pendingCatSmartIdx); return next; });
+                }
+                enqueueSnackbar(`Category "${newCatName}" created${pendingCatTxId ? " and assigned" : ""}`, { variant: "success" });
                 setNewCatDialogOpen(false);
                 setNewCatName("");
                 setPendingCatTxId(null);
+                setPendingCatSmartIdx(null);
               } catch {
                 enqueueSnackbar("Failed to create category", { variant: "error" });
               }
