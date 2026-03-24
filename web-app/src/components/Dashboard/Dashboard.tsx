@@ -555,7 +555,7 @@ function Dashboard() {
             <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Expense Categories Over Time
+                  Expense Categories ({trendPeriod.charAt(0).toUpperCase() + trendPeriod.slice(1)})
                 </Typography>
                 <ExpenseStackedBarChart
                   data={categoryTrends.data}
