@@ -47,7 +47,7 @@ import ExpenseViewToggle, {
 import ExportButton from "../Analysis/ExportButton";
 
 function Dashboard() {
-  const { selectedEntityId } = useEntityContext();
+  const { selectedEntityId, selectedEntity } = useEntityContext();
   const [dateRange, setDateRange] = useState<DateRange>({
     start_date: "",
     end_date: "",
@@ -146,7 +146,17 @@ function Dashboard() {
           gap: 2,
         }}
       >
-        <Typography variant="h4">Dashboard</Typography>
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+          <Typography variant="h4">Dashboard</Typography>
+          {selectedEntity && (
+            <Chip
+              label={selectedEntity.entity_name}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+          )}
+        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
           <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
           <DateRangePicker value={dateRange} onChange={setDateRange} />
