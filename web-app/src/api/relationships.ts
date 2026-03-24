@@ -10,6 +10,7 @@ import type {
   ReimbursementPairsResponse,
   DetectAllRelationshipsResponse,
   DetectRelationshipsParams,
+  TransactionSummary,
 } from "../types/relationship";
 
 // ============================================================================
@@ -121,4 +122,34 @@ export const detectAllRelationships = async (
       autoLink: auto_link,
     });
   return response.data as unknown as DetectAllRelationshipsResponse;
+};
+
+
+// ============================================================================
+// Related Transaction Lookup
+// ============================================================================
+
+export interface RelatedTransactionInfo {
+  transaction: TransactionSummary;
+  relationship_type: string;
+  relationship_description?: string;
+}
+
+export interface RelatedTransactionsResponse {
+  transaction_id: number;
+  related_transactions: RelatedTransactionInfo[];
+  count: number;
+}
+
+/**
+ * Get related transactions for a given transaction ID
+ */
+export const getRelatedTransactions = async (
+  transactionId: number
+): Promise<RelatedTransactionsResponse> => {
+  const response = await fetch(`/api/transactions/${transactionId}/relationships`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch related transactions: ${response.statusText}`);
+  }
+  return response.json();
 };

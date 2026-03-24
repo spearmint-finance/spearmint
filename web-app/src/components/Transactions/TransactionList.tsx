@@ -342,6 +342,12 @@ function TransactionList() {
       filterable: false,
       renderCell: (params) => {
         const hasRelationship = params.row.related_transaction_id;
+        const categoryName = params.row.category_name || "";
+        const isTransfer = categoryName === "Transfers" || categoryName === "Credit Card Payment";
+        const relType = categoryName === "Credit Card Payment" ? "CC Payment"
+          : categoryName === "Transfers" ? "Transfer"
+          : categoryName === "Reimbursements" ? "Reimbursement"
+          : "Linked";
 
         return (
           <Box
@@ -353,8 +359,23 @@ function TransactionList() {
             }}
           >
             {hasRelationship && (
-              <Tooltip title="Part of a linked transaction pair - Click row to view related transaction">
-                <LinkIcon fontSize="small" color="primary" />
+              <Tooltip title={`${relType} pair — click to jump to linked transaction`}>
+                <LinkIcon
+                  fontSize="small"
+                  color="primary"
+                  sx={{ cursor: "pointer", "&:hover": { color: "primary.dark" } }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const relatedId = params.row.related_transaction_id;
+                    // Find and select the related transaction from the grid data
+                    const txns = (data as any)?.transactions || [];
+                    const relRow = txns.find((r: any) => r.id === relatedId);
+                    if (relRow) {
+                      setSelectedTransaction(relRow);
+                      setDetailDialogOpen(true);
+                    }
+                  }}
+                />
               </Tooltip>
             )}
             <Typography variant="body2" sx={{ flex: 1 }}>
