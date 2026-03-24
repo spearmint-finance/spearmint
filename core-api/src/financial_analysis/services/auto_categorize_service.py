@@ -145,26 +145,35 @@ class AutoCategorizeService:
             for d in descriptions
         )
 
-        prompt = f"""You are a financial transaction categorizer. Given bank transaction descriptions, identify the merchant and assign the best category.
+        prompt = f"""You are a financial transaction categorizer for a personal finance app. Given bank transaction descriptions, identify the merchant and assign a SPECIFIC category.
 
-Existing categories:
+Existing categories (use these if they fit well):
 {category_list}
+
+IMPORTANT: Do NOT default to generic categories like "Expense" or "Income". If no existing category is a good fit, ALWAYS suggest a new specific category name. Good category names describe what you're spending on:
+- "Coffee & Cafes" not "Expense"
+- "Restaurants & Dining" not "Food"
+- "Gas & Fuel" not "Transportation"
+- "Software & Subscriptions" not "Expense"
+- "Home Improvement" not "Shopping"
+- "Pet Care" not "Expense"
+- "Clothing & Apparel" not "Shopping"
 
 For each transaction description, return a JSON array. Each element must have:
 - "description": the original description (exact match)
-- "merchant_name": the real business name (e.g., "ShopRite", "OpenAI", "Wawa")
-- "merchant_type": what kind of business (e.g., "Grocery Store", "Software", "Gas Station")
-- "suggested_category": best matching category name from the existing list. If none fit well, suggest a new descriptive category name.
+- "merchant_name": the real business name (e.g., "Dunkin' Donuts", "OpenAI", "Wawa")
+- "merchant_type": what kind of business (e.g., "Coffee & Donut Shop", "Software Company", "Gas Station & Convenience Store")
+- "suggested_category": the best specific category. Use an existing category ONLY if it truly fits. Otherwise suggest a new descriptive name. Never use generic names like "Expense", "Income", "Other", or "Miscellaneous".
 - "category_id": the ID of the matching existing category, or null if suggesting a new one
-- "confidence": 0.0-1.0 how confident you are in the categorization
+- "confidence": 0.0-1.0 how confident you are
 - "reasoning": brief 1-sentence explanation
-- "suggested_pattern": a generalized pattern for a transaction rule (strip store numbers, locations — e.g., "ACME.COM #0294 VENTNOR CITY NJ" → "ACME.COM")
+- "suggested_pattern": a generalized pattern for a transaction rule (strip store numbers, locations — e.g., "DUNKIN #XX6233 VENTNOR NJ" → "DUNKIN")
 
-Important rules:
-- If the description looks like an internal bank transfer, sweep, or money movement between accounts, categorize as "Transfers"
-- If it's clearly interest or dividend income, use the appropriate income category
+Other rules:
+- Internal bank transfers, sweeps, money movements between accounts → "Transfers"
+- Interest or dividend income → use the appropriate existing income category
 - Strip payment processor prefixes (AplPay, SQ *, ZELLE) when identifying the merchant
-- Be conservative with confidence — only use >0.9 when you're very certain
+- Be conservative with confidence — only use >0.9 when you're very certain of both the merchant AND the category
 
 Return ONLY a valid JSON array, no other text.
 
