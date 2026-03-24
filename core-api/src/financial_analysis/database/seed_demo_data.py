@@ -840,6 +840,7 @@ def generate_expense_transactions(
         "description": f"{DEMO_MARKER} Rent Payment - 123 Main Street Apt 4B",
         "source": PRIMARY_CHECKING,
         "payment_method": "ACH Transfer",
+        "is_recurring": True,
     })
 
     # Utilities - 3-4x per month
@@ -910,6 +911,7 @@ def generate_expense_transactions(
             "description": f"{DEMO_MARKER} {sub_name}",
             "source": random.choice(CREDIT_CARDS),
             "payment_method": "Credit Card",
+            "is_recurring": True,
         })
 
     # Shopping - 3-5x per month (more in November/December)
@@ -940,6 +942,7 @@ def generate_expense_transactions(
             "description": f"{DEMO_MARKER} {random.choice(HEALTHCARE_MERCHANTS)}",
             "source": source,
             "payment_method": payment,
+            "is_tax_deductible": True,
         })
 
     # Entertainment - 2-4x per month
@@ -964,6 +967,7 @@ def generate_expense_transactions(
         "description": f"{DEMO_MARKER} Auto Insurance - GEICO",
         "source": PRIMARY_CHECKING,
         "payment_method": "Auto Pay",
+        "is_recurring": True,
     })
 
     return transactions
@@ -1103,6 +1107,7 @@ def generate_edge_cases(
             "category_id": categories["Shopping"],
             "description": f"{DEMO_MARKER} {item_name}",
             "notes": "Capital expense - excluded from operating expenses",
+            "is_capital_expense": True,
         })
 
     # Data quality issues - only in specific months
