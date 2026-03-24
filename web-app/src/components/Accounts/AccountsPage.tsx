@@ -186,6 +186,9 @@ const AccountsPage: React.FC = () => {
                   color={isLiability ? 'error' : 'success'}
                   variant="outlined"
                 />
+                {account.currency && account.currency !== 'USD' && (
+                  <Chip label={account.currency} size="small" variant="outlined" />
+                )}
               </Box>
             </Box>
 
