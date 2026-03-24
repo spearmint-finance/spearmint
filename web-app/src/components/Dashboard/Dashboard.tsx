@@ -175,7 +175,7 @@ function Dashboard() {
       <Grid container spacing={3}>
         {/* Total Income Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "success.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingUpIcon color="success" sx={{ mr: 1 }} />
@@ -205,7 +205,7 @@ function Dashboard() {
 
         {/* Total Expenses Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "error.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingDownIcon color="error" sx={{ mr: 1 }} />
@@ -235,7 +235,7 @@ function Dashboard() {
 
         {/* Net Cash Flow Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: summary.net_cash_flow >= 0 ? "success.main" : "error.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <AccountBalanceWalletIcon color="primary" sx={{ mr: 1 }} />
@@ -262,7 +262,7 @@ function Dashboard() {
 
         {/* Financial Health Indicators */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "primary.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Income/Expense Ratio
@@ -298,7 +298,7 @@ function Dashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "primary.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Savings Rate
@@ -328,7 +328,7 @@ function Dashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: summary.financial_health.net_daily_cash_flow >= 0 ? "success.main" : "error.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Daily Cash Flow
