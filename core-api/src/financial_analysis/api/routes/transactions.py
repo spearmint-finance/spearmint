@@ -434,19 +434,19 @@ def classify_batch(
 
         # Apply if mode == "apply" and we have a category
         if request.mode == "apply" and cat_id and confidence >= 0.5:
-            from ...database.models import Category as CatModel
+            from ...database.models import Transaction as TxModel, Category as CatModel
             from sqlalchemy import or_
             nan_cat = db.query(CatModel).filter(CatModel.category_name == "nan").first()
             cat_conditions = []
             if nan_cat:
-                cat_conditions.append(Transaction.category_id == nan_cat.category_id)
-            cat_conditions.append(Transaction.category_id.is_(None))
+                cat_conditions.append(TxModel.category_id == nan_cat.category_id)
+            cat_conditions.append(TxModel.category_id.is_(None))
 
-            updated = db.query(Transaction).filter(
-                Transaction.description == desc,
+            updated = db.query(TxModel).filter(
+                TxModel.description == desc,
                 or_(*cat_conditions),
             ).update(
-                {Transaction.category_id: cat_id},
+                {TxModel.category_id: cat_id},
                 synchronize_session="fetch",
             )
 
