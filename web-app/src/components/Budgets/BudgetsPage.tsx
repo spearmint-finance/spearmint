@@ -27,6 +27,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { CircularProgress } from "@mui/material";
+import { useCreateCategory } from "../../hooks/useCategories";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -106,6 +108,9 @@ function BudgetsPage() {
   const [newAmount, setNewAmount] = useState("");
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [editAmount, setEditAmount] = useState("");
+  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const createCategoryMutation = useCreateCategory();
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ["budget-summary", year, month, selectedEntityId],
@@ -422,6 +427,16 @@ function BudgetsPage() {
                 {cat.category_name}
               </MenuItem>
             ))}
+            <MenuItem
+              value="__create__"
+              sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setNewCatDialogOpen(true);
+              }}
+            >
+              + Create New Category
+            </MenuItem>
           </TextField>
           <TextField
             label="Monthly Amount"
@@ -440,6 +455,44 @@ function BudgetsPage() {
             disabled={!newCategoryId || !newAmount || createMutation.isPending}
           >
             Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create New Category Dialog */}
+      <Dialog open={newCatDialogOpen} onClose={() => setNewCatDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create New Category</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Category Name"
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            sx={{ mt: 1, mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setNewCatDialogOpen(false); setNewCatName(""); }}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!newCatName.trim() || createCategoryMutation.isPending}
+            onClick={async () => {
+              try {
+                const created = await createCategoryMutation.mutateAsync({
+                  category_name: newCatName.trim(),
+                  category_type: "Expense",
+                });
+                setNewCategoryId(created.category_id);
+                setNewCatDialogOpen(false);
+                setNewCatName("");
+                enqueueSnackbar(`Category "${newCatName}" created`, { variant: "success" });
+              } catch {
+                enqueueSnackbar("Failed to create category", { variant: "error" });
+              }
+            }}
+          >
+            {createCategoryMutation.isPending ? <CircularProgress size={20} /> : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

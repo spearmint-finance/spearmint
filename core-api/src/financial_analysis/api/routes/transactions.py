@@ -447,6 +447,13 @@ def classify_batch(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
 
+    # Map LLM descriptions back to originals (LLM may alter case/whitespace)
+    original_lookup = {d.strip().lower(): d for d in request.descriptions}
+    for c in classifications:
+        llm_desc = (c.get("description") or "").strip().lower()
+        if llm_desc in original_lookup:
+            c["description"] = original_lookup[llm_desc]
+
     # Build category lookup
     cat_name_to_id = {c["category_name"].lower(): c["category_id"] for c in categories}
     rules_created = 0
@@ -536,11 +543,16 @@ def apply_categories(
     No LLM call — just updates transactions and optionally creates rules.
     """
     from ...database.models import Transaction as TxModel, Category as CatModel, CategoryRule
-    from sqlalchemy import or_
+    from sqlalchemy import or_, func
 
     nan_cat = db.query(CatModel).filter(CatModel.category_name == "nan").first()
     rules_created = 0
     total_updated = 0
+
+    # Pre-check which categories are Transfer type (should exclude from analysis)
+    transfer_cat_ids = set(
+        c.category_id for c in db.query(CatModel).filter(CatModel.category_type == "Transfer").all()
+    )
 
     for a in request.assignments:
         cat_conditions = []
@@ -548,14 +560,29 @@ def apply_categories(
             cat_conditions.append(TxModel.category_id == nan_cat.category_id)
         cat_conditions.append(TxModel.category_id.is_(None))
 
+        # Build update dict — auto-exclude from analysis for Transfer-type categories
+        update_fields = {TxModel.category_id: a.category_id}
+        if a.category_id in transfer_cat_ids:
+            update_fields[TxModel.include_in_analysis] = False
+
         # Update by exact description match first
         updated = db.query(TxModel).filter(
             TxModel.description == a.description,
             or_(*cat_conditions),
         ).update(
-            {TxModel.category_id: a.category_id},
+            update_fields,
             synchronize_session="fetch",
         )
+
+        # Fallback: case-insensitive match if exact match found nothing
+        if updated == 0:
+            updated = db.query(TxModel).filter(
+                func.lower(TxModel.description) == a.description.strip().lower(),
+                or_(*cat_conditions),
+            ).update(
+                update_fields,
+                synchronize_session="fetch",
+            )
 
         # Also update all transactions matching the suggested pattern (catches variants)
         if a.suggested_pattern:
@@ -563,7 +590,7 @@ def apply_categories(
                 TxModel.description.contains(a.suggested_pattern),
                 or_(*cat_conditions),
             ).update(
-                {TxModel.category_id: a.category_id},
+                update_fields,
                 synchronize_session="fetch",
             )
             updated += pattern_updated
