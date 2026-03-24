@@ -192,7 +192,7 @@ const AccountsPage: React.FC = () => {
             <Box mt={2}>
               <Typography variant="h5" color={isLiability ? 'error' : 'primary'}>
                 {isLiability && balance < 0 && '-'}
-                {formatCurrency(displayBalance)}
+                {formatCurrency(displayBalance, account.currency)}
               </Typography>
               {account.current_balance_date && (
                 <Typography variant="caption" color="text.secondary">
@@ -210,7 +210,7 @@ const AccountsPage: React.FC = () => {
                         Cash
                       </Typography>
                       <Typography variant="body2">
-                        {formatCurrency(account.cash_balance)}
+                        {formatCurrency(account.cash_balance, account.currency)}
                       </Typography>
                     </Grid>
                   )}
@@ -220,7 +220,7 @@ const AccountsPage: React.FC = () => {
                         Investments
                       </Typography>
                       <Typography variant="body2">
-                        {formatCurrency(account.investment_value)}
+                        {formatCurrency(account.investment_value, account.currency)}
                       </Typography>
                     </Grid>
                   )}

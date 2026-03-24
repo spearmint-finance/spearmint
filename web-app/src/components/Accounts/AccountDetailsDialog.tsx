@@ -106,6 +106,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
 }) => {
   const navigate = useNavigate();
   const { entities } = useEntityContext();
+  const acctCurrency = account?.currency || "USD";
   const [tabValue, setTabValue] = useState(0);
   const [showAddBalance, setShowAddBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
@@ -436,7 +437,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   Current Balance
                 </Typography>
                 <Typography variant="h5">
-                  {formatCurrency(account.current_balance || 0)}
+                  {formatCurrency(account.current_balance || 0, acctCurrency)}
                 </Typography>
                 {account.current_balance_date && (
                   <Typography variant="caption" color="text.secondary">
@@ -463,7 +464,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     Cash Position
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(account.cash_balance)}
+                    {formatCurrency(account.cash_balance, acctCurrency)}
                   </Typography>
                 </Grid>
               )}
@@ -474,7 +475,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     Investment Value
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(account.investment_value)}
+                    {formatCurrency(account.investment_value, acctCurrency)}
                   </Typography>
                 </Grid>
               )}
@@ -600,7 +601,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   <ListItem>
                     <ListItemText
                       primary="Opening Balance"
-                      secondary={formatCurrency(account.opening_balance)}
+                      secondary={formatCurrency(account.opening_balance, acctCurrency)}
                     />
                   </ListItem>
                   <ListItem>
@@ -689,7 +690,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           )}
 
           {balanceHistory && balanceHistory.balances.length > 0 ? (
-            <BalanceHistoryChart balances={balanceHistory.balances} />
+            <BalanceHistoryChart balances={balanceHistory.balances} currency={acctCurrency} />
           ) : (
             <Typography color="text.secondary">No balance history available</Typography>
           )}
@@ -796,7 +797,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Total Value
                     </Typography>
-                    <Typography variant="h6">{formatCurrency(portfolio.total_value)}</Typography>
+                    <Typography variant="h6">{formatCurrency(portfolio.total_value, acctCurrency)}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
@@ -815,7 +816,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       }
                     >
                       {portfolio.total_gain_loss != null
-                        ? formatCurrency(portfolio.total_gain_loss)
+                        ? formatCurrency(portfolio.total_gain_loss, acctCurrency)
                         : 'N/A'}
                     </Typography>
                   </Grid>
@@ -865,8 +866,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       <ListItemText
                         primary={`${holding.symbol} - ${holding.description || 'N/A'}`}
                         secondary={`${holding.quantity} shares @ ${formatCurrency(
-                          holding.current_value || 0
-                        )}${holding.gain_loss != null ? ` (${holding.gain_loss >= 0 ? '+' : ''}${formatCurrency(holding.gain_loss)})` : ''}`}
+                          holding.current_value || 0, acctCurrency
+                        )}${holding.gain_loss != null ? ` (${holding.gain_loss >= 0 ? '+' : ''}${formatCurrency(holding.gain_loss, acctCurrency)})` : ''}`}
                       />
                       {holding.gain_loss_percent != null && (
                         <Chip
@@ -971,13 +972,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                 <Grid item xs={4}>
                   <Typography variant="caption" color="text.secondary">Statement Balance</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {formatCurrency(activeRecon.statement_balance)}
+                    {formatCurrency(activeRecon.statement_balance, acctCurrency)}
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
                   <Typography variant="caption" color="text.secondary">Cleared Balance</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {formatCurrency(clearedBalance)}
+                    {formatCurrency(clearedBalance, acctCurrency)}
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
@@ -987,7 +988,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     fontWeight="bold"
                     color={Math.abs(discrepancy) < 0.01 ? 'success.main' : 'warning.main'}
                   >
-                    {formatCurrency(discrepancy)}
+                    {formatCurrency(discrepancy, acctCurrency)}
                   </Typography>
                 </Grid>
               </Grid>
@@ -1033,7 +1034,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                                   variant="body2"
                                   color={tx.transaction_type === 'Income' ? 'success.main' : 'error.main'}
                                 >
-                                  {tx.transaction_type === 'Income' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
+                                  {tx.transaction_type === 'Income' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), acctCurrency)}
                                 </Typography>
                               </Box>
                             }
@@ -1083,10 +1084,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   <ListItemText
                     primary={new Date(recon.statement_date).toLocaleDateString()}
                     secondary={`Statement: ${formatCurrency(
-                      recon.statement_balance
+                      recon.statement_balance, acctCurrency
                     )} | Calculated: ${formatCurrency(
-                      recon.calculated_balance
-                    )} | Discrepancy: ${formatCurrency(recon.discrepancy_amount || 0)}`}
+                      recon.calculated_balance, acctCurrency
+                    )} | Discrepancy: ${formatCurrency(recon.discrepancy_amount || 0, acctCurrency)}`}
                   />
                   {recon.is_reconciled ? (
                     <Chip

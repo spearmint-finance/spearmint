@@ -23,7 +23,7 @@ interface NetWorthCardProps {
 }
 
 const NetWorthCard: React.FC<NetWorthCardProps> = ({ netWorth, entityName }) => {
-  const formatCompact = (amount: number) => formatCurrency(amount, "USD", 0);
+  const formatCompact = (amount: number) => formatCurrency(amount, undefined, 0);
 
   const assets = Number(netWorth.assets) || 0;
   const liabilities = Number(netWorth.liabilities) || 0;
