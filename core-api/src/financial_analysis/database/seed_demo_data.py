@@ -27,7 +27,11 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .base import SessionLocal
-from .models import Account, AccountBalance, Category, Transaction
+from .models import (
+    Account, AccountBalance, Category, CategoryRule, Entity,
+    InvestmentHolding, Transaction, TransactionRelationship,
+    TransactionSplit, account_entities,
+)
 
 
 # Constants
@@ -195,6 +199,22 @@ SAVINGS_ACCOUNT = "Marcus Savings"
 # Demo Account Definitions
 # =============================================================================
 
+DEMO_ENTITIES = [
+    {
+        "entity_name": "Personal",
+        "entity_type": "personal",
+        "is_default": True,
+        "notes": f"{DEMO_MARKER} Personal finances",
+    },
+    {
+        "entity_name": "Side Business",
+        "entity_type": "business",
+        "tax_id": "12-3456789",
+        "fiscal_year_start_month": 1,
+        "notes": f"{DEMO_MARKER} Freelance consulting business",
+    },
+]
+
 DEMO_ACCOUNTS = [
     {
         "account_name": "Chase Checking",
@@ -204,6 +224,7 @@ DEMO_ACCOUNTS = [
         "has_cash_component": True,
         "opening_balance": Decimal("5000.00"),
         "notes": f"{DEMO_MARKER} Primary checking account",
+        "entity": "Personal",
     },
     {
         "account_name": "Marcus Savings",
@@ -213,6 +234,7 @@ DEMO_ACCOUNTS = [
         "has_cash_component": True,
         "opening_balance": Decimal("15000.00"),
         "notes": f"{DEMO_MARKER} High-yield savings account",
+        "entity": "Personal",
     },
     {
         "account_name": "Chase Sapphire",
@@ -221,32 +243,26 @@ DEMO_ACCOUNTS = [
         "account_number_last4": "9012",
         "opening_balance": Decimal("0.00"),
         "notes": f"{DEMO_MARKER} Chase Sapphire Reserve credit card",
+        "entity": "Personal",
     },
     {
-        "account_name": "Amex Gold",
-        "account_type": "credit_card",
-        "institution_name": "American Express",
-        "account_number_last4": "1004",
-        "opening_balance": Decimal("0.00"),
-        "notes": f"{DEMO_MARKER} Amex Gold rewards card",
-    },
-    {
-        "account_name": "Citi Double Cash",
-        "account_type": "credit_card",
-        "institution_name": "Citibank",
-        "account_number_last4": "7788",
-        "opening_balance": Decimal("0.00"),
-        "notes": f"{DEMO_MARKER} Citi Double Cash Back card",
-    },
-    {
-        "account_name": "Fidelity HSA",
-        "account_type": "other",
-        "account_subtype": "hsa",
-        "institution_name": "Fidelity Investments",
-        "account_number_last4": "3344",
+        "account_name": "Business Checking",
+        "account_type": "checking",
+        "institution_name": "Mercury",
+        "account_number_last4": "7701",
         "has_cash_component": True,
-        "opening_balance": Decimal("2500.00"),
-        "notes": f"{DEMO_MARKER} Health Savings Account",
+        "opening_balance": Decimal("8000.00"),
+        "notes": f"{DEMO_MARKER} Business operating account",
+        "entity": "Side Business",
+    },
+    {
+        "account_name": "Business Credit Card",
+        "account_type": "credit_card",
+        "institution_name": "Brex",
+        "account_number_last4": "3302",
+        "opening_balance": Decimal("0.00"),
+        "notes": f"{DEMO_MARKER} Business rewards card",
+        "entity": "Side Business",
     },
     {
         "account_name": "Vanguard Brokerage",
@@ -257,7 +273,58 @@ DEMO_ACCOUNTS = [
         "has_investment_component": True,
         "opening_balance": Decimal("50000.00"),
         "notes": f"{DEMO_MARKER} Investment brokerage account",
+        "entity": "Personal",
     },
+]
+
+
+# =============================================================================
+# Demo Transaction Rules
+# =============================================================================
+
+DEMO_RULES = [
+    {
+        "rule_name": "Grocery stores",
+        "description_pattern": "WHOLE FOODS|TRADER JOE|SAFEWAY|COSTCO|KROGER",
+        "category_name": "Groceries",
+        "entity_name": "Personal",
+    },
+    {
+        "rule_name": "Streaming services",
+        "description_pattern": "NETFLIX|SPOTIFY|YOUTUBE PREMIUM|AMAZON PRIME",
+        "category_name": "Subscriptions",
+        "entity_name": "Personal",
+    },
+    {
+        "rule_name": "Business software",
+        "description_pattern": "ADOBE|GITHUB|AWS|DIGITALOCEAN",
+        "category_name": "Subscriptions",
+        "entity_name": "Side Business",
+    },
+    {
+        "rule_name": "Rideshare",
+        "description_pattern": "UBER|LYFT",
+        "category_name": "Transportation",
+    },
+    {
+        "rule_name": "Salary deposits",
+        "description_pattern": "Direct Deposit.*Acme|Direct Deposit.*TechStart|Direct Deposit.*Global",
+        "category_name": "Salary",
+        "entity_name": "Personal",
+        "transaction_type_pattern": "Income",
+    },
+]
+
+
+# =============================================================================
+# Demo Investment Holdings
+# =============================================================================
+
+DEMO_HOLDINGS = [
+    {"symbol": "VTSAX", "description": "Vanguard Total Stock Market", "quantity": Decimal("150.000"), "cost_basis": Decimal("22500.00"), "current_value": Decimal("28500.00"), "asset_class": "etf"},
+    {"symbol": "VTIAX", "description": "Vanguard Total International", "quantity": Decimal("100.000"), "cost_basis": Decimal("10000.00"), "current_value": Decimal("11200.00"), "asset_class": "etf"},
+    {"symbol": "BND", "description": "Vanguard Total Bond Market", "quantity": Decimal("80.000"), "cost_basis": Decimal("6400.00"), "current_value": Decimal("6100.00"), "asset_class": "bond"},
+    {"symbol": "AAPL", "description": "Apple Inc.", "quantity": Decimal("25.000"), "cost_basis": Decimal("3750.00"), "current_value": Decimal("4800.00"), "asset_class": "stock"},
 ]
 
 
@@ -338,9 +405,43 @@ def seed_demo_categories(db: Session) -> dict[str, int]:
     return category_map
 
 
-def seed_demo_accounts(db: Session) -> dict[str, int]:
+def seed_demo_entities(db: Session) -> dict[str, int]:
     """
-    Seed demo accounts if they don't exist.
+    Seed demo entities (Personal + Side Business).
+
+    Returns:
+        dict mapping entity_name -> entity_id
+    """
+    print("\n" + "=" * 60)
+    print("Seeding Demo Entities")
+    print("=" * 60)
+
+    entity_map = {}
+    added = 0
+
+    for ent_data in DEMO_ENTITIES:
+        existing = db.query(Entity).filter_by(
+            entity_name=ent_data["entity_name"]
+        ).first()
+
+        if existing:
+            entity_map[ent_data["entity_name"]] = existing.entity_id
+        else:
+            entity = Entity(**ent_data)
+            db.add(entity)
+            db.flush()
+            entity_map[ent_data["entity_name"]] = entity.entity_id
+            added += 1
+            print(f"  [ADDED] {ent_data['entity_name']} ({ent_data['entity_type']})")
+
+    db.commit()
+    print(f"\n[OK] Entities: {added} added")
+    return entity_map
+
+
+def seed_demo_accounts(db: Session, entity_map: dict[str, int]) -> dict[str, int]:
+    """
+    Seed demo accounts and assign them to entities.
 
     Returns:
         dict mapping account_name -> account_id
@@ -373,6 +474,9 @@ def seed_demo_accounts(db: Session) -> dict[str, int]:
                 if opening_date.year == date_type.today().year:
                     opening_date = opening_date.replace(year=opening_date.year - 1)
 
+            entity_name = acct_data.get("entity")
+            entity_id = entity_map.get(entity_name) if entity_name else None
+
             account = Account(
                 account_name=acct_data["account_name"],
                 account_type=acct_data["account_type"],
@@ -384,13 +488,21 @@ def seed_demo_accounts(db: Session) -> dict[str, int]:
                 opening_balance=acct_data.get("opening_balance", Decimal("0.00")),
                 opening_balance_date=opening_date,
                 notes=acct_data.get("notes"),
+                entity_id=entity_id,
                 is_active=True,
             )
             db.add(account)
-            db.flush()  # Get the ID
+            db.flush()
             account_map[acct_data["account_name"]] = account.account_id
 
-            # Create initial balance snapshot so current_balance is never null
+            # Assign to entity via M2M
+            if entity_id:
+                db.execute(account_entities.insert().values(
+                    account_id=account.account_id,
+                    entity_id=entity_id,
+                ))
+
+            # Create initial balance snapshot
             opening_bal = acct_data.get("opening_balance", Decimal("0.00"))
             if opening_bal != 0:
                 balance_snapshot = AccountBalance(
@@ -402,11 +514,145 @@ def seed_demo_accounts(db: Session) -> dict[str, int]:
                 db.add(balance_snapshot)
 
             added += 1
-            print(f"  [ADDED] {acct_data['account_name']} ({acct_data['account_type']})")
+            entity_label = f" → {entity_name}" if entity_name else ""
+            print(f"  [ADDED] {acct_data['account_name']} ({acct_data['account_type']}){entity_label}")
 
     db.commit()
     print(f"\n[OK] Accounts: {added} added, {skipped} already existed")
     return account_map
+
+
+def seed_demo_rules(db: Session, categories: dict[str, int], entities: dict[str, int]) -> int:
+    """Seed demo transaction rules. Returns count of rules created."""
+    print("\n" + "=" * 60)
+    print("Seeding Demo Transaction Rules")
+    print("=" * 60)
+
+    added = 0
+    for rule_data in DEMO_RULES:
+        existing = db.query(CategoryRule).filter_by(
+            rule_name=rule_data["rule_name"]
+        ).first()
+        if existing:
+            continue
+
+        cat_id = categories.get(rule_data["category_name"])
+        ent_id = entities.get(rule_data.get("entity_name")) if rule_data.get("entity_name") else None
+
+        rule = CategoryRule(
+            rule_name=rule_data["rule_name"],
+            description_pattern=rule_data["description_pattern"],
+            category_id=cat_id,
+            entity_id=ent_id,
+            transaction_type_pattern=rule_data.get("transaction_type_pattern"),
+            is_active=True,
+            rule_priority=100,
+        )
+        db.add(rule)
+        added += 1
+        print(f"  [ADDED] {rule_data['rule_name']}")
+
+    db.commit()
+    print(f"\n[OK] Rules: {added} added")
+    return added
+
+
+def seed_demo_holdings(db: Session, accounts: dict[str, int]) -> int:
+    """Seed investment holdings for the brokerage account."""
+    print("\n" + "=" * 60)
+    print("Seeding Demo Investment Holdings")
+    print("=" * 60)
+
+    brokerage_id = accounts.get("Vanguard Brokerage")
+    if not brokerage_id:
+        print("  [SKIP] No brokerage account found")
+        return 0
+
+    added = 0
+    today = date.today()
+
+    for h in DEMO_HOLDINGS:
+        existing = db.query(InvestmentHolding).filter_by(
+            account_id=brokerage_id, symbol=h["symbol"], as_of_date=today,
+        ).first()
+        if existing:
+            continue
+
+        holding = InvestmentHolding(
+            account_id=brokerage_id,
+            symbol=h["symbol"],
+            description=h["description"],
+            quantity=h["quantity"],
+            cost_basis=h["cost_basis"],
+            current_value=h["current_value"],
+            as_of_date=today,
+            asset_class=h["asset_class"],
+        )
+        db.add(holding)
+        added += 1
+        gain = h["current_value"] - h["cost_basis"]
+        print(f"  [ADDED] {h['symbol']}: {h['quantity']} shares (gain: ${gain})")
+
+    db.commit()
+    print(f"\n[OK] Holdings: {added} added")
+    return added
+
+
+def seed_demo_balance_snapshots(db: Session, accounts: dict[str, int], months: int = DEMO_MONTHS) -> int:
+    """
+    Generate monthly balance snapshots for each account showing positive trajectory.
+    Returns count of snapshots created.
+    """
+    print("\n" + "=" * 60)
+    print("Seeding Demo Balance Snapshots")
+    print("=" * 60)
+
+    month_dates = get_month_dates(months)
+    added = 0
+
+    # Starting balances and monthly growth patterns per account
+    balance_profiles = {
+        "Chase Checking": {"start": Decimal("5000"), "monthly_delta": Decimal("200"), "variance": 500},
+        "Marcus Savings": {"start": Decimal("15000"), "monthly_delta": Decimal("800"), "variance": 200},
+        "Chase Sapphire": {"start": Decimal("-1200"), "monthly_delta": Decimal("-50"), "variance": 300},
+        "Business Checking": {"start": Decimal("8000"), "monthly_delta": Decimal("500"), "variance": 800},
+        "Business Credit Card": {"start": Decimal("-400"), "monthly_delta": Decimal("-30"), "variance": 200},
+        "Vanguard Brokerage": {"start": Decimal("50000"), "monthly_delta": Decimal("1500"), "variance": 2000},
+    }
+
+    random.seed(RANDOM_SEED + 1)
+
+    for acct_name, acct_id in accounts.items():
+        profile = balance_profiles.get(acct_name)
+        if not profile:
+            continue
+
+        balance = profile["start"]
+
+        for i, month_date in enumerate(month_dates):
+            # Skip if snapshot already exists
+            existing = db.query(AccountBalance).filter_by(
+                account_id=acct_id, balance_date=month_date, balance_type="statement",
+            ).first()
+            if existing:
+                continue
+
+            # Add growth + variance
+            delta = profile["monthly_delta"] + Decimal(str(round(random.uniform(-profile["variance"], profile["variance"]), 2)))
+            balance += delta
+
+            snapshot = AccountBalance(
+                account_id=acct_id,
+                balance_date=month_date,
+                total_balance=balance,
+                balance_type="statement",
+            )
+            db.add(snapshot)
+            added += 1
+
+    db.commit()
+    print(f"\n[OK] Balance snapshots: {added} added")
+    return added
 
 
 # =============================================================================
@@ -454,7 +700,7 @@ def generate_income_transactions(
         "payment_method": "Direct Deposit",
     })
 
-    # Freelance - 1-3x per month (random)
+    # Freelance - 1-3x per month (random) — deposited to business account
     num_freelance = random.randint(1, 3)
     for _ in range(num_freelance):
         quarter = (month - 1) // 3 + 1
@@ -465,6 +711,7 @@ def generate_income_transactions(
             "transaction_type": "Income",
             "category_id": categories["Freelance Income"],
             "description": f"{DEMO_MARKER} {client_desc}",
+            "source": "Business Checking",
             "payment_method": "ACH Transfer",
         })
 
@@ -846,37 +1093,77 @@ def generate_edge_cases(
 # Main Seeding Functions
 # =============================================================================
 
+def _resolve_account_id(source: str, accounts: dict[str, int]) -> int | None:
+    """Map a source/merchant string to an account_id."""
+    if not source:
+        return None
+    for acct_name, acct_id in accounts.items():
+        if acct_name in source:
+            return acct_id
+    # Default personal checking for salary deposits and unknown
+    return accounts.get("Chase Checking")
+
+
+def _resolve_entity_id(source: str, acct_id: int | None, accounts: dict[str, int], entities: dict[str, int]) -> int | None:
+    """Derive entity_id from the account assignment."""
+    # Build reverse map: account_id -> entity_name
+    acct_entity = {}
+    for acct_data in DEMO_ACCOUNTS:
+        aid = accounts.get(acct_data["account_name"])
+        if aid and acct_data.get("entity"):
+            acct_entity[aid] = acct_data["entity"]
+
+    if acct_id and acct_id in acct_entity:
+        return entities.get(acct_entity[acct_id])
+    return entities.get("Personal")
+
+
 def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
     """
-    Seed demo transactions for the specified number of months.
-
-    Args:
-        db: Database session
-        months: Number of months of data to generate (default: 12)
-
-    Returns:
-        dict with counts of created transactions
+    Seed complete demo data: entities, accounts, categories, transactions,
+    rules, holdings, balance snapshots, and relationships.
     """
     print("\n" + "=" * 60)
-    print("Seeding Demo Transaction Data")
+    print("Seeding Demo Data Package")
     print("=" * 60)
 
     # Set random seed for reproducibility
     random.seed(RANDOM_SEED)
 
-    # Seed accounts first
-    accounts = seed_demo_accounts(db)
+    # 1. Seed entities
+    entities = seed_demo_entities(db)
 
-    # Seed categories
+    # 2. Seed accounts (with entity assignment)
+    accounts = seed_demo_accounts(db, entities)
+
+    # 3. Seed categories
     categories = seed_demo_categories(db)
 
-    # Generate transactions for each month
+    # 4. Seed transaction rules
+    seed_demo_rules(db, categories, entities)
+
+    # 5. Seed investment holdings
+    seed_demo_holdings(db, accounts)
+
+    # 6. Generate transactions for each month (idempotent — skip if demo txns exist)
+    existing_demo_count = db.query(Transaction).filter(
+        Transaction.description.like(f"%{DEMO_MARKER}%")
+    ).count()
+    if existing_demo_count > 0:
+        print(f"\n[OK] {existing_demo_count} demo transactions already exist — skipping generation.")
+        return {
+            "total": existing_demo_count, "income": 0, "expense": 0,
+            "transfers": 0, "edge_cases": 0, "entities": len(entities),
+            "accounts": len(accounts), "relationships": 0,
+        }
+
     month_dates = get_month_dates(months)
 
     total_income = 0
     total_expense = 0
     total_transfers = 0
     total_edge_cases = 0
+    transfer_pairs = []  # Track pairs for relationship linking
 
     print(f"\nGenerating transactions for {months} months...")
 
@@ -885,16 +1172,31 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
 
         # Generate all transaction types
         income_txns = generate_income_transactions(month_date, categories)
-        expense_txns = generate_expense_transactions(month_date, categories)
+        expense_txns = generate_expense_transactions(month_date, categories, {})
         transfer_txns = generate_transfer_transactions(month_date, categories)
         edge_txns = generate_edge_cases(month_date, categories, i)
 
-        # Combine and insert
+        # Combine all and assign account_id + entity_id
         all_txns = income_txns + expense_txns + transfer_txns + edge_txns
 
+        month_transfer_ids = []
         for txn_data in all_txns:
+            acct_id = _resolve_account_id(txn_data.get("source"), accounts)
+            ent_id = _resolve_entity_id(txn_data.get("source"), acct_id, accounts, entities)
+            txn_data["account_id"] = acct_id
+            txn_data["entity_id"] = ent_id
+
             transaction = Transaction(**txn_data)
             db.add(transaction)
+            db.flush()
+
+            # Track transfer pairs
+            if txn_data.get("transfer_account_from") or txn_data.get("category_id") == categories.get("Credit Card Payment"):
+                month_transfer_ids.append(transaction.transaction_id)
+
+        # Link transfer pairs (they come in consecutive pairs: expense + income)
+        for j in range(0, len(month_transfer_ids) - 1, 2):
+            transfer_pairs.append((month_transfer_ids[j], month_transfer_ids[j + 1]))
 
         total_income += len(income_txns)
         total_expense += len(expense_txns)
@@ -903,17 +1205,72 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
 
         print(f"  {month_name}: {len(all_txns)} transactions")
 
+    # 7. Create a split transaction (shared dinner — split Personal/Business)
+    print("\n  Creating split transaction...")
+    split_date = month_dates[-1] + timedelta(days=5)  # Recent
+    split_txn = Transaction(
+        transaction_date=split_date,
+        amount=Decimal("180.00"),
+        transaction_type="Expense",
+        category_id=categories["Dining & Restaurants"],
+        description=f"{DEMO_MARKER} Team Dinner - Client Meeting (split)",
+        source="Chase Sapphire",
+        payment_method="Credit Card",
+        account_id=accounts.get("Chase Sapphire"),
+        entity_id=entities.get("Personal"),
+    )
+    db.add(split_txn)
+    db.flush()
+
+    # Create splits: 60% business, 40% personal
+    db.add(TransactionSplit(
+        transaction_id=split_txn.transaction_id,
+        amount=Decimal("108.00"),
+        category_id=categories["Dining & Restaurants"],
+        entity_id=entities.get("Side Business"),
+        description="Client entertainment",
+    ))
+    db.add(TransactionSplit(
+        transaction_id=split_txn.transaction_id,
+        amount=Decimal("72.00"),
+        category_id=categories["Dining & Restaurants"],
+        entity_id=entities.get("Personal"),
+        description="Personal portion",
+    ))
+    total_expense += 1
+
     db.commit()
+
+    # 8. Link transfer transaction pairs
+    print(f"\n  Linking {len(transfer_pairs)} transfer pairs...")
+    for tx1_id, tx2_id in transfer_pairs:
+        existing = db.query(TransactionRelationship).filter_by(
+            transaction_id_1=tx1_id, transaction_id_2=tx2_id,
+        ).first()
+        if not existing:
+            db.add(TransactionRelationship(
+                transaction_id_1=tx1_id,
+                transaction_id_2=tx2_id,
+                relationship_type="transfer",
+                description=f"{DEMO_MARKER} Auto-linked transfer pair",
+            ))
+    db.commit()
+
+    # 9. Seed balance snapshots
+    seed_demo_balance_snapshots(db, accounts, months)
 
     total = total_income + total_expense + total_transfers + total_edge_cases
 
     print("\n" + "-" * 40)
     print(f"[OK] Demo data seeding complete!")
+    print(f"     Entities:              {len(entities)}")
+    print(f"     Accounts:              {len(accounts)}")
     print(f"     Income transactions:   {total_income}")
     print(f"     Expense transactions:  {total_expense}")
     print(f"     Transfer pairs:        {total_transfers}")
     print(f"     Edge cases:            {total_edge_cases}")
-    print(f"     TOTAL:                 {total}")
+    print(f"     TOTAL transactions:    {total}")
+    print(f"     Transfer relationships:{len(transfer_pairs)}")
     print("-" * 40)
 
     return {
@@ -922,67 +1279,93 @@ def seed_demo_transactions(db: Session, months: int = DEMO_MONTHS) -> dict:
         "expense": total_expense,
         "transfers": total_transfers,
         "edge_cases": total_edge_cases,
+        "entities": len(entities),
+        "accounts": len(accounts),
+        "relationships": len(transfer_pairs),
     }
 
 
 def clear_demo_data(db: Session) -> dict:
     """
-    Remove all demo data (transactions and accounts identified by DEMO_MARKER).
-
-    Args:
-        db: Database session
-
-    Returns:
-        dict with counts of deleted transactions and accounts
+    Remove all demo data (identified by DEMO_MARKER in descriptions/notes).
+    Cleans up in dependency order to avoid FK violations.
     """
     print("\n" + "=" * 60)
     print("Clearing Demo Data")
     print("=" * 60)
 
-    # Find all demo transactions
+    counts = {}
+
+    # 1. Delete demo transaction relationships
+    rel_count = db.query(TransactionRelationship).filter(
+        TransactionRelationship.description.like(f"%{DEMO_MARKER}%")
+    ).delete(synchronize_session=False)
+    counts["relationships"] = rel_count
+    print(f"  [OK] Deleted {rel_count} demo relationships.")
+
+    # 2. Find demo transactions and delete splits first
     demo_txns = db.query(Transaction).filter(
         Transaction.description.like(f"%{DEMO_MARKER}%")
     ).all()
+    demo_ids = [txn.transaction_id for txn in demo_txns]
 
-    txn_count = len(demo_txns)
+    if demo_ids:
+        split_count = db.query(TransactionSplit).filter(
+            TransactionSplit.transaction_id.in_(demo_ids)
+        ).delete(synchronize_session=False)
+        counts["splits"] = split_count
 
-    if txn_count > 0:
-        # First, clear related_transaction_id to avoid circular dependency
-        demo_ids = [txn.transaction_id for txn in demo_txns]
+        # Clear related_transaction_id to avoid circular FK
         db.query(Transaction).filter(
             Transaction.transaction_id.in_(demo_ids)
         ).update({Transaction.related_transaction_id: None}, synchronize_session=False)
         db.flush()
 
-        # Delete them using bulk delete to avoid ORM dependency issues
         db.query(Transaction).filter(
             Transaction.transaction_id.in_(demo_ids)
         ).delete(synchronize_session=False)
+    counts["transactions"] = len(demo_ids)
+    print(f"  [OK] Deleted {len(demo_ids)} demo transactions.")
 
-        print(f"[OK] Deleted {txn_count} demo transactions.")
-    else:
-        print("[OK] No demo transactions found.")
-
-    # Find and delete demo accounts (identified by DEMO_MARKER in notes)
+    # 3. Delete demo accounts (cascades to balances, holdings, reconciliations)
     demo_accounts = db.query(Account).filter(
         Account.notes.like(f"%{DEMO_MARKER}%")
     ).all()
+    demo_acct_ids = [acct.account_id for acct in demo_accounts]
 
-    acct_count = len(demo_accounts)
-
-    if acct_count > 0:
-        demo_acct_ids = [acct.account_id for acct in demo_accounts]
+    if demo_acct_ids:
+        # Clear M2M first
+        db.execute(account_entities.delete().where(
+            account_entities.c.account_id.in_(demo_acct_ids)
+        ))
+        # Delete balances, holdings
+        db.query(AccountBalance).filter(
+            AccountBalance.account_id.in_(demo_acct_ids)
+        ).delete(synchronize_session=False)
+        db.query(InvestmentHolding).filter(
+            InvestmentHolding.account_id.in_(demo_acct_ids)
+        ).delete(synchronize_session=False)
         db.query(Account).filter(
             Account.account_id.in_(demo_acct_ids)
         ).delete(synchronize_session=False)
+    counts["accounts"] = len(demo_acct_ids)
+    print(f"  [OK] Deleted {len(demo_acct_ids)} demo accounts.")
 
-        print(f"[OK] Deleted {acct_count} demo accounts.")
-    else:
-        print("[OK] No demo accounts found.")
+    # 4. Delete demo entities
+    demo_entities = db.query(Entity).filter(
+        Entity.notes.like(f"%{DEMO_MARKER}%")
+    ).all()
+    ent_count = len(demo_entities)
+    if ent_count:
+        demo_ent_ids = [e.entity_id for e in demo_entities]
+        db.query(Entity).filter(
+            Entity.entity_id.in_(demo_ent_ids)
+        ).delete(synchronize_session=False)
+    counts["entities"] = ent_count
+    print(f"  [OK] Deleted {ent_count} demo entities.")
 
     db.commit()
-
-    return {"transactions": txn_count, "accounts": acct_count}
+    return counts
 
 
 # =============================================================================
