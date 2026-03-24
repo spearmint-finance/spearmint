@@ -24,6 +24,7 @@ import {
   IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
 import { useSnackbar } from "notistack";
 import type {
   Transaction,
@@ -391,7 +392,12 @@ function TransactionForm({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {mode === "create" ? "Add New Transaction" : "Edit Transaction"}
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          {mode === "create" ? "Add New Transaction" : "Edit Transaction"}
+          <IconButton onClick={onClose} size="small" aria-label="Close">
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent>
@@ -896,12 +902,12 @@ function TransactionForm({
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', zIndex: 1 }}>
           <Button onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {mode === "create" ? "Create" : "Update"}
+            {mode === "create" ? "Create" : "Save"}
           </Button>
         </DialogActions>
       </form>

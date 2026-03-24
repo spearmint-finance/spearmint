@@ -39,7 +39,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: "http://localhost:8080",
+    baseURL: "http://localhost:5173",
 
     /* Disable cache to ensure fresh content */
     serviceWorkers: "block",

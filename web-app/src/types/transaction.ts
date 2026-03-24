@@ -46,6 +46,8 @@ export interface Transaction {
   entity_id?: number | null;
   splits?: TransactionSplit[];
   split_portion?: boolean;
+  is_cleared?: boolean;
+  cleared_date?: string;
   created_at?: string;
   updated_at?: string;
 }

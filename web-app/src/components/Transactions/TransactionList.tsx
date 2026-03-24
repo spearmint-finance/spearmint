@@ -21,6 +21,7 @@ import {
   FormControlLabel,
   Badge,
   Autocomplete,
+  Alert,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 
@@ -39,11 +40,15 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
 import DownloadIcon from "@mui/icons-material/Download";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RuleIcon from "@mui/icons-material/Rule";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   useTransactions,
   useUpdateTransaction,
 } from "../../hooks/useTransactions";
-import { useCategories } from "../../hooks/useCategories";
+import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { formatCurrency, formatDate } from "../../utils/formatters";
 import TransactionForm from "./TransactionForm";
 import type { Transaction } from "../../types/transaction";
@@ -51,6 +56,7 @@ import { useSnackbar } from "notistack";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { detectAllRelationships } from "../../api/relationships";
 import CircularProgress from "@mui/material/CircularProgress";
+import { categoryRulesApi } from "../../api/categories";
 import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
@@ -98,8 +104,40 @@ function TransactionList() {
   // Row editing state
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
 
+  // Inline category creation state
+  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatType, setNewCatType] = useState<"Income" | "Expense" | "Transfer">("Expense");
+  const [pendingCatTxId, setPendingCatTxId] = useState<number | null>(null);
+  const [pendingCatSmartIdx, setPendingCatSmartIdx] = useState<number | null>(null);
+
+  // Smart Categorize state
+  const [smartCatOpen, setSmartCatOpen] = useState(false);
+  const [smartCatLoading, setSmartCatLoading] = useState(false);
+  const [smartCatDescriptions, setSmartCatDescriptions] = useState<any[]>([]);
+  const [smartCatTotal, setSmartCatTotal] = useState(0);
+  const [smartCatTotalTxns, setSmartCatTotalTxns] = useState(0);
+  const [smartCatPage, setSmartCatPage] = useState(0);
+  const [smartCatClassifying, setSmartCatClassifying] = useState(false);
+  const [smartCatApplying, setSmartCatApplying] = useState(false);
+  const [smartCatResults, setSmartCatResults] = useState<any[]>([]); // LLM suggestions (not yet applied)
+  const [smartCatApplied, setSmartCatApplied] = useState<any[]>([]); // Already applied results
+  const [smartCatSelected, setSmartCatSelected] = useState<Set<number>>(new Set());
+  const [smartCatApproved, setSmartCatApproved] = useState<Set<number>>(new Set()); // Indices in smartCatResults
+  const [smartCatOverrides, setSmartCatOverrides] = useState<Record<number, number>>({}); // index → category_id override
+
+  // Create Rule inline state
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
+  const [ruleForm, setRuleForm] = useState({
+    rule_name: "",
+    description_pattern: "",
+    category_id: null as number | null,
+    entity_id: null as number | null,
+  });
+
   // Hooks for data
   const updateTransaction = useUpdateTransaction();
+  const createCategory = useCreateCategory();
   // Fetch all categories (unfiltered) so inline editors can filter per-row by entity
   const { data: categoriesData } = useCategories();
   const { data: accountsData } = useQuery({
@@ -275,6 +313,20 @@ function TransactionList() {
   // Define columns for DataGrid
   const columns: GridColDef[] = [
     {
+      field: "is_cleared",
+      headerName: "",
+      width: 40,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) =>
+        params.row.is_cleared ? (
+          <Tooltip title={`Cleared${params.row.cleared_date ? ` on ${params.row.cleared_date}` : ''}`}>
+            <CheckCircleIcon fontSize="small" color="success" />
+          </Tooltip>
+        ) : null,
+    },
+    {
       field: "date",
       headerName: "Date",
       width: 120,
@@ -409,6 +461,19 @@ function TransactionList() {
                 {opt.label}
               </MenuItem>
             ))}
+            <MenuItem
+              value="__create__"
+              sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPendingCatTxId(id);
+                setNewCatType(params.row.transaction_type === 'Income' ? 'Income' : 'Expense');
+                setNewCatDialogOpen(true);
+                apiRef.current.stopCellEditMode({ id, field: "category_id" });
+              }}
+            >
+              + Create New Category
+            </MenuItem>
           </Select>
         );
       },
@@ -528,12 +593,40 @@ function TransactionList() {
         />
       ),
     })) as GridColDef[]),
+    {
+      field: "actions",
+      headerName: "",
+      width: 50,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Tooltip title="Create rule from this transaction">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              const tx = params.row;
+              setRuleForm({
+                rule_name: (tx.description || "").slice(0, 50),
+                description_pattern: tx.description || "",
+                category_id: tx.category_id || null,
+                entity_id: tx.entity_id || null,
+              });
+              setRuleDialogOpen(true);
+            }}
+          >
+            <RuleIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
   ];
 
   const handleCellClick = useCallback((params: any, event: any) => {
     // Don't open detail dialog when clicking on editable or boolean toggle cells
     const nonClickableFields = [
-      "__check__", "description", "category_id",
+      "__check__", "description", "category_id", "actions",
       "is_capital_expense", "is_tax_deductible", "is_recurring",
       "is_reimbursable", "exclude_from_income", "exclude_from_expenses",
     ];
@@ -683,6 +776,35 @@ function TransactionList() {
             {detectRelationshipsMutation.isPending
               ? "Detecting..."
               : "Detect Relationships"}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AutoFixHighIcon />}
+            onClick={async () => {
+              setSmartCatOpen(true);
+              setSmartCatLoading(true);
+              setSmartCatDescriptions([]);
+              setSmartCatResults([]);
+              setSmartCatApplied([]);
+              setSmartCatSelected(new Set());
+              setSmartCatApproved(new Set());
+              setSmartCatOverrides({});
+              setSmartCatPage(0);
+              try {
+                const response = await fetch("/api/transactions/uncategorized-descriptions?offset=0&limit=20");
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Failed");
+                setSmartCatDescriptions(data.descriptions);
+                setSmartCatTotal(data.total);
+                setSmartCatTotalTxns(data.total_transactions);
+              } catch (err: any) {
+                enqueueSnackbar(err.message || "Failed to load descriptions", { variant: "error" });
+              } finally {
+                setSmartCatLoading(false);
+              }
+            }}
+          >
+            Smart Categorize
           </Button>
           <Button
             variant="outlined"
@@ -909,11 +1031,15 @@ function TransactionList() {
           sortModel={sortModel}
           onSortModelChange={(newModel) => setSortModel(newModel)}
           loading={isLoading}
+          localeText={{
+            noRowsLabel: "No transactions match your filters. Try adjusting your search or filters.",
+          }}
           onCellClick={handleCellClick}
           disableColumnMenu={false}
           columnVisibilityModel={columnVisibilityModel}
           onColumnVisibilityModelChange={setColumnVisibilityModel}
           checkboxSelection
+          disableRowSelectionOnClick
           onRowSelectionModelChange={(model) => {
             // MUI DataGrid v7: model is { type, ids: Set<GridRowId> }
             const ids = model && typeof model === 'object' && 'ids' in model
@@ -1419,6 +1545,509 @@ function TransactionList() {
             variant="contained"
           >
             Apply Filters
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Smart Categorize Review Dialog */}
+      <Dialog open={smartCatOpen} onClose={() => setSmartCatOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box>
+              Smart Categorization
+              {smartCatTotal > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  {smartCatTotal} unique descriptions, {smartCatTotalTxns} transactions
+                </Typography>
+              )}
+            </Box>
+            <IconButton onClick={() => setSmartCatOpen(false)} size="small" aria-label="Close">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {smartCatLoading && (
+            <Box display="flex" flexDirection="column" alignItems="center" py={4}>
+              <CircularProgress />
+              <Typography sx={{ mt: 2 }}>Loading...</Typography>
+            </Box>
+          )}
+
+          {/* Already applied results */}
+          {smartCatApplied.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle2" color="success.main" gutterBottom>
+                Applied ({smartCatApplied.length})
+              </Typography>
+              <Box sx={{ maxHeight: 150, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                {smartCatApplied.map((r: any, i: number) => (
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" noWrap>{r.merchant_name}: {r.description}</Typography>
+                    </Box>
+                    <Chip label={r.applied_category || r.suggested_category} size="small" color="success" sx={{ mx: 1 }} />
+                    <Typography variant="caption" color="text.secondary">{r.transaction_count} txns</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Step 2: Review LLM suggestions (not yet applied) */}
+          {smartCatResults.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2" color="warning.main">
+                  Review Suggestions ({smartCatResults.length})
+                </Typography>
+                <Box>
+                  <Button size="small" onClick={() => setSmartCatApproved(new Set(smartCatResults.map((_: any, i: number) => i)))}>
+                    Approve All
+                  </Button>
+                  <Button size="small" onClick={() => setSmartCatApproved(new Set())}>
+                    Clear
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                {smartCatResults.map((r: any, i: number) => (
+                  <Box key={i} sx={{
+                    display: 'flex', alignItems: 'center', px: 1, py: 1,
+                    borderBottom: '1px solid', borderColor: 'divider',
+                    bgcolor: smartCatApproved.has(i) ? 'action.selected' : 'transparent',
+                  }}>
+                    <Checkbox
+                      size="small"
+                      checked={smartCatApproved.has(i)}
+                      onChange={() => {
+                        setSmartCatApproved(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i)) next.delete(i); else next.add(i);
+                          return next;
+                        });
+                      }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+                      <Typography variant="body2" noWrap>
+                        <strong>{r.merchant_name}</strong> — {r.description}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {r.reasoning} ({Math.round(r.confidence * 100)}% confidence, {r.transaction_count} txns)
+                      </Typography>
+                    </Box>
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <Select
+                        value={smartCatOverrides[i] ?? r.category_id ?? (r.suggested_category && !r.category_id ? "__new__" : "")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "__new__") {
+                            // Keep as __new__ — will auto-create on apply
+                            setSmartCatOverrides(prev => { const next = { ...prev }; delete next[i]; return next; });
+                          } else {
+                            setSmartCatOverrides(prev => ({ ...prev, [i]: Number(val) }));
+                          }
+                          setSmartCatApproved(prev => { const next = new Set(prev); next.add(i); return next; });
+                        }}
+                        displayEmpty
+                        size="small"
+                      >
+                        {r.suggested_category && !(smartCatOverrides[i] ?? r.category_id) && (
+                          <MenuItem value="__new__" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                            {r.suggested_category} (create new)
+                          </MenuItem>
+                        )}
+                        {categoriesData?.categories?.map((cat) => (
+                          <MenuItem key={cat.category_id} value={cat.category_id}>{cat.category_name}</MenuItem>
+                        ))}
+                        <MenuItem
+                          value="__create__"
+                          sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingCatSmartIdx(i);
+                            setPendingCatTxId(null);
+                            setNewCatType("Expense");
+                            setNewCatDialogOpen(true);
+                          }}
+                        >
+                          + Create New Category
+                        </MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Step 1: Select descriptions to classify */}
+          {!smartCatLoading && smartCatResults.length === 0 && smartCatDescriptions.length > 0 && (
+            <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2">
+                  Select descriptions to classify ({smartCatPage * 20 + 1}-{Math.min((smartCatPage + 1) * 20, smartCatTotal)} of {smartCatTotal})
+                </Typography>
+                <Box>
+                  <Button size="small" onClick={() => setSmartCatSelected(new Set(smartCatDescriptions.map((_: any, i: number) => i)))}>
+                    Select All
+                  </Button>
+                  <Button size="small" onClick={() => setSmartCatSelected(new Set())}>
+                    Clear
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                {smartCatDescriptions.map((d: any, i: number) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      display: 'flex', alignItems: 'center', px: 1, py: 0.5,
+                      borderBottom: '1px solid', borderColor: 'divider',
+                      bgcolor: smartCatSelected.has(i) ? 'action.selected' : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      setSmartCatSelected(prev => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i); else next.add(i);
+                        return next;
+                      });
+                    }}
+                  >
+                    <Checkbox size="small" checked={smartCatSelected.has(i)} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" noWrap>{d.description}</Typography>
+                    </Box>
+                    <Chip label={`${d.count} txns`} size="small" variant="outlined" sx={{ ml: 1 }} />
+                  </Box>
+                ))}
+              </Box>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Button size="small" disabled={smartCatPage === 0}
+                  onClick={async () => {
+                    const p = smartCatPage - 1;
+                    setSmartCatLoading(true);
+                    try {
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${p * 20}&limit=20`);
+                      const data = await res.json();
+                      setSmartCatDescriptions(data.descriptions); setSmartCatTotal(data.total); setSmartCatPage(p); setSmartCatSelected(new Set());
+                    } finally { setSmartCatLoading(false); }
+                  }}>Previous</Button>
+                <Typography variant="caption">Page {smartCatPage + 1} of {Math.ceil(smartCatTotal / 20)}</Typography>
+                <Button size="small" disabled={(smartCatPage + 1) * 20 >= smartCatTotal}
+                  onClick={async () => {
+                    const p = smartCatPage + 1;
+                    setSmartCatLoading(true);
+                    try {
+                      const res = await fetch(`/api/transactions/uncategorized-descriptions?offset=${p * 20}&limit=20`);
+                      const data = await res.json();
+                      setSmartCatDescriptions(data.descriptions); setSmartCatTotal(data.total); setSmartCatPage(p); setSmartCatSelected(new Set());
+                    } finally { setSmartCatLoading(false); }
+                  }}>Next</Button>
+              </Box>
+            </Box>
+          )}
+
+          {!smartCatLoading && smartCatDescriptions.length === 0 && smartCatResults.length === 0 && smartCatApplied.length === 0 && (
+            <Typography color="text.secondary">No uncategorized transactions found.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider' }}>
+          <Button onClick={() => setSmartCatOpen(false)}>Close</Button>
+
+          {/* Step 1 action: Classify selected descriptions */}
+          {smartCatResults.length === 0 && smartCatDescriptions.length > 0 && (
+            <Button
+              variant="contained"
+              disabled={smartCatSelected.size === 0 || smartCatClassifying}
+              startIcon={smartCatClassifying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+              onClick={async () => {
+                setSmartCatClassifying(true);
+                const descs = Array.from(smartCatSelected).map(i => smartCatDescriptions[i]?.description).filter(Boolean);
+                try {
+                  const res = await fetch("/api/transactions/classify-batch", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ descriptions: descs, mode: "preview" }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.detail || "Failed");
+                  setSmartCatResults(data.results || []);
+                  setSmartCatApproved(new Set((data.results || []).map((_: any, i: number) => i)));
+                  setSmartCatSelected(new Set());
+                } catch (err: any) {
+                  enqueueSnackbar(err.message || "Classification failed", { variant: "error" });
+                } finally {
+                  setSmartCatClassifying(false);
+                }
+              }}
+            >
+              {smartCatClassifying ? "Classifying..." : `Classify Selected (${smartCatSelected.size})`}
+            </Button>
+          )}
+
+          {/* Step 2 actions: Apply approved or go back */}
+          {smartCatResults.length > 0 && (
+            <>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSmartCatResults([]);
+                  setSmartCatApproved(new Set());
+                  setSmartCatOverrides({});
+                }}
+              >
+                Back
+              </Button>
+              <Button
+                variant="contained"
+                disabled={smartCatApproved.size === 0 || smartCatApplying}
+                startIcon={smartCatApplying ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                onClick={async () => {
+                  setSmartCatApplying(true);
+                  try {
+                    // Step 1: Create any new categories that the LLM suggested
+                    const updatedOverrides = { ...smartCatOverrides };
+                    for (const i of Array.from(smartCatApproved)) {
+                      const r = smartCatResults[i];
+                      const hasOverride = updatedOverrides[i] !== undefined;
+                      const catId = hasOverride ? updatedOverrides[i] : r.category_id;
+                      if (!catId && r.suggested_category) {
+                        // Need to create this category
+                        const created = await createCategory.mutateAsync({
+                          category_name: r.suggested_category,
+                          category_type: r.transaction_type === "Income" ? "Income" : "Expense",
+                        });
+                        updatedOverrides[i] = created.category_id;
+                      }
+                    }
+                    setSmartCatOverrides(updatedOverrides);
+
+                    // Step 2: Build assignments with resolved category IDs
+                    const assignments = Array.from(smartCatApproved).map(i => {
+                      const r = smartCatResults[i];
+                      const catId = updatedOverrides[i] ?? r.category_id;
+                      return {
+                        description: r.description,
+                        category_id: catId,
+                        suggested_pattern: r.suggested_pattern,
+                        rule_name: `Auto: ${r.merchant_name || r.description.slice(0, 30)}`,
+                      };
+                    }).filter(a => a.category_id);
+
+                    // Step 3: Apply via backend (no LLM call — just DB updates)
+                    const res = await fetch("/api/transactions/apply-categories", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ assignments, create_rules: true }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.detail || "Failed");
+
+                    // Step 4: Move to applied list
+                    const appliedItems = Array.from(smartCatApproved).map(i => {
+                      const r = smartCatResults[i];
+                      const catId = updatedOverrides[i] ?? r.category_id;
+                      const catName = categoriesData?.categories?.find(c => c.category_id === catId)?.category_name || r.suggested_category;
+                      return { ...r, applied_category: catName };
+                    });
+                    setSmartCatApplied(prev => [...prev, ...appliedItems]);
+                    setSmartCatResults([]);
+                    setSmartCatApproved(new Set());
+                    setSmartCatOverrides({});
+                    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                    queryClient.invalidateQueries({ queryKey: ["categories"] });
+                    enqueueSnackbar(`Applied ${appliedItems.length} classifications (${data.total_updated} transactions updated, ${data.rules_created} rules created)`, { variant: "success" });
+
+                    // Reload descriptions from page 0
+                    const pageRes = await fetch(`/api/transactions/uncategorized-descriptions?offset=0&limit=20`);
+                    const pageData = await pageRes.json();
+                    console.log(`[SmartCat] Reload: ${pageData.total} descriptions, ${pageData.total_transactions} txns remaining`);
+                    setSmartCatDescriptions(pageData.descriptions || []);
+                    setSmartCatTotal(pageData.total);
+                    setSmartCatTotalTxns(pageData.total_transactions);
+                    setSmartCatPage(0);
+                  } catch (err: any) {
+                    enqueueSnackbar(err.message || "Apply failed", { variant: "error" });
+                  } finally {
+                    setSmartCatApplying(false);
+                  }
+                }}
+              >
+                {smartCatApplying ? "Applying..." : `Apply Approved (${smartCatApproved.size})`}
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Rule from Transaction Dialog */}
+      <Dialog open={ruleDialogOpen} onClose={() => setRuleDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Transaction Rule</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Rule Name"
+            value={ruleForm.rule_name}
+            onChange={(e) => setRuleForm({ ...ruleForm, rule_name: e.target.value })}
+            sx={{ mt: 1, mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Description Pattern (matches transactions containing this text)"
+            value={ruleForm.description_pattern}
+            onChange={(e) => setRuleForm({ ...ruleForm, description_pattern: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Assign Category</InputLabel>
+            <Select
+              value={ruleForm.category_id ?? ""}
+              label="Assign Category"
+              onChange={(e) => setRuleForm({ ...ruleForm, category_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <MenuItem value="">None</MenuItem>
+              {categoriesData?.categories?.map((cat) => (
+                <MenuItem key={cat.category_id} value={cat.category_id}>
+                  {cat.category_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Assign Entity</InputLabel>
+            <Select
+              value={ruleForm.entity_id ?? ""}
+              label="Assign Entity"
+              onChange={(e) => setRuleForm({ ...ruleForm, entity_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <MenuItem value="">None</MenuItem>
+              {entitiesData?.map((entity: any) => (
+                <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                  {entity.entity_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRuleDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="outlined"
+            disabled={!ruleForm.rule_name.trim() || !ruleForm.description_pattern.trim()}
+            onClick={async () => {
+              try {
+                await categoryRulesApi.create({
+                  rule_name: ruleForm.rule_name.trim(),
+                  description_pattern: ruleForm.description_pattern.trim(),
+                  category_id: ruleForm.category_id,
+                  entity_id: ruleForm.entity_id,
+                  is_active: true,
+                  rule_priority: 10,
+                });
+                enqueueSnackbar(`Rule "${ruleForm.rule_name}" created`, { variant: "success" });
+                setRuleDialogOpen(false);
+              } catch {
+                enqueueSnackbar("Failed to create rule", { variant: "error" });
+              }
+            }}
+          >
+            Create Only
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!ruleForm.rule_name.trim() || !ruleForm.description_pattern.trim()}
+            onClick={async () => {
+              try {
+                const rule = await categoryRulesApi.create({
+                  rule_name: ruleForm.rule_name.trim(),
+                  description_pattern: ruleForm.description_pattern.trim(),
+                  category_id: ruleForm.category_id,
+                  entity_id: ruleForm.entity_id,
+                  is_active: true,
+                  rule_priority: 10,
+                });
+                const result = await categoryRulesApi.apply({
+                  rule_ids: [rule.rule_id],
+                  force_recategorize: true,
+                });
+                queryClient.invalidateQueries({ queryKey: ["transactions"] });
+                enqueueSnackbar(
+                  `Rule created — ${result.categorized_count} categorized, ${result.entity_assigned_count} entities assigned`,
+                  { variant: "success" }
+                );
+                setRuleDialogOpen(false);
+              } catch {
+                enqueueSnackbar("Failed to create or apply rule", { variant: "error" });
+              }
+            }}
+          >
+            Create & Apply
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Inline Create Category Dialog */}
+      <Dialog open={newCatDialogOpen} onClose={() => setNewCatDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create New Category</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Category Name"
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            sx={{ mt: 1, mb: 2 }}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Type</InputLabel>
+            <Select
+              value={newCatType}
+              label="Type"
+              onChange={(e) => setNewCatType(e.target.value as "Income" | "Expense" | "Transfer")}
+            >
+              <MenuItem value="Income">Income</MenuItem>
+              <MenuItem value="Expense">Expense</MenuItem>
+              <MenuItem value="Transfer">Transfer</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setNewCatDialogOpen(false); setNewCatName(""); }}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!newCatName.trim() || createCategory.isPending}
+            onClick={async () => {
+              try {
+                const created = await createCategory.mutateAsync({
+                  category_name: newCatName.trim(),
+                  category_type: newCatType,
+                });
+                // Assign the new category to the pending transaction
+                if (pendingCatTxId) {
+                  await updateTransaction.mutateAsync({
+                    id: pendingCatTxId,
+                    data: { category_id: created.category_id },
+                  });
+                }
+                // Or assign to the smart categorize review item
+                if (pendingCatSmartIdx !== null) {
+                  setSmartCatOverrides(prev => ({ ...prev, [pendingCatSmartIdx]: created.category_id }));
+                  setSmartCatApproved(prev => { const next = new Set(prev); next.add(pendingCatSmartIdx); return next; });
+                }
+                enqueueSnackbar(`Category "${newCatName}" created${pendingCatTxId ? " and assigned" : ""}`, { variant: "success" });
+                setNewCatDialogOpen(false);
+                setNewCatName("");
+                setPendingCatTxId(null);
+                setPendingCatSmartIdx(null);
+              } catch {
+                enqueueSnackbar("Failed to create category", { variant: "error" });
+              }
+            }}
+          >
+            {createCategory.isPending ? <CircularProgress size={20} /> : "Create"}
           </Button>
         </DialogActions>
       </Dialog>

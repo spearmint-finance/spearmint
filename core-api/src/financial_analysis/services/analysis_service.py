@@ -144,7 +144,10 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False set at import/classification time
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             # For both ANALYSIS and WITH_CAPITAL modes: exclude non-operating income
             # (e.g., credit card receipts, loan disbursements, reimbursements)
@@ -291,7 +294,10 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False set at import/classification time
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses (capital, CC payments, refunds, etc.)
@@ -889,7 +895,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers excluded via include_in_analysis=False
+            # Transfers excluded by category_type filter below (only Income/Expense pass)
 
             if mode == AnalysisMode.WITH_CAPITAL:
                 # WITH_CAPITAL: include capital expenses, exclude other non-operating transactions
@@ -1026,7 +1032,10 @@ class AnalysisService:
         # Apply mode filtering
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers excluded via include_in_analysis=False
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 query = query.filter(

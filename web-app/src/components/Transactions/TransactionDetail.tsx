@@ -515,22 +515,23 @@ function TransactionDetail({
             )}
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', zIndex: 1 }}>
           <Button
             startIcon={<DeleteIcon />}
             color="error"
+            size="small"
             onClick={() => setDeleteConfirmOpen(true)}
           >
             Delete
           </Button>
-          <Box sx={{ flex: 1 }} />
           <Button
             startIcon={<ContentCopyIcon />}
+            size="small"
             onClick={() => setDuplicateDialogOpen(true)}
           >
             Duplicate
           </Button>
-          <Button onClick={onClose}>Close</Button>
+          <Box sx={{ flex: 1 }} />
           <Button
             variant="contained"
             startIcon={<EditIcon />}

@@ -165,6 +165,16 @@ class AccountService:
             ).all() if entity_ids else []
             account.entities = entities
 
+            # Backfill transactions with NULL entity_id when account has exactly one entity
+            if len(entities) == 1:
+                self.db.query(Transaction).filter(
+                    Transaction.account_id == account_id,
+                    Transaction.entity_id.is_(None),
+                ).update(
+                    {Transaction.entity_id: entities[0].entity_id},
+                    synchronize_session='fetch',
+                )
+
         for key, value in kwargs.items():
             if hasattr(account, key):
                 setattr(account, key, value)
