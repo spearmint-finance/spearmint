@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from financial_analysis.database.base import Base
 from financial_analysis.database.models import (
-    Transaction, Category, CategoryRule, Account, AccountBalance,
+    Transaction, Category, CategoryRule, Account, AccountBalance, Entity,
 )
 from financial_analysis.database.assistant_models import AssistantActionLog
 from financial_analysis.services.assistant.tool_orchestrator import (
@@ -879,3 +879,175 @@ class TestUndoAction:
         result = await orchestrator.undo_action(confirm_result["action_log_ids"][0])
         assert "error" in result
         assert "already been undone" in result["error"]
+
+
+@pytest.fixture
+def sample_entity(db_session):
+    """Seed a sample entity for testing."""
+    entity = Entity(
+        entity_name="Personal",
+        entity_type="personal",
+        is_default=True,
+    )
+    db_session.add(entity)
+    db_session.commit()
+    return entity
+
+
+class TestProposeEntityAssignment:
+    """Tests for entity assignment proposal tool."""
+
+    @pytest.mark.asyncio
+    async def test_propose_by_ids(self, orchestrator, sample_transactions, sample_entity):
+        tx_ids = [sample_transactions[0].transaction_id]
+        result = await orchestrator.execute_tool("propose_entity_assignment", {
+            "transaction_ids": tx_ids,
+            "entity_name": "Personal",
+        })
+        assert result["type"] == "action_proposal"
+        assert result["action"] == "assign_entity"
+        assert result["requires_confirmation"] is True
+        assert result["preview"]["transaction_count"] == 1
+        assert result["preview"]["entity"] == "Personal"
+
+    @pytest.mark.asyncio
+    async def test_propose_by_merchant_pattern(self, orchestrator, sample_transactions, sample_entity):
+        result = await orchestrator.execute_tool("propose_entity_assignment", {
+            "merchant_pattern": "Foods",
+            "entity_name": "Personal",
+        })
+        assert result["type"] == "action_proposal"
+        assert result["preview"]["transaction_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_propose_unknown_entity(self, orchestrator, sample_transactions):
+        result = await orchestrator.execute_tool("propose_entity_assignment", {
+            "transaction_ids": [1],
+            "entity_name": "NonExistent",
+        })
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_propose_no_matching_transactions(self, orchestrator, sample_transactions, sample_entity):
+        result = await orchestrator.execute_tool("propose_entity_assignment", {
+            "merchant_pattern": "ZZZZZ_NO_MATCH",
+            "entity_name": "Personal",
+        })
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_propose_missing_ids_and_pattern(self, orchestrator, sample_entity):
+        result = await orchestrator.execute_tool("propose_entity_assignment", {
+            "entity_name": "Personal",
+        })
+        assert "error" in result
+
+
+class TestConfirmEntityAssignment:
+    """Tests for entity assignment action execution."""
+
+    @pytest.mark.asyncio
+    async def test_confirm_assigns_entity(self, orchestrator, db_session, sample_transactions, sample_entity):
+        tx = sample_transactions[0]
+        assert tx.entity_id is None
+
+        result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "entity_id": sample_entity.entity_id,
+                "entity_name": "Personal",
+            },
+            message_id="msg-entity",
+        )
+
+        assert result["success"] is True
+        assert result["updated_count"] == 1
+        assert result["entity"] == "Personal"
+        assert result["undo_available"] is True
+
+        db_session.refresh(tx)
+        assert tx.entity_id == sample_entity.entity_id
+
+    @pytest.mark.asyncio
+    async def test_confirm_multiple(self, orchestrator, db_session, sample_transactions, sample_entity):
+        tx_ids = [sample_transactions[0].transaction_id, sample_transactions[1].transaction_id]
+
+        result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={
+                "transaction_ids": tx_ids,
+                "entity_id": sample_entity.entity_id,
+                "entity_name": "Personal",
+            },
+        )
+
+        assert result["success"] is True
+        assert result["updated_count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_confirm_creates_action_log(self, orchestrator, db_session, sample_transactions, sample_entity):
+        tx = sample_transactions[0]
+
+        result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "entity_id": sample_entity.entity_id,
+                "entity_name": "Personal",
+            },
+            message_id="msg-ent-log",
+        )
+
+        log = db_session.query(AssistantActionLog).filter_by(id=result["action_log_ids"][0]).first()
+        assert log is not None
+        assert log.action_type == "assign_entity"
+        assert log.previous_state["entity_id"] is None
+        assert log.new_state["entity_id"] == sample_entity.entity_id
+
+    @pytest.mark.asyncio
+    async def test_confirm_nonexistent_entity(self, orchestrator, sample_transactions):
+        result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={
+                "transaction_ids": [sample_transactions[0].transaction_id],
+                "entity_id": 99999,
+                "entity_name": "Gone",
+            },
+        )
+        assert "error" in result
+
+    @pytest.mark.asyncio
+    async def test_confirm_missing_payload(self, orchestrator):
+        result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={"transaction_ids": []},
+        )
+        assert "error" in result
+
+
+class TestUndoEntityAssignment:
+    """Tests for entity assignment undo."""
+
+    @pytest.mark.asyncio
+    async def test_undo_restores_previous_entity(self, orchestrator, db_session, sample_transactions, sample_entity):
+        tx = sample_transactions[0]
+        assert tx.entity_id is None
+
+        confirm_result = await orchestrator.confirm_action(
+            action_type="assign_entity",
+            payload={
+                "transaction_ids": [tx.transaction_id],
+                "entity_id": sample_entity.entity_id,
+                "entity_name": "Personal",
+            },
+        )
+        db_session.refresh(tx)
+        assert tx.entity_id == sample_entity.entity_id
+
+        undo_result = await orchestrator.undo_action(confirm_result["action_log_ids"][0])
+        assert undo_result["success"] is True
+        assert undo_result["action"] == "undo_entity_assignment"
+
+        db_session.refresh(tx)
+        assert tx.entity_id is None

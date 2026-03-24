@@ -14,7 +14,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from ...database.models import Transaction, Category, Account, CategoryRule
+from ...database.models import Transaction, Category, Account, CategoryRule, Entity
 from ...database.assistant_models import AssistantActionLog
 from ..analysis_service import AnalysisService, DateRange, AnalysisMode
 from ..transaction_service import TransactionService
@@ -670,6 +670,63 @@ class ToolOrchestrator:
             }
         }
 
+    async def _execute_propose_entity_assignment(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Propose assigning transactions to an entity (requires confirmation)."""
+        transaction_ids = args.get("transaction_ids", [])
+        merchant_pattern = args.get("merchant_pattern")
+        entity_name = args["entity_name"]
+
+        # Find target entity
+        entity = self.db.query(Entity).filter(
+            func.lower(Entity.entity_name) == entity_name.lower()
+        ).first()
+
+        if not entity:
+            return {"error": f"Entity '{entity_name}' not found"}
+
+        # Find transactions to update
+        if transaction_ids:
+            transactions = self.db.query(Transaction).filter(
+                Transaction.transaction_id.in_(transaction_ids)
+            ).all()
+        elif merchant_pattern:
+            transactions = self.db.query(Transaction).filter(
+                Transaction.source.ilike(f"%{merchant_pattern}%")
+            ).all()
+        else:
+            return {"error": "Must provide transaction_ids or merchant_pattern"}
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        return {
+            "type": "action_proposal",
+            "action": "assign_entity",
+            "requires_confirmation": True,
+            "preview": {
+                "transaction_count": len(transactions),
+                "entity": entity_name,
+                "entity_type": entity.entity_type,
+                "total_amount": sum(float(t.amount) for t in transactions),
+                "transactions": [
+                    {
+                        "id": t.transaction_id,
+                        "date": t.transaction_date.isoformat(),
+                        "source": t.source,
+                        "amount": float(t.amount),
+                        "current_entity": None,
+                    }
+                    for t in transactions[:10]
+                ],
+                "more_count": max(0, len(transactions) - 10)
+            },
+            "payload": {
+                "transaction_ids": [t.transaction_id for t in transactions],
+                "entity_id": entity.entity_id,
+                "entity_name": entity_name
+            }
+        }
+
     # ===== Action Execution (Confirmation Handlers) =====
 
     async def confirm_action(
@@ -692,6 +749,7 @@ class ToolOrchestrator:
         handler = {
             "categorize": self._confirm_categorize,
             "create_rule": self._confirm_create_rule,
+            "assign_entity": self._confirm_entity_assignment,
         }.get(action_type)
 
         if not handler:
@@ -840,6 +898,67 @@ class ToolOrchestrator:
             "undo_available": True,
         }
 
+    async def _confirm_entity_assignment(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute an entity assignment action: update transaction entity_id."""
+        transaction_ids = payload.get("transaction_ids", [])
+        entity_id = payload.get("entity_id")
+        entity_name = payload.get("entity_name", "")
+
+        if not transaction_ids or not entity_id:
+            return {"error": "Missing transaction_ids or entity_id in payload"}
+
+        # Verify entity still exists
+        entity = self.db.query(Entity).filter(
+            Entity.entity_id == entity_id
+        ).first()
+        if not entity:
+            return {"error": f"Entity ID {entity_id} no longer exists"}
+
+        transactions = self.db.query(Transaction).filter(
+            Transaction.transaction_id.in_(transaction_ids)
+        ).all()
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        action_log_ids = []
+        for tx in transactions:
+            previous_entity_id = tx.entity_id
+
+            log_entry = AssistantActionLog(
+                id=str(uuid4()),
+                message_id=message_id,
+                action_type="assign_entity",
+                entity_type="transaction",
+                entity_id=str(tx.transaction_id),
+                previous_state={
+                    "entity_id": previous_entity_id,
+                },
+                new_state={
+                    "entity_id": entity_id,
+                    "entity_name": entity_name,
+                },
+            )
+            self.db.add(log_entry)
+            action_log_ids.append(log_entry.id)
+
+            tx.entity_id = entity_id
+
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "assign_entity",
+            "updated_count": len(transactions),
+            "entity": entity_name,
+            "action_log_ids": action_log_ids,
+            "undo_available": True,
+        }
+
     async def undo_action(self, action_log_id: str) -> Dict[str, Any]:
         """
         Undo a previously executed action.
@@ -865,6 +984,8 @@ class ToolOrchestrator:
                 return await self._undo_categorize(log_entry)
             elif log_entry.action_type == "create_category_rule":
                 return await self._undo_create_rule(log_entry)
+            elif log_entry.action_type == "assign_entity":
+                return await self._undo_entity_assignment(log_entry)
             else:
                 return {"error": f"Cannot undo action type: {log_entry.action_type}"}
         except Exception as e:
@@ -911,4 +1032,28 @@ class ToolOrchestrator:
             "action": "undo_create_rule",
             "rule_id": rule_id,
             "rule_name": (log_entry.new_state or {}).get("rule_name"),
+        }
+
+    async def _undo_entity_assignment(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo an entity assignment by restoring the previous entity_id."""
+        tx_id = int(log_entry.entity_id)
+        previous_state = log_entry.previous_state or {}
+        previous_entity_id = previous_state.get("entity_id")
+
+        transaction = self.db.query(Transaction).filter(
+            Transaction.transaction_id == tx_id
+        ).first()
+
+        if not transaction:
+            return {"error": f"Transaction {tx_id} no longer exists"}
+
+        transaction.entity_id = previous_entity_id
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_entity_assignment",
+            "transaction_id": tx_id,
+            "restored_entity_id": previous_entity_id,
         }
