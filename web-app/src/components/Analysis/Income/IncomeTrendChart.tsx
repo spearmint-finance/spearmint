@@ -8,6 +8,15 @@ import {
   Grid,
 } from "@mui/material";
 import { useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import TrendLineChart from "../../Charts/TrendLineChart";
 import CashFlowAreaChart from "../../Charts/CashFlowAreaChart";
 import { CashFlowTrendsResponse } from "../../../api/analysis";
@@ -143,11 +152,31 @@ function IncomeTrendChart({ trendsData, isLoading, trendPeriod, onPeriodChange }
               />
             )}
             {chartType === "bar" && (
-              <Box sx={{ height: 400 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-                  Bar chart view - Coming soon
-                </Typography>
-              </Box>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis
+                    tickFormatter={(value: number) =>
+                      `$${value.toLocaleString()}`
+                    }
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      `$${value.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`,
+                      "Income",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="income"
+                    fill="#4caf50"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </Box>
         ) : (
