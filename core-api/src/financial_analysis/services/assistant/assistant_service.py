@@ -238,18 +238,9 @@ class AssistantService:
                     model = event.data.get("model", "")
 
         # Save final assistant message (response after tool execution or direct response)
-        if full_content:
-            self.conversation_manager.add_message(
-                conversation_id=conversation.id,
-                role="assistant",
-                content=full_content,
-                tool_calls=None,  # Final response has no tool calls
-                tokens_used=tokens_used,
-                model=model,
-            )
-        elif not tool_calls:
-            # No tool calls and no content - save empty response
-            self.conversation_manager.add_message(
+        final_message = None
+        if full_content or not tool_calls:
+            final_message = self.conversation_manager.add_message(
                 conversation_id=conversation.id,
                 role="assistant",
                 content=full_content,
@@ -264,7 +255,7 @@ class AssistantService:
             "data": {
                 "tokens_used": tokens_used,
                 "model": model,
-                "message_id": conversation.id  # TODO: return actual message ID
+                "message_id": final_message.id if final_message else conversation.id,
             }
         }
 

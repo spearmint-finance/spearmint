@@ -7,6 +7,7 @@ Provides endpoints for chat, conversation management, and insights.
 from typing import Optional, Dict, Any, List
 import json
 import logging
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -73,8 +74,6 @@ class InsightResponse(BaseModel):
 
 def get_api_key(db: Session) -> str:
     """Get OpenAI API key from preferences or environment."""
-    import os
-
     # Try to get from database preferences
     prefs = db.query(AssistantPreferences).first()
     if prefs and prefs.openai_api_key_encrypted:
@@ -99,9 +98,6 @@ def get_assistant_service(db: Session = Depends(get_db)) -> AssistantService:
 
     llm_adapter = OpenAIAdapter(api_key=api_key, model=model)
     return AssistantService(db=db, llm_adapter=llm_adapter)
-
-
-import os  # Move to top in production
 
 
 # ===== Endpoints =====
