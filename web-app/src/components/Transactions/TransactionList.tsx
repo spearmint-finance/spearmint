@@ -134,6 +134,7 @@ function TransactionList() {
     description_pattern: "",
     category_id: null as number | null,
     entity_id: null as number | null,
+    account_id: null as number | null,
   });
 
   // Hooks for data
@@ -627,6 +628,7 @@ function TransactionList() {
                 description_pattern: tx.description || "",
                 category_id: tx.category_id || null,
                 entity_id: tx.entity_id || null,
+                account_id: tx.account_id || null,
               });
               setRuleDialogOpen(true);
             }}
@@ -1896,7 +1898,7 @@ function TransactionList() {
               ))}
             </Select>
           </FormControl>
-          <FormControl fullWidth>
+          <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Assign Entity</InputLabel>
             <Select
               value={ruleForm.entity_id ?? ""}
@@ -1907,6 +1909,22 @@ function TransactionList() {
               {entitiesData?.map((entity: any) => (
                 <MenuItem key={entity.entity_id} value={entity.entity_id}>
                   {entity.entity_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Match Account (optional)</InputLabel>
+            <Select
+              value={ruleForm.account_id ?? ""}
+              label="Match Account (optional)"
+              onChange={(e) => setRuleForm({ ...ruleForm, account_id: e.target.value ? Number(e.target.value) : null })}
+            >
+              <MenuItem value="">Any account</MenuItem>
+              {accountsData?.map((account) => (
+                <MenuItem key={account.account_id} value={account.account_id}>
+                  {account.account_name}
+                  {account.institution_name ? ` (${account.institution_name})` : ""}
                 </MenuItem>
               ))}
             </Select>
@@ -1924,6 +1942,7 @@ function TransactionList() {
                   description_pattern: ruleForm.description_pattern.trim(),
                   category_id: ruleForm.category_id,
                   entity_id: ruleForm.entity_id,
+                  account_id: ruleForm.account_id,
                   is_active: true,
                   rule_priority: 10,
                 });
@@ -1946,6 +1965,7 @@ function TransactionList() {
                   description_pattern: ruleForm.description_pattern.trim(),
                   category_id: ruleForm.category_id,
                   entity_id: ruleForm.entity_id,
+                  account_id: ruleForm.account_id,
                   is_active: true,
                   rule_priority: 10,
                 });
