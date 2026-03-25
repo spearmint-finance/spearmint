@@ -31,7 +31,7 @@ async function expectPageLoads(page: Page, path: string) {
   });
 
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('load');
 
   // Page must not show an error boundary or unhandled crash
   await expect(page.locator('body')).not.toContainText('Something went wrong');
@@ -52,28 +52,29 @@ test.describe('Page load smoke tests', () => {
 test.describe('Navigation', () => {
   test('sidebar navigation links are all present', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
+    // Sidebar uses ListItemButton (role=button), not anchor tags
     const navItems = ['Dashboard', 'Accounts', 'Transactions', 'Budgets', 'Analysis', 'Settings'];
     for (const item of navItems) {
-      await expect(page.getByRole('link', { name: item })).toBeVisible();
+      await expect(page.getByRole('button', { name: item })).toBeVisible();
     }
   });
 
   test('clicking sidebar links navigates correctly', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
-    await page.getByRole('link', { name: 'Accounts' }).click();
+    await page.getByRole('button', { name: 'Accounts' }).click();
     await expect(page).toHaveURL(/\/accounts/);
 
-    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page.getByRole('button', { name: 'Transactions' }).click();
     await expect(page).toHaveURL(/\/transactions/);
 
-    await page.getByRole('link', { name: 'Budgets' }).click();
+    await page.getByRole('button', { name: 'Budgets' }).click();
     await expect(page).toHaveURL(/\/budgets/);
 
-    await page.getByRole('link', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/\/settings/);
   });
 

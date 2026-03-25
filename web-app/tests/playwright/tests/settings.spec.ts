@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Settings page', () => {
   test('loads and shows all tabs', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await expect(page.getByRole('tab', { name: 'Categories' })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Transaction Rules' })).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('Settings page', () => {
 
   test('defaults to Categories tab', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     const categoriesTab = page.getByRole('tab', { name: 'Categories' });
     await expect(categoriesTab).toHaveAttribute('aria-selected', 'true');
@@ -29,7 +29,7 @@ test.describe('Settings page', () => {
 
   test('can switch between tabs', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.getByRole('tab', { name: 'Transaction Rules' }).click();
     await expect(page.getByRole('tab', { name: 'Transaction Rules' })).toHaveAttribute('aria-selected', 'true');
@@ -48,7 +48,7 @@ test.describe('Settings page', () => {
 test.describe('Categories tab', () => {
   test('shows the category management grid', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     // The categories tab is default
     await expect(page.getByRole('tab', { name: 'Categories' })).toHaveAttribute('aria-selected', 'true');
@@ -60,24 +60,24 @@ test.describe('Categories tab', () => {
 test.describe('Transaction Rules tab', () => {
   test('shows the rules panel', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.getByRole('tab', { name: 'Transaction Rules' }).click();
-    await page.waitForLoadState('networkidle');
+    // Tab switch is in-page (SPA) — no navigation event fires
 
-    // Rules panel should be rendered (grid or empty state)
-    await expect(page.locator('[role="tabpanel"]').first()).toBeVisible();
+    // Rules panel should be rendered (grid or empty state) — use :not([hidden]) to skip inactive panels
+    await expect(page.locator('[role="tabpanel"]:not([hidden])')).toBeVisible();
   });
 });
 
 test.describe('API Keys tab', () => {
   test('shows API key section', async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('load');
 
     await page.getByRole('tab', { name: 'API Keys' }).click();
-    await page.waitForLoadState('networkidle');
+    // Tab switch is in-page (SPA) — no navigation event fires
 
-    await expect(page.locator('[role="tabpanel"]').first()).toBeVisible();
+    await expect(page.locator('[role="tabpanel"]:not([hidden])')).toBeVisible();
   });
 });

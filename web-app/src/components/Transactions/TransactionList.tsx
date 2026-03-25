@@ -849,18 +849,14 @@ function TransactionList() {
               placeholder="Search transactions..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                },
-                htmlInput: {
-                  autoComplete: "off",
-                },
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
               }}
+              inputProps={{ autoComplete: "off" }}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -2048,3 +2044,4 @@ function TransactionList() {
 }
 
 export default TransactionList;
+

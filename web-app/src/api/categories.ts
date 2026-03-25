@@ -91,7 +91,18 @@ export const categoriesApi = {
       description: category.description ?? undefined,
       entityId: category.entity_id ?? undefined,
     } as any);
-    return response.data as unknown as Category;
+    // SDK transforms API snake_case → camelCase; normalize back to snake_case for consistency
+    const c = response.data as Record<string, unknown>;
+    return {
+      category_id: (c.category_id ?? c.categoryId) as number,
+      category_name: (c.category_name ?? c.categoryName) as string,
+      category_type: (c.category_type ?? c.categoryType) as string,
+      parent_category_id: (c.parent_category_id ?? c.parentCategoryId ?? null) as number | null,
+      description: (c.description ?? null) as string | null,
+      entity_id: (c.entity_id ?? c.entityId ?? null) as number | null,
+      created_at: (c.created_at ?? c.createdAt ?? "") as string,
+      transaction_count: (c.transaction_count ?? c.transactionCount ?? null) as number | null,
+    } as Category;
   },
 
   /**

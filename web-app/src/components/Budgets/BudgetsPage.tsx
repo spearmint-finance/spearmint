@@ -62,7 +62,9 @@ const fetchBudgetSummary = async (year: number, month: number, entityId?: number
 const fetchCategories = async () => {
   const res = await fetch("/api/categories");
   if (!res.ok) throw new Error("Failed to fetch categories");
-  return res.json();
+  const data = await res.json();
+  // API returns { categories: [...], total: N } — extract the array
+  return Array.isArray(data) ? data : (data.categories ?? []);
 };
 
 const createBudget = async (data: any) => {
@@ -482,6 +484,12 @@ function BudgetsPage() {
                 const created = await createCategoryMutation.mutateAsync({
                   category_name: newCatName.trim(),
                   category_type: "Expense",
+                });
+                // Immediately add to cache so the select shows the new option without
+                // waiting for the background refetch triggered by invalidateQueries
+                queryClient.setQueryData(["categories"], (old: any) => {
+                  const arr = Array.isArray(old) ? old : (old?.categories ?? []);
+                  return [...arr, created];
                 });
                 setNewCategoryId(created.category_id);
                 setNewCatDialogOpen(false);

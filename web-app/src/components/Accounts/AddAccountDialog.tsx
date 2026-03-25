@@ -178,8 +178,9 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth required>
-              <InputLabel>Account Type</InputLabel>
+              <InputLabel id="account-type-label">Account Type</InputLabel>
               <Select
+                labelId="account-type-label"
                 value={formData.account_type}
                 onChange={(e) =>
                   handleInputChange('account_type', e.target.value as AccountType)
