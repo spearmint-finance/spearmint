@@ -23,14 +23,13 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { CircularProgress } from "@mui/material";
 import type { CategoryRule } from "../../types/settings";
 import {
   useCreateCategoryRule,
   useUpdateCategoryRule,
   useTestCategoryRule,
 } from "../../hooks/useCategoryRules";
-import { useCategories, useCreateCategory } from "../../hooks/useCategories";
+import CategorySelect from "../common/CategorySelect";
 import { useEntities } from "../../hooks/useEntities";
 import { useQuery } from "@tanstack/react-query";
 import { getAccounts } from "../../api/accounts";
@@ -59,17 +58,10 @@ interface CategoryRuleFormProps {
 function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
   const isEditing = !!rule;
 
-  const { data: categoriesData } = useCategories();
   const { data: entities = [] } = useEntities();
   const createRuleMutation = useCreateCategoryRule();
   const updateRuleMutation = useUpdateCategoryRule();
   const testRuleMutation = useTestCategoryRule();
-  const createCategoryMutation = useCreateCategory();
-
-  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatType, setNewCatType] = useState<"Income" | "Expense" | "Transfer">("Expense");
-
   const {
     control,
     handleSubmit,
@@ -294,27 +286,11 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
                   name="category_id"
                   control={control}
                   render={({ field }) => (
-                    <FormControl fullWidth>
-                      <InputLabel>Category</InputLabel>
-                      <Select {...field} label="Category">
-                        <MenuItem value="">None</MenuItem>
-                        {categoriesData?.categories.map((c) => (
-                          <MenuItem key={c.category_id} value={c.category_id}>
-                            {c.category_name} ({c.category_type})
-                          </MenuItem>
-                        ))}
-                        <MenuItem
-                          value="__create__"
-                          sx={{ borderTop: 1, borderColor: 'divider', fontStyle: 'italic', color: 'primary.main' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setNewCatDialogOpen(true);
-                          }}
-                        >
-                          + Create New Category
-                        </MenuItem>
-                      </Select>
-                    </FormControl>
+                    <CategorySelect
+                      value={field.value ? Number(field.value) : null}
+                      onChange={(id) => field.onChange(id ?? "")}
+                      label="Category"
+                    />
                   )}
                 />
               </Grid>
@@ -517,55 +493,7 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
       </form>
     </Dialog>
 
-    {/* Create New Category Dialog */}
-    <Dialog open={newCatDialogOpen} onClose={() => setNewCatDialogOpen(false)} maxWidth="xs" fullWidth>
-      <DialogTitle>Create New Category</DialogTitle>
-      <DialogContent>
-        <TextField
-          autoFocus
-          fullWidth
-          label="Category Name"
-          value={newCatName}
-          onChange={(e) => setNewCatName(e.target.value)}
-          sx={{ mt: 1, mb: 2 }}
-        />
-        <FormControl fullWidth>
-          <InputLabel>Type</InputLabel>
-          <Select
-            value={newCatType}
-            label="Type"
-            onChange={(e) => setNewCatType(e.target.value as "Income" | "Expense" | "Transfer")}
-          >
-            <MenuItem value="Income">Income</MenuItem>
-            <MenuItem value="Expense">Expense</MenuItem>
-            <MenuItem value="Transfer">Transfer</MenuItem>
-          </Select>
-        </FormControl>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => { setNewCatDialogOpen(false); setNewCatName(""); }}>Cancel</Button>
-        <Button
-          variant="contained"
-          disabled={!newCatName.trim() || createCategoryMutation.isPending}
-          onClick={async () => {
-            try {
-              const created = await createCategoryMutation.mutateAsync({
-                category_name: newCatName.trim(),
-                category_type: newCatType,
-              });
-              setValue("category_id", created.category_id);
-              setNewCatDialogOpen(false);
-              setNewCatName("");
-            } catch {
-              // error handled by mutation
-            }
-          }}
-        >
-          {createCategoryMutation.isPending ? <CircularProgress size={20} /> : "Create"}
-        </Button>
-      </DialogActions>
-    </Dialog>
-    </>
+</>
   );
 }
 

@@ -61,6 +61,7 @@ import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
 import { getTransactions } from "../../api/transactions";
 import { useEntityContext } from "../../contexts/EntityContext";
+import CategorySelect from "../common/CategorySelect";
 import { useEntities } from "../../hooks/useEntities";
 
 function TransactionList() {
@@ -1883,21 +1884,12 @@ function TransactionList() {
             onChange={(e) => setRuleForm({ ...ruleForm, description_pattern: e.target.value })}
             sx={{ mb: 2 }}
           />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Assign Category</InputLabel>
-            <Select
-              value={ruleForm.category_id ?? ""}
-              label="Assign Category"
-              onChange={(e) => setRuleForm({ ...ruleForm, category_id: e.target.value ? Number(e.target.value) : null })}
-            >
-              <MenuItem value="">None</MenuItem>
-              {categoriesData?.categories?.map((cat) => (
-                <MenuItem key={cat.category_id} value={cat.category_id}>
-                  {cat.category_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <CategorySelect
+            value={ruleForm.category_id}
+            onChange={(id) => setRuleForm({ ...ruleForm, category_id: id })}
+            label="Assign Category"
+            sx={{ mb: 2 }}
+          />
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Assign Entity</InputLabel>
             <Select
