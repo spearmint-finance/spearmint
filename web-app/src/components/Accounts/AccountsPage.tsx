@@ -15,6 +15,9 @@ import {
   Skeleton,
   TextField,
   InputAdornment,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -67,6 +70,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const AccountsPage: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [tabValue, setTabValue] = useState(0);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -290,37 +295,64 @@ const AccountsPage: React.FC = () => {
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
+        <Typography variant={isMobile ? 'h5' : 'h4'} component="h1">
           Accounts
         </Typography>
-        <Box>
-          <IconButton
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            aria-label="Refresh accounts"
-            sx={{
-              mr: 1,
-              animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
-              '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
-          <Button
-            variant="outlined"
-            startIcon={<LinkIcon />}
-            onClick={() => setLinkDialogOpen(true)}
-            sx={{ mr: 1 }}
-          >
-            Link Account
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddAccount}
-          >
-            Add Manual
-          </Button>
+        <Box display="flex" alignItems="center" gap={1}>
+          <Tooltip title="Refresh">
+            <span>
+              <IconButton
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                aria-label="Refresh accounts"
+                sx={{
+                  animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                  '@keyframes spin': { '100%': { transform: 'rotate(360deg)' } },
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          {isMobile ? (
+            <>
+              <Tooltip title="Link Account">
+                <IconButton
+                  onClick={() => setLinkDialogOpen(true)}
+                  aria-label="Link account"
+                  color="primary"
+                >
+                  <LinkIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Add Manual Account">
+                <IconButton
+                  onClick={handleAddAccount}
+                  aria-label="Add manual account"
+                  color="primary"
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outlined"
+                startIcon={<LinkIcon />}
+                onClick={() => setLinkDialogOpen(true)}
+              >
+                Link Account
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddAccount}
+              >
+                Add Manual
+              </Button>
+            </>
+          )}
         </Box>
       </Box>
 
