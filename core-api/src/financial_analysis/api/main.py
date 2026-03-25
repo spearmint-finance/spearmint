@@ -224,23 +224,6 @@ def ensure_database_tables():
                         f"ALTER TABLE budgets ADD COLUMN {col_name} {col_def}"
                     ))
 
-    # DEMO_MODE: seed demo data on first startup if database is empty
-    import os
-    if os.environ.get("DEMO_MODE", "").lower() in ("true", "1", "yes"):
-        from ..database.base import SessionLocal
-        from ..database.models import Transaction
-        db = SessionLocal()
-        try:
-            txn_count = db.query(Transaction).count()
-            if txn_count == 0:
-                print("[DEMO_MODE] Empty database detected — seeding demo data...")
-                from ..database.seed_demo_data import seed_demo_transactions
-                seed_demo_transactions(db)
-            else:
-                print(f"[DEMO_MODE] Database already has {txn_count} transactions — skipping seed.")
-        finally:
-            db.close()
-
 
 # Root endpoint
 @app.get("/", tags=["system"])
