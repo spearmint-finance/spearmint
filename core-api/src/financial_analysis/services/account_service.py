@@ -36,7 +36,10 @@ class AccountService:
         opening_balance: Decimal = Decimal('0'),
         opening_balance_date: Optional[date] = None,
         entity_ids: Optional[List[int]] = None,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
+        property_value: Optional[Decimal] = None,
+        property_type: Optional[str] = None,
+        linked_mortgage_account_id: Optional[int] = None,
     ) -> Account:
         """
         Create a new financial account.
@@ -73,7 +76,10 @@ class AccountService:
             has_investment_component=has_investments,
             opening_balance=opening_balance,
             opening_balance_date=opening_balance_date or date.today(),
-            notes=notes
+            notes=notes,
+            property_value=property_value,
+            property_type=property_type,
+            linked_mortgage_account_id=linked_mortgage_account_id,
         )
 
         # Assign entities

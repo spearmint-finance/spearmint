@@ -18,7 +18,7 @@ class AccountBase(BaseModel):
     account_name: str = Field(..., min_length=1, max_length=100)
     account_type: Literal[
         'checking', 'savings', 'brokerage', 'investment',
-        'credit_card', 'loan', '401k', 'ira', 'other'
+        'credit_card', 'loan', '401k', 'ira', 'real_estate', 'other'
     ]
     account_subtype: Optional[str] = Field(None, max_length=50)
     institution_name: Optional[str] = Field(None, max_length=100)
@@ -32,6 +32,10 @@ class AccountCreate(AccountBase):
     opening_balance: Decimal = Field(default=Decimal('0'))
     opening_balance_date: Optional[date] = None
     entity_ids: Optional[List[int]] = Field(None, description="Entity IDs this account belongs to")
+    # Real estate fields
+    property_value: Optional[Decimal] = Field(None, description="Current market value (real_estate accounts)")
+    property_type: Optional[Literal['primary_residence', 'rental', 'vacation']] = Field(None, description="Property use type")
+    linked_mortgage_account_id: Optional[int] = Field(None, description="Account ID of the linked mortgage/loan")
 
 
 class AccountUpdate(BaseModel):
@@ -43,6 +47,10 @@ class AccountUpdate(BaseModel):
     is_active: Optional[bool] = None
     entity_ids: Optional[List[int]] = Field(None, description="Entity IDs this account belongs to")
     notes: Optional[str] = None
+    # Real estate fields
+    property_value: Optional[Decimal] = None
+    property_type: Optional[Literal['primary_residence', 'rental', 'vacation']] = None
+    linked_mortgage_account_id: Optional[int] = None
 
 
 class AccountResponse(AccountBase):
@@ -70,6 +78,11 @@ class AccountResponse(AccountBase):
     # Linked provider info
     link_type: str = 'manual'
     linked_provider_id: Optional[int] = None
+
+    # Real estate fields
+    property_value: Optional[Decimal] = None
+    property_type: Optional[str] = None
+    linked_mortgage_account_id: Optional[int] = None
 
 
 class AccountSummary(BaseModel):

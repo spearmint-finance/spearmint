@@ -11,7 +11,10 @@ export type AccountType =
   | 'loan'
   | '401k'
   | 'ira'
+  | 'real_estate'
   | 'other';
+
+export type PropertyType = 'primary_residence' | 'rental' | 'vacation';
 
 export type BalanceType = 'statement' | 'calculated' | 'reconciled';
 
@@ -41,6 +44,10 @@ export interface Account {
   // Linked provider info
   link_type?: 'manual' | 'plaid' | 'akoya';
   linked_provider_id?: number;
+  // Real estate fields
+  property_value?: number;
+  property_type?: PropertyType;
+  linked_mortgage_account_id?: number;
 }
 
 export interface AccountCreate {
@@ -54,6 +61,10 @@ export interface AccountCreate {
   opening_balance_date?: string;
   entity_ids?: number[];
   notes?: string;
+  // Real estate fields
+  property_value?: number;
+  property_type?: PropertyType;
+  linked_mortgage_account_id?: number | null;
 }
 
 export interface AccountUpdate {
@@ -64,6 +75,10 @@ export interface AccountUpdate {
   is_active?: boolean;
   entity_ids?: number[];
   notes?: string;
+  // Real estate fields
+  property_value?: number;
+  property_type?: PropertyType;
+  linked_mortgage_account_id?: number | null;
 }
 
 export interface AccountSummary {
@@ -203,6 +218,7 @@ export const getAccountTypeLabel = (type: AccountType): string => {
     loan: 'Loan',
     '401k': '401(k)',
     ira: 'IRA',
+    real_estate: 'Real Estate',
     other: 'Other',
   };
   return labels[type] || type;
@@ -215,9 +231,10 @@ export const getAccountTypeIcon = (type: AccountType): string => {
     brokerage: '📈',
     investment: '📊',
     credit_card: '💳',
-    loan: '🏠',
+    loan: '📋',
     '401k': '🏢',
-    ira: '📋',
+    ira: '🪙',
+    real_estate: '🏡',
     other: '📁',
   };
   return icons[type] || '📁';
@@ -225,6 +242,10 @@ export const getAccountTypeIcon = (type: AccountType): string => {
 
 export const isAssetAccount = (type: AccountType): boolean => {
   return !['credit_card', 'loan'].includes(type);
+};
+
+export const isRealEstateAccount = (type: AccountType): boolean => {
+  return type === 'real_estate';
 };
 
 export const isLiabilityAccount = (type: AccountType): boolean => {

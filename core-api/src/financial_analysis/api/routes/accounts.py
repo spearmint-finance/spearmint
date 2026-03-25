@@ -124,7 +124,10 @@ def list_accounts(
             "entity_ids": [e.entity_id for e in account.entities],
             "notes": account.notes,
             "created_at": account.created_at,
-            "updated_at": account.updated_at
+            "updated_at": account.updated_at,
+            "property_value": account.property_value,
+            "property_type": account.property_type,
+            "linked_mortgage_account_id": account.linked_mortgage_account_id,
         }
 
         # Get current balance
@@ -159,7 +162,10 @@ def create_account(
             opening_balance=account.opening_balance,
             opening_balance_date=account.opening_balance_date,
             entity_ids=account.entity_ids,
-            notes=account.notes
+            notes=account.notes,
+            property_value=account.property_value,
+            property_type=account.property_type,
+            linked_mortgage_account_id=account.linked_mortgage_account_id,
         )
 
         # Build response
@@ -178,7 +184,10 @@ def create_account(
             opening_balance_date=new_account.opening_balance_date,
             notes=new_account.notes,
             created_at=new_account.created_at,
-            updated_at=new_account.updated_at
+            updated_at=new_account.updated_at,
+            property_value=new_account.property_value,
+            property_type=new_account.property_type,
+            linked_mortgage_account_id=new_account.linked_mortgage_account_id,
         )
 
         if account.opening_balance != 0:
@@ -226,7 +235,10 @@ def get_account(
         "notes": account.notes,
         "entity_ids": [e.entity_id for e in account.entities],
         "created_at": account.created_at,
-        "updated_at": account.updated_at
+        "updated_at": account.updated_at,
+        "property_value": account.property_value,
+        "property_type": account.property_type,
+        "linked_mortgage_account_id": account.linked_mortgage_account_id,
     }
 
     # Get current balance

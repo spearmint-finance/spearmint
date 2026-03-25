@@ -47,6 +47,7 @@ import { useSnackbar } from 'notistack';
 import {
   Account,
   AccountUpdate,
+  PropertyType,
   getAccountTypeLabel,
   getAccountTypeIcon,
 } from '../../types/account';
@@ -62,6 +63,7 @@ import {
   addBalanceSnapshot,
   updateAccount,
   deleteAccount,
+  getAccounts,
 } from '../../api/accounts';
 import { getTransactions } from '../../api/transactions';
 import type { Transaction } from '../../types/transaction';
@@ -139,7 +141,33 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     notes: account.notes || '',
     entity_ids: account.entity_ids || [],
     is_active: account.is_active,
+    property_value: account.property_value ?? '',
+    property_type: account.property_type ?? '',
+    linked_mortgage_account_id: account.linked_mortgage_account_id ?? '',
   });
+
+  const isRealEstate = account.account_type === 'real_estate';
+
+  // Fetch all loan accounts (for mortgage selector in edit mode)
+  const { data: loanAccounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => getAccounts(),
+    select: (data) => data.filter((a) => a.account_type === 'loan'),
+    enabled: isRealEstate,
+  });
+
+  // Fetch linked mortgage account to compute equity
+  const { data: mortgageAccount } = useQuery({
+    queryKey: ['account', account.linked_mortgage_account_id],
+    queryFn: () => getAccounts(),
+    select: (data) => data.find((a) => a.account_id === account.linked_mortgage_account_id),
+    enabled: isRealEstate && !!account.linked_mortgage_account_id,
+  });
+
+  const propertyValue = account.property_value ?? 0;
+  const mortgageBalance = mortgageAccount?.current_balance ?? 0;
+  // Mortgage is a liability so current_balance is typically negative; equity = value - |balance|
+  const equity = propertyValue - Math.abs(mortgageBalance);
 
   // Fetch balance history
   const { data: balanceHistory } = useQuery({
@@ -384,6 +412,9 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       notes: account.notes || '',
       entity_ids: account.entity_ids || [],
       is_active: account.is_active,
+      property_value: account.property_value ?? '',
+      property_type: account.property_type ?? '',
+      linked_mortgage_account_id: account.linked_mortgage_account_id ?? '',
     });
     setIsEditing(true);
   };
@@ -401,6 +432,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       notes: editForm.notes.trim() || undefined,
       entity_ids: editForm.entity_ids,
       is_active: editForm.is_active,
+      ...(isRealEstate && {
+        property_value: editForm.property_value !== '' ? Number(editForm.property_value) : undefined,
+        property_type: editForm.property_type ? (editForm.property_type as PropertyType) : undefined,
+        linked_mortgage_account_id: editForm.linked_mortgage_account_id !== ''
+          ? Number(editForm.linked_mortgage_account_id)
+          : null,
+      }),
     };
     updateAccountMutation.mutate(update);
   };
@@ -523,6 +561,49 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   </Typography>
                 </Grid>
               )}
+
+              {isRealEstate && account.property_value !== undefined && (
+                <>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">
+                      Property Value
+                    </Typography>
+                    <Typography variant="body1">
+                      {formatCurrency(account.property_value, acctCurrency)}
+                    </Typography>
+                  </Grid>
+                  {account.linked_mortgage_account_id && (
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Mortgage Balance
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatCurrency(Math.abs(mortgageBalance), acctCurrency)}
+                      </Typography>
+                    </Grid>
+                  )}
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">
+                      Equity
+                    </Typography>
+                    <Typography variant="body1" color={equity >= 0 ? 'success.main' : 'error.main'}>
+                      {formatCurrency(equity, acctCurrency)}
+                    </Typography>
+                  </Grid>
+                  {account.property_type && (
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Property Type
+                      </Typography>
+                      <Typography variant="body1">
+                        {account.property_type === 'primary_residence' ? 'Primary Residence'
+                          : account.property_type === 'rental' ? 'Rental'
+                          : 'Vacation Home'}
+                      </Typography>
+                    </Grid>
+                  )}
+                </>
+              )}
             </Grid>
           </CardContent>
         </Card>
@@ -606,6 +687,52 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                 />
               </Grid>
+              {isRealEstate && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Property Value"
+                      fullWidth
+                      type="number"
+                      value={editForm.property_value}
+                      onChange={(e) => setEditForm({ ...editForm, property_value: e.target.value })}
+                      InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Property Type</InputLabel>
+                      <Select
+                        value={editForm.property_type}
+                        onChange={(e) => setEditForm({ ...editForm, property_type: e.target.value })}
+                        label="Property Type"
+                      >
+                        <MenuItem value="">—</MenuItem>
+                        <MenuItem value="primary_residence">Primary Residence</MenuItem>
+                        <MenuItem value="rental">Rental Property</MenuItem>
+                        <MenuItem value="vacation">Vacation Home</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth>
+                      <InputLabel>Linked Mortgage / Loan</InputLabel>
+                      <Select
+                        value={editForm.linked_mortgage_account_id}
+                        onChange={(e) => setEditForm({ ...editForm, linked_mortgage_account_id: e.target.value })}
+                        label="Linked Mortgage / Loan"
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        {loanAccounts.map((acc) => (
+                          <MenuItem key={acc.account_id} value={acc.account_id}>
+                            {acc.account_name}{acc.institution_name ? ` — ${acc.institution_name}` : ''}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </>
+              )}
               <Grid item xs={12}>
                 <FormControlLabel
                   control={
@@ -673,6 +800,14 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   {account.notes && (
                     <ListItem>
                       <ListItemText primary="Notes" secondary={account.notes} />
+                    </ListItem>
+                  )}
+                  {isRealEstate && account.linked_mortgage_account_id && mortgageAccount && (
+                    <ListItem>
+                      <ListItemText
+                        primary="Linked Mortgage"
+                        secondary={mortgageAccount.account_name}
+                      />
                     </ListItem>
                   )}
                 </List>

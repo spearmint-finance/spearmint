@@ -13,16 +13,19 @@ import {
   Grid,
   InputAdornment,
   Alert,
+  Divider,
+  Typography,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-import { createAccount } from '../../api/accounts';
+import { createAccount, getAccounts } from '../../api/accounts';
 import {
   AccountCreate,
   AccountType,
+  PropertyType,
   getAccountTypeLabel,
 } from '../../types/account';
 import { useEntityContext } from '../../contexts/EntityContext';
@@ -55,6 +58,12 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
   const [entityIds, setEntityIds] = useState<number[]>(
     selectedEntityId != null ? [selectedEntityId] : []
   );
+
+  const { data: loanAccounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => getAccounts(),
+    select: (data) => data.filter((a) => a.account_type === 'loan'),
+  });
 
   const createMutation = useMutation({
     mutationFn: createAccount,
@@ -110,7 +119,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
 
   const handleInputChange = (
     field: keyof AccountCreate,
-    value: string | number | null
+    value: string | number | null | undefined
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -136,8 +145,11 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
     'loan',
     '401k',
     'ira',
+    'real_estate',
     'other',
   ];
+
+  const isRealEstate = formData.account_type === 'real_estate';
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -263,6 +275,75 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
               />
             </LocalizationProvider>
           </Grid>
+
+          {isRealEstate && (
+            <>
+              <Grid item xs={12}>
+                <Divider>
+                  <Typography variant="caption" color="text.secondary">Real Estate Details</Typography>
+                </Divider>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Property Value"
+                  fullWidth
+                  type="number"
+                  value={formData.property_value ?? ''}
+                  onChange={(e) =>
+                    handleInputChange('property_value', parseFloat(e.target.value) || 0)
+                  }
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
+                  helperText="Current market value of the property"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Property Type</InputLabel>
+                  <Select
+                    value={formData.property_type ?? ''}
+                    onChange={(e) =>
+                      handleInputChange('property_type', e.target.value as PropertyType)
+                    }
+                    label="Property Type"
+                  >
+                    <MenuItem value="primary_residence">Primary Residence</MenuItem>
+                    <MenuItem value="rental">Rental Property</MenuItem>
+                    <MenuItem value="vacation">Vacation Home</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {loanAccounts.length > 0 && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Linked Mortgage / Loan</InputLabel>
+                    <Select
+                      value={formData.linked_mortgage_account_id ?? ''}
+                      onChange={(e) =>
+                        handleInputChange(
+                          'linked_mortgage_account_id',
+                          e.target.value ? Number(e.target.value) : null
+                        )
+                      }
+                      label="Linked Mortgage / Loan"
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {loanAccounts.map((acc) => (
+                        <MenuItem key={acc.account_id} value={acc.account_id}>
+                          {acc.account_name}
+                          {acc.institution_name ? ` — ${acc.institution_name}` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+            </>
+          )}
 
           <Grid item xs={12}>
             <TextField

@@ -535,6 +535,11 @@ class Account(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
+    # Real estate fields (only used when account_type = 'real_estate')
+    property_value = Column(Numeric(15, 2), nullable=True)         # Current market value
+    property_type = Column(String(30), nullable=True)              # primary_residence, rental, vacation
+    linked_mortgage_account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)
+
     # Entity assignment (NULL = default/personal entity)
     entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
 
@@ -554,7 +559,7 @@ class Account(Base):
     # Constraints and Indexes
     __table_args__ = (
         CheckConstraint("account_type IN ('checking', 'savings', 'brokerage', 'investment', "
-                       "'credit_card', 'loan', '401k', 'ira', 'other')",
+                       "'credit_card', 'loan', '401k', 'ira', 'real_estate', 'other')",
                        name='check_account_type'),
         Index('idx_account_type', 'account_type'),
         Index('idx_account_active', 'is_active'),
