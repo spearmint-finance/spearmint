@@ -180,6 +180,7 @@ function TransactionList() {
     transaction_type: "",
     category_id: initialCategoryId,
     account_id: initialAccountId,
+    entity_id: "" as string | number,
     include_capital_expenses: true,
     include_transfers: true,
   });
@@ -192,7 +193,7 @@ function TransactionList() {
     transaction_type: filters.transaction_type || undefined,
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
     account_id: filters.account_id ? Number(filters.account_id) : undefined,
-    entity_id: selectedEntityId ?? undefined,
+    entity_id: filters.entity_id ? Number(filters.entity_id) : (selectedEntityId ?? undefined),
     include_capital_expenses: filters.include_capital_expenses,
     include_transfers: filters.include_transfers,
     limit: paginationModel.pageSize,
@@ -679,7 +680,7 @@ function TransactionList() {
         account_id: filters.account_id
           ? Number(filters.account_id)
           : undefined,
-        entity_id: selectedEntityId ?? undefined,
+        entity_id: filters.entity_id ? Number(filters.entity_id) : (selectedEntityId ?? undefined),
         include_capital_expenses: filters.include_capital_expenses,
         include_transfers: filters.include_transfers,
         limit: 10000,
@@ -886,6 +887,7 @@ function TransactionList() {
                       transaction_type: "",
                       category_id: "",
                       account_id: "",
+                      entity_id: "",
                       include_capital_expenses: true,
                       include_transfers: true,
                     });
@@ -1458,6 +1460,25 @@ function TransactionList() {
               </FormControl>
             </Grid>
             <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Entity</InputLabel>
+                <Select
+                  value={filters.entity_id || ""}
+                  label="Entity"
+                  onChange={(e) =>
+                    setFilters({ ...filters, entity_id: e.target.value })
+                  }
+                >
+                  <MenuItem value="">All Entities</MenuItem>
+                  {entitiesData?.map((entity) => (
+                    <MenuItem key={entity.entity_id} value={entity.entity_id}>
+                      {entity.entity_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
               <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
                 <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
                   Include
@@ -1512,15 +1533,15 @@ function TransactionList() {
       <Dialog open={smartCatOpen} onClose={() => setSmartCatOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box>
-              Smart Categorization
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" component="span">Smart Categorization</Typography>
               {smartCatTotal > 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
                   {smartCatTotal} unique descriptions, {smartCatTotalTxns} transactions
                 </Typography>
               )}
             </Box>
-            <IconButton onClick={() => setSmartCatOpen(false)} size="small" aria-label="Close">
+            <IconButton onClick={() => setSmartCatOpen(false)} size="small" aria-label="Close" sx={{ ml: 1, flexShrink: 0 }}>
               <CloseIcon />
             </IconButton>
           </Box>
@@ -1591,7 +1612,7 @@ function TransactionList() {
                       <Typography variant="body2" noWrap>
                         <strong>{r.merchant_name}</strong> — {r.description}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', whiteSpace: 'normal' }}>
                         {r.reasoning} ({Math.round(r.confidence * 100)}% confidence, {r.transaction_count} txns)
                       </Typography>
                     </Box>
@@ -1656,7 +1677,7 @@ function TransactionList() {
                   </Button>
                 </Box>
               </Box>
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 2, maxHeight: 400, overflow: 'auto' }}>
                 {smartCatDescriptions.map((d: any, i: number) => (
                   <Box
                     key={i}

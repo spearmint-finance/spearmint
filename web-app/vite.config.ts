@@ -13,6 +13,9 @@ export default defineConfig({
   server: {
     host: true,  // Bind to 0.0.0.0 for dev container port forwarding
     port: 5173,
+    headers: {
+      'Cache-Control': 'no-store',  // Prevent browser from caching dev assets
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

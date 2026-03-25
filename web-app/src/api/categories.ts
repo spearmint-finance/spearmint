@@ -104,7 +104,13 @@ export const categoriesApi = {
     const response =
       await categoriesClient.updateCategory(
         categoryId,
-        category
+        {
+          categoryName: category.category_name,
+          categoryType: category.category_type,
+          parentCategoryId: category.parent_category_id,
+          description: category.description,
+          entityId: category.entity_id,
+        } as any
       );
     return response.data as unknown as Category;
   },
