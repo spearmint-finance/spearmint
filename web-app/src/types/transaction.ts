@@ -24,7 +24,7 @@ export interface Transaction {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense" | "Transfer";
+  transaction_type: "Income" | "Expense" | "Transfer" | "MortgagePayment";
   is_transfer?: boolean;
   balance?: number;
   category_id?: number;
@@ -48,6 +48,11 @@ export interface Transaction {
   split_portion?: boolean;
   is_cleared?: boolean;
   cleared_date?: string;
+  // Mortgage payment fields
+  mortgage_account_id?: number;
+  mortgage_principal?: number;
+  mortgage_interest?: number;
+  mortgage_escrow?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -56,8 +61,8 @@ export interface TransactionCreate {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense";
-  category_id: number; // Required field
+  transaction_type: "Income" | "Expense" | "MortgagePayment";
+  category_id: number;
   account_id?: number;
   balance?: number;
   notes?: string;
@@ -70,13 +75,17 @@ export interface TransactionCreate {
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
   splits?: TransactionSplitCreate[];
+  mortgage_account_id?: number;
+  mortgage_principal?: number;
+  mortgage_interest?: number;
+  mortgage_escrow?: number;
 }
 
 export interface TransactionUpdate {
   date?: string;
   description?: string;
   amount?: number;
-  transaction_type?: "Income" | "Expense";
+  transaction_type?: "Income" | "Expense" | "MortgagePayment";
   balance?: number;
   category_id?: number;
   account_id?: number;
@@ -90,6 +99,10 @@ export interface TransactionUpdate {
   exclude_from_expenses?: boolean;
   entity_id?: number | null;
   splits?: TransactionSplitCreate[];
+  mortgage_account_id?: number;
+  mortgage_principal?: number;
+  mortgage_interest?: number;
+  mortgage_escrow?: number;
 }
 
 export interface TransactionFilter {

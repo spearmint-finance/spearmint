@@ -277,9 +277,9 @@ export function ChatMessage({ message, onConfirmAction, onDismissAction }: ChatM
                 Proposed Action: {message.actionProposal.action}
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                {message.actionProposal.preview?.transaction_count && (
+                {(message.actionProposal.preview?.transaction_count as number) > 0 && (
                   <>
-                    {String(message.actionProposal.preview.transaction_count)}{" "}
+                    {String(message.actionProposal.preview?.transaction_count)}{" "}
                     transactions will be affected
                   </>
                 )}

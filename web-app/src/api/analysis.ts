@@ -292,7 +292,7 @@ export const getFinancialSummary = async (
     recent_transactions: (data.recentTransactions ?? []).map((txn) => ({
       transaction_id: txn.transactionId,
       transaction_date: txn.transactionDate,
-      description: txn.description,
+      description: txn.description ?? "",
       amount: Number(txn.amount),
       transaction_type: txn.transactionType as "Income" | "Expense",
       category: txn.category ?? null,

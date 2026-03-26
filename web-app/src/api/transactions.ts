@@ -1,5 +1,4 @@
 import { transactionsApi, splitsApi } from "./sdk";
-import { toCamelCase } from "../utils/caseConvert";
 import type {
   Transaction,
   TransactionCreate,
@@ -16,6 +15,7 @@ export interface TransactionListParams {
   min_amount?: number;
   max_amount?: number;
   search_text?: string;
+  description_contains?: string;
   account_id?: number;
   entity_id?: number;
   include_capital_expenses?: boolean;
@@ -125,6 +125,10 @@ const transformTransaction = (backendTransaction: any): Transaction => {
     is_cleared: isCleared,
     cleared_date: clearedDate ? new Date(clearedDate).toISOString().split("T")[0] : undefined,
     entity_id: backendTransaction.entityId ?? backendTransaction.entity_id ?? null,
+    mortgage_account_id: backendTransaction.mortgageAccountId ?? backendTransaction.mortgage_account_id ?? undefined,
+    mortgage_principal: backendTransaction.mortgagePrincipal ?? backendTransaction.mortgage_principal ?? undefined,
+    mortgage_interest: backendTransaction.mortgageInterest ?? backendTransaction.mortgage_interest ?? undefined,
+    mortgage_escrow: backendTransaction.mortgageEscrow ?? backendTransaction.mortgage_escrow ?? undefined,
     splits: (backendTransaction.splits || []).map((s: any) => ({
       split_id: s.splitId ?? s.split_id,
       transaction_id: s.transactionId ?? s.transaction_id,
@@ -146,10 +150,18 @@ const transformTransaction = (backendTransaction: any): Transaction => {
 export const getTransactions = async (
   params?: TransactionListParams
 ): Promise<TransactionListResponse> => {
-  // Convert snake_case params to camelCase for SDK
-  const sdkParams = params ? toCamelCase<Record<string, any>>(params) : undefined;
-  const response = await transactionsApi.listTransactions(sdkParams);
-  const data = response.data as any;
+  const query = new URLSearchParams();
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") {
+        query.set(key, String(value));
+      }
+    }
+  }
+  const qs = query.toString();
+  const response = await fetch(`/api/transactions${qs ? `?${qs}` : ""}`);
+  if (!response.ok) throw new Error(`Failed to fetch transactions: ${response.status}`);
+  const data = await response.json();
 
   return {
     transactions: (data.transactions || []).map(transformTransaction),
@@ -191,6 +203,10 @@ export const createTransaction = async (
   if (data.is_reimbursable != null) body.isReimbursable = data.is_reimbursable;
   if (data.exclude_from_income != null) body.excludeFromIncome = data.exclude_from_income;
   if (data.exclude_from_expenses != null) body.excludeFromExpenses = data.exclude_from_expenses;
+  if (data.mortgage_account_id != null) body.mortgageAccountId = data.mortgage_account_id;
+  if (data.mortgage_principal != null) body.mortgagePrincipal = data.mortgage_principal;
+  if (data.mortgage_interest != null) body.mortgageInterest = data.mortgage_interest;
+  if (data.mortgage_escrow != null) body.mortgageEscrow = data.mortgage_escrow;
 
   const response = await transactionsApi.createTransaction(body as any);
   return transformTransaction(response.data);
@@ -220,6 +236,10 @@ export const updateTransaction = async (
   if (data.is_reimbursable != null) body.isReimbursable = data.is_reimbursable;
   if (data.exclude_from_income != null) body.excludeFromIncome = data.exclude_from_income;
   if (data.exclude_from_expenses != null) body.excludeFromExpenses = data.exclude_from_expenses;
+  if (data.mortgage_account_id != null) body.mortgageAccountId = data.mortgage_account_id;
+  if (data.mortgage_principal != null) body.mortgagePrincipal = data.mortgage_principal;
+  if (data.mortgage_interest != null) body.mortgageInterest = data.mortgage_interest;
+  if (data.mortgage_escrow != null) body.mortgageEscrow = data.mortgage_escrow;
 
   const response = await transactionsApi.updateTransaction(id, body as any);
   return transformTransaction(response.data);

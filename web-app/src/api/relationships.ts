@@ -81,7 +81,7 @@ export const detectCreditCardPairs = async (
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
         autoLink: auto_link,
-      }
+      } as any
     );
   return response.data as unknown as CreditCardPairsResponse;
 };
@@ -104,7 +104,7 @@ export const detectReimbursements = async (
         dateToleranceDays: date_tolerance_days,
         amountTolerance: amount_tolerance,
         autoLink: auto_link,
-      }
+      } as any
     );
   return response.data as unknown as ReimbursementPairsResponse;
 };

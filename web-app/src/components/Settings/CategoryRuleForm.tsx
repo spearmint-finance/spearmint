@@ -64,11 +64,9 @@ function CategoryRuleForm({ open, onClose, rule }: CategoryRuleFormProps) {
   const testRuleMutation = useTestCategoryRule();
   const {
     control,
-    handleSubmit,
     reset,
     watch,
     getValues,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CategoryRuleFormData>({
     defaultValues: {

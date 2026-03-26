@@ -208,6 +208,41 @@ def ensure_database_tables():
                     "REFERENCES accounts(account_id)"
                 ))
 
+    # Migration: add real estate and mortgage fields to accounts
+    if inspector.has_table("accounts"):
+        columns = [c["name"] for c in inspector.get_columns("accounts")]
+        acct_additions = [
+            ("purchase_price",  "NUMERIC(15,2)"),
+            ("purchase_date",   "DATE"),
+            ("interest_rate",   "NUMERIC(6,4)"),
+            ("original_loan_amount", "NUMERIC(15,2)"),
+            ("loan_start_date", "DATE"),
+            ("loan_term_months", "INTEGER"),
+            ("linked_real_estate_account_id", "INTEGER REFERENCES accounts(account_id)"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in acct_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE accounts ADD COLUMN {col_name} {col_def}"
+                    ))
+
+    # Migration: add mortgage payment fields to transactions
+    if inspector.has_table("transactions"):
+        columns = [c["name"] for c in inspector.get_columns("transactions")]
+        mort_additions = [
+            ("mortgage_account_id", "INTEGER REFERENCES accounts(account_id)"),
+            ("mortgage_principal",  "NUMERIC(10,2)"),
+            ("mortgage_interest",   "NUMERIC(10,2)"),
+            ("mortgage_escrow",     "NUMERIC(10,2)"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in mort_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE transactions ADD COLUMN {col_name} {col_def}"
+                    ))
+
     # Migration: add new columns to budgets table
     if inspector.has_table("budgets"):
         columns = [c["name"] for c in inspector.get_columns("budgets")]

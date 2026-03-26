@@ -64,6 +64,10 @@ def create_transaction(
             exclude_from_income=transaction.exclude_from_income or False,
             exclude_from_expenses=transaction.exclude_from_expenses or False,
             splits=transaction.splits,
+            mortgage_account_id=transaction.mortgage_account_id,
+            mortgage_principal=transaction.mortgage_principal,
+            mortgage_interest=transaction.mortgage_interest,
+            mortgage_escrow=transaction.mortgage_escrow,
         )
         return created
     except ValidationError as e:
@@ -170,6 +174,7 @@ def list_transactions(
     min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
     max_amount: Optional[Decimal] = Query(None, gt=0, description="Maximum amount filter"),
     search_text: Optional[str] = Query(None, description="Search in description, source, notes"),
+    description_contains: Optional[str] = Query(None, description="Filter by description text (case-insensitive substring match)"),
     account_id: Optional[int] = Query(None, gt=0, description="Filter by account ID"),
     tag_ids: Optional[List[int]] = Query(None, description="Filter by tag IDs (transactions matching any of the given tags)"),
     entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID (via account)"),
@@ -208,6 +213,7 @@ def list_transactions(
         min_amount=min_amount,
         max_amount=max_amount,
         search_text=search_text,
+        description_contains=description_contains,
         account_id=account_id,
         tag_ids=tag_ids,
         entity_id=entity_id,

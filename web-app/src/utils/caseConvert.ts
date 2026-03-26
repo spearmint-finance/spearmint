@@ -4,7 +4,7 @@
  */
 
 function camelToSnake(key: string): string {
-  return key.replace(/([A-Z])/g, (match, char, index) => {
+  return key.replace(/([A-Z])/g, (_match, char, index) => {
     // Don't add underscore at the start
     return index > 0 ? `_${char.toLowerCase()}` : char.toLowerCase();
   });

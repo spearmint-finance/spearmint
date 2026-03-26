@@ -18,7 +18,7 @@ class AccountBase(BaseModel):
     account_name: str = Field(..., min_length=1, max_length=100)
     account_type: Literal[
         'checking', 'savings', 'brokerage', 'investment',
-        'credit_card', 'loan', '401k', 'ira', 'real_estate', 'other'
+        'credit_card', 'loan', 'mortgage', '401k', 'ira', 'real_estate', 'other'
     ]
     account_subtype: Optional[str] = Field(None, max_length=50)
     institution_name: Optional[str] = Field(None, max_length=100)
@@ -32,10 +32,17 @@ class AccountCreate(AccountBase):
     opening_balance: Decimal = Field(default=Decimal('0'))
     opening_balance_date: Optional[date] = None
     entity_ids: Optional[List[int]] = Field(None, description="Entity IDs this account belongs to")
-    # Real estate fields
-    property_value: Optional[Decimal] = Field(None, description="Current market value (real_estate accounts)")
+    # Real estate fields (account_type = 'real_estate')
+    property_value: Optional[Decimal] = Field(None, description="Current market value")
     property_type: Optional[Literal['primary_residence', 'rental', 'vacation']] = Field(None, description="Property use type")
-    linked_mortgage_account_id: Optional[int] = Field(None, description="Account ID of the linked mortgage/loan")
+    purchase_price: Optional[Decimal] = Field(None, description="Original purchase price")
+    purchase_date: Optional[date] = Field(None, description="Date of purchase")
+    # Mortgage fields (account_type = 'mortgage')
+    interest_rate: Optional[Decimal] = Field(None, description="Annual interest rate as a percentage (e.g. 6.5)")
+    original_loan_amount: Optional[Decimal] = Field(None, description="Original loan principal")
+    loan_start_date: Optional[date] = Field(None, description="Date mortgage began")
+    loan_term_months: Optional[int] = Field(None, description="Loan term in months (e.g. 360 for 30 years)")
+    linked_real_estate_account_id: Optional[int] = Field(None, description="Account ID of the real estate property this mortgage secures")
 
 
 class AccountUpdate(BaseModel):
@@ -50,7 +57,14 @@ class AccountUpdate(BaseModel):
     # Real estate fields
     property_value: Optional[Decimal] = None
     property_type: Optional[Literal['primary_residence', 'rental', 'vacation']] = None
-    linked_mortgage_account_id: Optional[int] = None
+    purchase_price: Optional[Decimal] = None
+    purchase_date: Optional[date] = None
+    # Mortgage fields
+    interest_rate: Optional[Decimal] = None
+    original_loan_amount: Optional[Decimal] = None
+    loan_start_date: Optional[date] = None
+    loan_term_months: Optional[int] = None
+    linked_real_estate_account_id: Optional[int] = None
 
 
 class AccountResponse(AccountBase):
@@ -82,7 +96,14 @@ class AccountResponse(AccountBase):
     # Real estate fields
     property_value: Optional[Decimal] = None
     property_type: Optional[str] = None
-    linked_mortgage_account_id: Optional[int] = None
+    purchase_price: Optional[Decimal] = None
+    purchase_date: Optional[date] = None
+    # Mortgage fields
+    interest_rate: Optional[Decimal] = None
+    original_loan_amount: Optional[Decimal] = None
+    loan_start_date: Optional[date] = None
+    loan_term_months: Optional[int] = None
+    linked_real_estate_account_id: Optional[int] = None
 
 
 class AccountSummary(BaseModel):

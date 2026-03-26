@@ -15,8 +15,6 @@ import CashFlowAreaChart from "../../Charts/CashFlowAreaChart";
 import ExpenseStackedBarChart from "../../Charts/ExpenseStackedBarChart";
 import {
   CashFlowTrendsResponse,
-  getExpenseAnalysis,
-  ExpenseAnalysisResponse,
   getExpenseCategoryTrends,
   CategoryTrendsResponse
 } from "../../../api/analysis";
@@ -28,7 +26,7 @@ interface ExpenseTrendChartProps {
   trendPeriod: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
   onPeriodChange: (period: "daily" | "weekly" | "monthly" | "quarterly" | "yearly") => void;
   dateRange: DateRange;
-  viewMode: "analysis" | "complete";
+  viewMode: "analysis" | "with_capital" | "complete";
 }
 
 function ExpenseTrendChart({ trendsData, isLoading, trendPeriod, onPeriodChange, dateRange, viewMode }: ExpenseTrendChartProps) {

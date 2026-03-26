@@ -59,10 +59,10 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
     selectedEntityId != null ? [selectedEntityId] : []
   );
 
-  const { data: loanAccounts = [] } = useQuery({
+  const { data: realEstateAccounts = [] } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => getAccounts(),
-    select: (data) => data.filter((a) => a.account_type === 'loan'),
+    select: (data) => data.filter((a) => a.account_type === 'real_estate'),
   });
 
   const createMutation = useMutation({
@@ -143,6 +143,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
     'investment',
     'credit_card',
     'loan',
+    'mortgage',
     '401k',
     'ira',
     'real_estate',
@@ -150,6 +151,7 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
   ];
 
   const isRealEstate = formData.account_type === 'real_estate';
+  const isMortgage = formData.account_type === 'mortgage';
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -281,13 +283,13 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
             <>
               <Grid item xs={12}>
                 <Divider>
-                  <Typography variant="caption" color="text.secondary">Real Estate Details</Typography>
+                  <Typography variant="caption" color="text.secondary">Property Details</Typography>
                 </Divider>
               </Grid>
 
               <Grid item xs={12} sm={6}>
                 <TextField
-                  label="Property Value"
+                  label="Current Market Value"
                   fullWidth
                   type="number"
                   value={formData.property_value ?? ''}
@@ -297,7 +299,21 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
                   InputProps={{
                     startAdornment: <InputAdornment position="start">$</InputAdornment>,
                   }}
-                  helperText="Current market value of the property"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Purchase Price"
+                  fullWidth
+                  type="number"
+                  value={formData.purchase_price ?? ''}
+                  onChange={(e) =>
+                    handleInputChange('purchase_price', parseFloat(e.target.value) || 0)
+                  }
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
                 />
               </Grid>
 
@@ -318,22 +334,110 @@ const AddAccountDialog: React.FC<AddAccountDialogProps> = ({
                 </FormControl>
               </Grid>
 
-              {loanAccounts.length > 0 && (
+              <Grid item xs={12} sm={6}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Purchase Date"
+                    value={formData.purchase_date ? new Date(formData.purchase_date) : null}
+                    onChange={(newDate) => {
+                      if (newDate) {
+                        handleInputChange('purchase_date', newDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+            </>
+          )}
+
+          {isMortgage && (
+            <>
+              <Grid item xs={12}>
+                <Divider>
+                  <Typography variant="caption" color="text.secondary">Mortgage Details</Typography>
+                </Divider>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Original Loan Amount"
+                  fullWidth
+                  type="number"
+                  value={formData.original_loan_amount ?? ''}
+                  onChange={(e) =>
+                    handleInputChange('original_loan_amount', parseFloat(e.target.value) || 0)
+                  }
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Interest Rate"
+                  fullWidth
+                  type="number"
+                  value={formData.interest_rate ?? ''}
+                  onChange={(e) =>
+                    handleInputChange('interest_rate', parseFloat(e.target.value) || 0)
+                  }
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
+                  inputProps={{ step: '0.001' }}
+                  helperText="Annual rate, e.g. 6.5"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Loan Start Date"
+                    value={formData.loan_start_date ? new Date(formData.loan_start_date) : null}
+                    onChange={(newDate) => {
+                      if (newDate) {
+                        handleInputChange('loan_start_date', newDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Loan Term"
+                  fullWidth
+                  type="number"
+                  value={formData.loan_term_months ?? ''}
+                  onChange={(e) =>
+                    handleInputChange('loan_term_months', parseInt(e.target.value) || 0)
+                  }
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">months</InputAdornment>,
+                  }}
+                  helperText="e.g. 360 for 30 years"
+                />
+              </Grid>
+
+              {realEstateAccounts.length > 0 && (
                 <Grid item xs={12}>
                   <FormControl fullWidth>
-                    <InputLabel>Linked Mortgage / Loan</InputLabel>
+                    <InputLabel>Secured by Property</InputLabel>
                     <Select
-                      value={formData.linked_mortgage_account_id ?? ''}
+                      value={formData.linked_real_estate_account_id ?? ''}
                       onChange={(e) =>
                         handleInputChange(
-                          'linked_mortgage_account_id',
+                          'linked_real_estate_account_id',
                           e.target.value ? Number(e.target.value) : null
                         )
                       }
-                      label="Linked Mortgage / Loan"
+                      label="Secured by Property"
                     >
                       <MenuItem value="">None</MenuItem>
-                      {loanAccounts.map((acc) => (
+                      {realEstateAccounts.map((acc) => (
                         <MenuItem key={acc.account_id} value={acc.account_id}>
                           {acc.account_name}
                           {acc.institution_name ? ` — ${acc.institution_name}` : ''}

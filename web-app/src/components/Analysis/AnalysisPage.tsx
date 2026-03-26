@@ -33,9 +33,10 @@ function AnalysisPage() {
   >("monthly");
 
   // Convert expense view to API mode
-  const viewMode = expenseView === "operating" ? "analysis" :
-                   expenseView === "with-capital" ? "with_capital" :
-                   "complete";
+  const viewMode: "analysis" | "with_capital" | "complete" =
+    expenseView === "operating" ? "analysis" :
+    expenseView === "with-capital" ? "with_capital" :
+    "complete";
 
   // Prepare params for API calls
   const params = {

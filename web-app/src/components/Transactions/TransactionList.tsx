@@ -21,7 +21,6 @@ import {
   FormControlLabel,
   Badge,
   Autocomplete,
-  Alert,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 
@@ -31,8 +30,7 @@ import {
   GridPaginationModel,
   GridColumnVisibilityModel,
   GridRowModel,
-  GridRowModesModel,
-  GridEventListener,
+  GridSortModel,
   useGridApiRef,
 } from "@mui/x-data-grid";
 import SearchIcon from "@mui/icons-material/Search";
@@ -59,7 +57,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { categoryRulesApi } from "../../api/categories";
 import { useSearchParams } from "react-router-dom";
 import { getAccounts } from "../../api/accounts";
-import { getTransactions } from "../../api/transactions";
+import { getTransactions, deleteTransaction } from "../../api/transactions";
 import { useEntityContext } from "../../contexts/EntityContext";
 import CategorySelect from "../common/CategorySelect";
 import { useEntities } from "../../hooks/useEntities";
@@ -80,8 +78,8 @@ function TransactionList() {
   });
 
   // Sorting state
-  const [sortModel, setSortModel] = useState([
-    { field: "date", sort: "desc" as const },
+  const [sortModel, setSortModel] = useState<GridSortModel>([
+    { field: "date", sort: "desc" },
   ]);
 
   // Map frontend column field names to backend API field names
@@ -102,9 +100,6 @@ function TransactionList() {
     });
   // Grid API ref to control edit mode programmatically
   const apiRef = useGridApiRef();
-
-  // Row editing state
-  const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
 
   // Inline category creation state
   const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
@@ -174,6 +169,8 @@ function TransactionList() {
   const [bulkEntityId, setBulkEntityId] = useState<string>("");
   const [bulkCategoryDialogOpen, setBulkCategoryDialogOpen] = useState(false);
   const [bulkCategoryId, setBulkCategoryId] = useState<string>("");
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   // State for advanced filters
   const [filters, setFilters] = useState({
@@ -183,6 +180,7 @@ function TransactionList() {
     category_id: initialCategoryId,
     account_id: initialAccountId,
     entity_id: "" as string | number,
+    description_contains: "",
     include_capital_expenses: true,
     include_transfers: true,
   });
@@ -192,7 +190,8 @@ function TransactionList() {
     search_text: searchText || undefined,
     start_date: filters.start_date || undefined,
     end_date: filters.end_date || undefined,
-    transaction_type: filters.transaction_type || undefined,
+    transaction_type: (filters.transaction_type || undefined) as "Income" | "Expense" | undefined,
+    description_contains: filters.description_contains || undefined,
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
     account_id: filters.account_id ? Number(filters.account_id) : undefined,
     entity_id: filters.entity_id ? Number(filters.entity_id) : (selectedEntityId ?? undefined),
@@ -203,7 +202,7 @@ function TransactionList() {
     sort_by: sortModel[0]?.field
       ? fieldToApiFieldMap[sortModel[0].field] || sortModel[0].field
       : "transaction_date",
-    sort_order: sortModel[0]?.sort || "desc",
+    sort_order: (sortModel[0]?.sort ?? "desc") as "asc" | "desc",
   });
 
   // Keep stable total row count across page transitions to avoid UI resets
@@ -258,11 +257,6 @@ function TransactionList() {
     []
   );
 
-  // Handle row edit stop
-  const handleRowEditStop: GridEventListener<"rowEditStop"> = () => {
-    // Allow default behavior so edits commit and the editor closes
-  };
-
   // Process row update
   const processRowUpdate = async (newRow: GridRowModel) => {
     try {
@@ -299,13 +293,6 @@ function TransactionList() {
     }
   };
 
-  // Prepare category options for select
-  const categoryOptions =
-    categoriesData?.categories?.map((cat) => ({
-      value: cat.category_id,
-      label: cat.category_name,
-    })) || [];
-
   // Define columns for DataGrid
   const columns: GridColDef[] = [
     {
@@ -339,7 +326,6 @@ function TransactionList() {
       renderCell: (params) => {
         const hasRelationship = params.row.related_transaction_id;
         const categoryName = params.row.category_name || "";
-        const isTransfer = categoryName === "Transfers" || categoryName === "Credit Card Payment";
         const relType = categoryName === "Credit Card Payment" ? "CC Payment"
           : categoryName === "Transfers" ? "Transfer"
           : categoryName === "Reimbursements" ? "Reimbursement"
@@ -469,7 +455,7 @@ function TransactionList() {
                   variant: "error",
                 });
               } finally {
-                apiRef.current.stopCellEditMode({ id, field: "category_id" });
+                apiRef.current?.stopCellEditMode({ id, field: "category_id" });
               }
             }}
           >
@@ -486,7 +472,7 @@ function TransactionList() {
                 setPendingCatTxId(id);
                 setNewCatType(params.row.transaction_type === 'Income' ? 'Income' : 'Expense');
                 setNewCatDialogOpen(true);
-                apiRef.current.stopCellEditMode({ id, field: "category_id" });
+                apiRef.current?.stopCellEditMode({ id, field: "category_id" });
               }}
             >
               + Create New Category
@@ -664,6 +650,7 @@ function TransactionList() {
     filters.transaction_type,
     filters.category_id,
     filters.account_id,
+    filters.description_contains,
     !filters.include_capital_expenses ? "on" : "",
     !filters.include_transfers ? "on" : "",
   ].filter(Boolean).length;
@@ -676,7 +663,7 @@ function TransactionList() {
         search_text: searchText || undefined,
         start_date: filters.start_date || undefined,
         end_date: filters.end_date || undefined,
-        transaction_type: filters.transaction_type || undefined,
+        transaction_type: (filters.transaction_type || undefined) as "Income" | "Expense" | undefined,
         category_id: filters.category_id
           ? Number(filters.category_id)
           : undefined,
@@ -691,7 +678,7 @@ function TransactionList() {
         sort_by: sortModel[0]?.field
           ? fieldToApiFieldMap[sortModel[0].field] || sortModel[0].field
           : "transaction_date",
-        sort_order: sortModel[0]?.sort || "desc",
+        sort_order: (sortModel[0]?.sort ?? "desc") as "asc" | "desc",
       });
 
       const rows = allData.transactions;
@@ -887,6 +874,7 @@ function TransactionList() {
                       category_id: "",
                       account_id: "",
                       entity_id: "",
+                      description_contains: "",
                       include_capital_expenses: true,
                       include_transfers: true,
                     });
@@ -995,6 +983,14 @@ function TransactionList() {
           </Button>
           <Button
             size="small"
+            variant="outlined"
+            color="error"
+            onClick={() => setBulkDeleteConfirmOpen(true)}
+          >
+            Delete {selectedRowIds.length} Selected
+          </Button>
+          <Button
+            size="small"
             variant="text"
             onClick={() => setSelectedRowIds([])}
           >
@@ -1025,7 +1021,7 @@ function TransactionList() {
           sortingMode="server"
           slotProps={{
             pagination: {
-              labelDisplayedRows: ({ from, to, count }) => {
+              labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) => {
                 const start = Math.max(1, from || 0);
                 const total =
                   typeof count === "number" ? count.toLocaleString() : count;
@@ -1046,38 +1042,24 @@ function TransactionList() {
           checkboxSelection
           disableRowSelectionOnClick
           onRowSelectionModelChange={(model) => {
-            // MUI DataGrid v7: model is { type, ids: Set<GridRowId> }
-            const ids = model && typeof model === 'object' && 'ids' in model
-              ? Array.from((model as any).ids)
-              : Array.isArray(model) ? model : [];
-            setSelectedRowIds(ids as number[]);
-          }}
-          editMode="cell"
-          onCellEditCommit={async (params) => {
-            try {
-              if (params.field === "category_id") {
-                await updateTransaction.mutateAsync({
-                  id: Number(params.id),
-                  data: { category_id: Number(params.value) },
-                });
-                enqueueSnackbar("Transaction updated successfully", {
-                  variant: "success",
-                });
-              } else if (params.field === "description") {
-                await updateTransaction.mutateAsync({
-                  id: Number(params.id),
-                  data: { description: String(params.value || "") },
-                });
-                enqueueSnackbar("Transaction updated successfully", {
-                  variant: "success",
-                });
+            // MUI DataGrid v7: model is { type: 'include'|'exclude', ids: Set<GridRowId> }
+            // type='include': ids = selected rows
+            // type='exclude': ids = excluded rows (e.g. empty set = "all selected")
+            if (model && typeof model === 'object' && 'type' in model) {
+              const m = model as any;
+              if (m.type === 'exclude') {
+                const excludedIds = new Set(m.ids);
+                const visibleIds = filteredTransactions.map((r: { id: number }) => r.id);
+                setSelectedRowIds(visibleIds.filter((id: number) => !excludedIds.has(id)));
+              } else {
+                setSelectedRowIds(Array.from(m.ids) as number[]);
               }
-            } catch (error) {
-              enqueueSnackbar("Failed to update transaction", {
-                variant: "error",
-              });
+            } else {
+              setSelectedRowIds(Array.isArray(model) ? (model as number[]) : []);
             }
           }}
+          editMode="cell"
+          processRowUpdate={processRowUpdate}
           getRowClassName={(params) => {
             const categoryName = params.row.category_name;
             const isUncategorized = !categoryName;
@@ -1269,6 +1251,60 @@ function TransactionList() {
         </DialogActions>
       </Dialog>
 
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog
+        open={bulkDeleteConfirmOpen}
+        onClose={() => !bulkDeleteLoading && setBulkDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete {selectedRowIds.length} Transactions?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This will permanently delete {selectedRowIds.length} transaction{selectedRowIds.length !== 1 ? "s" : ""}. This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setBulkDeleteConfirmOpen(false)}
+            disabled={bulkDeleteLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={bulkDeleteLoading}
+            onClick={async () => {
+              setBulkDeleteLoading(true);
+              const toDelete = [...selectedRowIds];
+              let failed = 0;
+              for (const id of toDelete) {
+                try {
+                  await deleteTransaction(id);
+                } catch {
+                  failed++;
+                }
+              }
+              setBulkDeleteLoading(false);
+              setBulkDeleteConfirmOpen(false);
+              setSelectedRowIds([]);
+              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+              if (failed > 0) {
+                enqueueSnackbar(
+                  `Deleted ${toDelete.length - failed} transactions. ${failed} failed.`,
+                  { variant: "warning" }
+                );
+              } else {
+                enqueueSnackbar(`Deleted ${toDelete.length} transaction${toDelete.length !== 1 ? "s" : ""}`, { variant: "success" });
+              }
+            }}
+          >
+            {bulkDeleteLoading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Filters Dialog */}
       <Dialog
         open={filtersDialogOpen}
@@ -1279,6 +1315,18 @@ function TransactionList() {
         <DialogTitle>Advanced Filters</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description contains"
+                placeholder="e.g. Amazon, Starbucks…"
+                value={filters.description_contains}
+                onChange={(e) =>
+                  setFilters({ ...filters, description_contains: e.target.value })
+                }
+                inputProps={{ autoComplete: "off" }}
+              />
+            </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth

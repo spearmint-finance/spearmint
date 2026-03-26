@@ -8,7 +8,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 interface ExpenseStackedBarChartProps {
@@ -96,20 +95,6 @@ function ExpenseStackedBarChart({
     return null;
   };
 
-  // Format Y-axis (for dates)
-  const formatYAxis = (value: string) => {
-    // If it's a date like "2024-01", show as "Jan 24"
-    if (value.includes("-")) {
-      const [year, month] = value.split("-");
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      if (month) {
-        return `${monthNames[parseInt(month) - 1]} '${year.slice(2)}`;
-      }
-    }
-    return value;
-  };
-
   // Format X-axis (for currency)
   const formatXAxis = (value: number) => {
     if (value >= 1000000) {
@@ -131,7 +116,7 @@ function ExpenseStackedBarChart({
           dataKey="period"
           stroke={theme.palette.text.secondary}
           style={{ fontSize: "0.875rem" }}
-          tick={{ angle: -45, textAnchor: "end" }}
+          tick={{ angle: -45, textAnchor: "end" } as any}
           height={60}
         />
         <YAxis

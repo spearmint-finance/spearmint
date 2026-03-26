@@ -39,7 +39,13 @@ class AccountService:
         notes: Optional[str] = None,
         property_value: Optional[Decimal] = None,
         property_type: Optional[str] = None,
-        linked_mortgage_account_id: Optional[int] = None,
+        purchase_price: Optional[Decimal] = None,
+        purchase_date: Optional[date] = None,
+        interest_rate: Optional[Decimal] = None,
+        original_loan_amount: Optional[Decimal] = None,
+        loan_start_date: Optional[date] = None,
+        loan_term_months: Optional[int] = None,
+        linked_real_estate_account_id: Optional[int] = None,
     ) -> Account:
         """
         Create a new financial account.
@@ -79,7 +85,13 @@ class AccountService:
             notes=notes,
             property_value=property_value,
             property_type=property_type,
-            linked_mortgage_account_id=linked_mortgage_account_id,
+            purchase_price=purchase_price,
+            purchase_date=purchase_date,
+            interest_rate=interest_rate,
+            original_loan_amount=original_loan_amount,
+            loan_start_date=loan_start_date,
+            loan_term_months=loan_term_months,
+            linked_real_estate_account_id=linked_real_estate_account_id,
         )
 
         # Assign entities
@@ -700,11 +712,11 @@ class AccountService:
                 amount = balance.total_balance
 
                 # Categorize by account type
-                if account.account_type in ['credit_card', 'loan']:
-                    # For credit cards/loans: negative or positive balance = amount owed (liability)
-                    # But if balance is negative (credit in your favor), it's an asset
+                if account.account_type in ['credit_card', 'loan', 'mortgage']:
+                    # For credit cards/loans/mortgages: positive balance = amount owed (liability)
+                    # If balance is negative (credit in your favor), treat as asset
                     if amount < 0:
-                        # Credit in your favor (overpayment) - treat as asset
+                        # Credit in your favor - treat as asset
                         assets += abs(amount)
                         liquid_assets += abs(amount)
                     else:

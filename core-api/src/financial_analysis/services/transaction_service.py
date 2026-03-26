@@ -30,6 +30,7 @@ class TransactionFilter:
         min_amount: Optional[Decimal] = None,
         max_amount: Optional[Decimal] = None,
         search_text: Optional[str] = None,
+        description_contains: Optional[str] = None,
         tag_ids: Optional[List[int]] = None,
         account_id: Optional[int] = None,
         entity_id: Optional[int] = None,
@@ -47,6 +48,7 @@ class TransactionFilter:
         self.min_amount = min_amount
         self.max_amount = max_amount
         self.search_text = search_text
+        self.description_contains = description_contains
         self.tag_ids = tag_ids or []
         self.account_id = account_id
         self.entity_id = entity_id
@@ -92,6 +94,10 @@ class TransactionService:
         exclude_from_income: bool = False,
         exclude_from_expenses: bool = False,
         splits: Optional[List] = None,
+        mortgage_account_id: Optional[int] = None,
+        mortgage_principal: Optional[Decimal] = None,
+        mortgage_interest: Optional[Decimal] = None,
+        mortgage_escrow: Optional[Decimal] = None,
     ) -> Transaction:
         """
         Create a new transaction.
@@ -156,6 +162,10 @@ class TransactionService:
             is_reimbursable=is_reimbursable,
             exclude_from_income=exclude_from_income,
             exclude_from_expenses=exclude_from_expenses,
+            mortgage_account_id=mortgage_account_id,
+            mortgage_principal=mortgage_principal,
+            mortgage_interest=mortgage_interest,
+            mortgage_escrow=mortgage_escrow,
         )
 
         self.db.add(transaction)
@@ -292,6 +302,9 @@ class TransactionService:
                 )
             )
 
+        if filters.description_contains:
+            conditions.append(Transaction.description.ilike(f"%{filters.description_contains}%"))
+
         if filters.tag_ids:
             query = query.join(
                 TransactionTag,
@@ -411,6 +424,10 @@ class TransactionService:
                     Category.category_name.ilike(search_pattern)
                 )
             )
+
+        if filters.description_contains:
+            conditions.append(Transaction.description.ilike(f"%{filters.description_contains}%"))
+
         if conditions:
             query = query.filter(and_(*conditions))
 

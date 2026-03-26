@@ -25,7 +25,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
 import { CircularProgress } from "@mui/material";
 import { useCreateCategory } from "../../hooks/useCategories";
@@ -42,15 +41,6 @@ import { useEntityContext } from "../../contexts/EntityContext";
 import { formatCurrency } from "../../utils/formatters";
 
 // API functions
-const fetchBudgets = async (entityId?: number | null) => {
-  const params = new URLSearchParams();
-  if (entityId) params.set("entity_id", String(entityId));
-  params.set("is_active", "true");
-  const res = await fetch(`/api/budgets?${params}`);
-  if (!res.ok) throw new Error("Failed to fetch budgets");
-  return res.json();
-};
-
 const fetchBudgetSummary = async (year: number, month: number, entityId?: number | null) => {
   const params = new URLSearchParams({ year: String(year), month: String(month) });
   if (entityId) params.set("entity_id", String(entityId));

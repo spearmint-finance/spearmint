@@ -143,26 +143,29 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     is_active: account.is_active,
     property_value: account.property_value ?? '',
     property_type: account.property_type ?? '',
-    linked_mortgage_account_id: account.linked_mortgage_account_id ?? '',
+    linked_real_estate_account_id: account.linked_real_estate_account_id ?? '',
   });
 
   const isRealEstate = account.account_type === 'real_estate';
+  const isMortgage = account.account_type === 'mortgage';
 
-  // Fetch all loan accounts (for mortgage selector in edit mode)
-  const { data: loanAccounts = [] } = useQuery({
-    queryKey: ['accounts'],
+  // For real estate: find mortgage accounts linked to this property
+  const { data: linkedMortgages = [] } = useQuery({
+    queryKey: ['accounts', 'mortgages-for', account.account_id],
     queryFn: () => getAccounts(),
-    select: (data) => data.filter((a) => a.account_type === 'loan'),
+    select: (data) => data.filter((a) => a.account_type === 'mortgage' && a.linked_real_estate_account_id === account.account_id),
     enabled: isRealEstate,
   });
 
-  // Fetch linked mortgage account to compute equity
-  const { data: mortgageAccount } = useQuery({
-    queryKey: ['account', account.linked_mortgage_account_id],
+  // For mortgage: find real estate accounts (for selector in edit mode)
+  const { data: realEstateAccounts = [] } = useQuery({
+    queryKey: ['accounts', 'real-estate'],
     queryFn: () => getAccounts(),
-    select: (data) => data.find((a) => a.account_id === account.linked_mortgage_account_id),
-    enabled: isRealEstate && !!account.linked_mortgage_account_id,
+    select: (data) => data.filter((a) => a.account_type === 'real_estate'),
+    enabled: isMortgage,
   });
+
+  const mortgageAccount = linkedMortgages[0]; // primary linked mortgage
 
   const propertyValue = account.property_value ?? 0;
   const mortgageBalance = mortgageAccount?.current_balance ?? 0;
@@ -414,7 +417,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       is_active: account.is_active,
       property_value: account.property_value ?? '',
       property_type: account.property_type ?? '',
-      linked_mortgage_account_id: account.linked_mortgage_account_id ?? '',
+      linked_real_estate_account_id: account.linked_real_estate_account_id ?? '',
     });
     setIsEditing(true);
   };
@@ -435,8 +438,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       ...(isRealEstate && {
         property_value: editForm.property_value !== '' ? Number(editForm.property_value) : undefined,
         property_type: editForm.property_type ? (editForm.property_type as PropertyType) : undefined,
-        linked_mortgage_account_id: editForm.linked_mortgage_account_id !== ''
-          ? Number(editForm.linked_mortgage_account_id)
+      }),
+      ...(isMortgage && {
+        linked_real_estate_account_id: editForm.linked_real_estate_account_id !== ''
+          ? Number(editForm.linked_real_estate_account_id)
           : null,
       }),
     };
@@ -572,7 +577,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       {formatCurrency(account.property_value, acctCurrency)}
                     </Typography>
                   </Grid>
-                  {account.linked_mortgage_account_id && (
+                  {mortgageAccount && (
                     <Grid item xs={6} sm={3}>
                       <Typography variant="body2" color="text.secondary">
                         Mortgage Balance
@@ -714,24 +719,26 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12}>
-                    <FormControl fullWidth>
-                      <InputLabel>Linked Mortgage / Loan</InputLabel>
-                      <Select
-                        value={editForm.linked_mortgage_account_id}
-                        onChange={(e) => setEditForm({ ...editForm, linked_mortgage_account_id: e.target.value })}
-                        label="Linked Mortgage / Loan"
-                      >
-                        <MenuItem value="">None</MenuItem>
-                        {loanAccounts.map((acc) => (
-                          <MenuItem key={acc.account_id} value={acc.account_id}>
-                            {acc.account_name}{acc.institution_name ? ` — ${acc.institution_name}` : ''}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
                 </>
+              )}
+              {isMortgage && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Secured by Property</InputLabel>
+                    <Select
+                      value={editForm.linked_real_estate_account_id}
+                      onChange={(e) => setEditForm({ ...editForm, linked_real_estate_account_id: e.target.value })}
+                      label="Secured by Property"
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {realEstateAccounts.map((acc) => (
+                        <MenuItem key={acc.account_id} value={acc.account_id}>
+                          {acc.account_name}{acc.institution_name ? ` — ${acc.institution_name}` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
               )}
               <Grid item xs={12}>
                 <FormControlLabel
@@ -802,7 +809,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       <ListItemText primary="Notes" secondary={account.notes} />
                     </ListItem>
                   )}
-                  {isRealEstate && account.linked_mortgage_account_id && mortgageAccount && (
+                  {isRealEstate && mortgageAccount && (
                     <ListItem>
                       <ListItemText
                         primary="Linked Mortgage"
