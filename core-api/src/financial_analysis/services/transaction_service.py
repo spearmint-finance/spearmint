@@ -34,6 +34,7 @@ class TransactionFilter:
         tag_ids: Optional[List[int]] = None,
         account_id: Optional[int] = None,
         entity_id: Optional[int] = None,
+        is_cleared: Optional[bool] = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = 'transaction_date',
@@ -52,6 +53,7 @@ class TransactionFilter:
         self.tag_ids = tag_ids or []
         self.account_id = account_id
         self.entity_id = entity_id
+        self.is_cleared = is_cleared
         self.limit = limit
         self.offset = offset
         self.sort_by = sort_by
@@ -304,6 +306,9 @@ class TransactionService:
 
         if filters.description_contains:
             conditions.append(Transaction.description.ilike(f"%{filters.description_contains}%"))
+
+        if filters.is_cleared is not None:
+            conditions.append(Transaction.is_cleared == filters.is_cleared)
 
         if filters.tag_ids:
             query = query.join(

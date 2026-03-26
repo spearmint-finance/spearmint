@@ -181,6 +181,7 @@ function TransactionList() {
     account_id: initialAccountId,
     entity_id: "" as string | number,
     description_contains: "",
+    is_cleared: undefined as boolean | undefined,
     include_capital_expenses: true,
     include_transfers: true,
   });
@@ -195,6 +196,7 @@ function TransactionList() {
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
     account_id: filters.account_id ? Number(filters.account_id) : undefined,
     entity_id: filters.entity_id ? Number(filters.entity_id) : (selectedEntityId ?? undefined),
+    is_cleared: filters.is_cleared,
     include_capital_expenses: filters.include_capital_expenses,
     include_transfers: filters.include_transfers,
     limit: paginationModel.pageSize,
@@ -653,6 +655,7 @@ function TransactionList() {
     filters.description_contains,
     !filters.include_capital_expenses ? "on" : "",
     !filters.include_transfers ? "on" : "",
+    filters.is_cleared !== undefined ? "on" : "",
   ].filter(Boolean).length;
 
   const handleExportCsv = useCallback(async () => {
@@ -671,6 +674,7 @@ function TransactionList() {
           ? Number(filters.account_id)
           : undefined,
         entity_id: filters.entity_id ? Number(filters.entity_id) : (selectedEntityId ?? undefined),
+        is_cleared: filters.is_cleared,
         include_capital_expenses: filters.include_capital_expenses,
         include_transfers: filters.include_transfers,
         limit: 10000,
@@ -875,6 +879,7 @@ function TransactionList() {
                       account_id: "",
                       entity_id: "",
                       description_contains: "",
+                      is_cleared: undefined,
                       include_capital_expenses: true,
                       include_transfers: true,
                     });
@@ -1524,6 +1529,34 @@ function TransactionList() {
                   ))}
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                  Reconciliation Status
+                </Typography>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={filters.is_cleared === true}
+                      indeterminate={filters.is_cleared === undefined}
+                      onChange={() =>
+                        setFilters({
+                          ...filters,
+                          is_cleared: filters.is_cleared === undefined ? true : filters.is_cleared === true ? false : undefined,
+                        })
+                      }
+                    />
+                  }
+                  label={
+                    filters.is_cleared === true
+                      ? "Cleared only"
+                      : filters.is_cleared === false
+                      ? "Uncleared only"
+                      : "All (cleared & uncleared)"
+                  }
+                />
+              </Box>
             </Grid>
             <Grid item xs={12}>
               <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>

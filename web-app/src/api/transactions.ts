@@ -18,6 +18,7 @@ export interface TransactionListParams {
   description_contains?: string;
   account_id?: number;
   entity_id?: number;
+  is_cleared?: boolean;
   include_capital_expenses?: boolean;
   include_transfers?: boolean;
   limit?: number;
