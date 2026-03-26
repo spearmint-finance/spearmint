@@ -1,5 +1,17 @@
 /**
- * Format a number as currency
+ * Detect user locale from browser, falling back to en-US.
+ */
+const getUserLocale = (): string => {
+  if (typeof navigator !== "undefined" && navigator.language) {
+    return navigator.language;
+  }
+  return "en-US";
+};
+
+/**
+ * Format a number as currency.
+ * Uses the browser's locale for number formatting and the provided
+ * ISO 4217 currency code for the currency symbol.
  */
 export const formatCurrency = (
   amount: number | string,
@@ -7,17 +19,37 @@ export const formatCurrency = (
   decimals = 2
 ): string => {
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  const locale = getUserLocale();
 
   if (isNaN(numAmount)) {
-    return decimals === 0 ? "$0" : "$0.00";
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }).format(0);
+    } catch {
+      return decimals === 0 ? "$0" : "$0.00";
+    }
   }
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(numAmount);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(numAmount);
+  } catch {
+    // Fallback for invalid currency codes
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(numAmount);
+  }
 };
 
 /**
@@ -30,7 +62,7 @@ export const formatNumber = (num: number | string, decimals = 0): string => {
     return "0";
   }
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(getUserLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(numValue);
@@ -71,7 +103,7 @@ export const formatDate = (
   }
 
   if (format === "short") {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(getUserLocale(), {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -93,7 +125,7 @@ export const formatCompactNumber = (num: number): string => {
     return "0";
   }
 
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(getUserLocale(), {
     notation: "compact",
     compactDisplay: "short",
     maximumFractionDigits: 1,

@@ -17,7 +17,7 @@ export const importApi = {
   ): Promise<ImportResponse> => {
     // The SDK should handle multipart/form-data if spec is correct
     const response = await importClient.importTransactions({
-      file,
+      file: file as any,
       mode,
       skipDuplicates,
     });

@@ -14,11 +14,12 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from ...database.models import Transaction, Category, Account
+from ...database.models import Transaction, Category, Account, CategoryRule, Entity
 from ...database.assistant_models import AssistantActionLog
 from ..analysis_service import AnalysisService, DateRange, AnalysisMode
 from ..transaction_service import TransactionService
 from ..account_service import AccountService
+from ..category_service import CategoryService
 from .tools import READ_ONLY_TOOLS, CONFIRMATION_REQUIRED_TOOLS
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class ToolOrchestrator:
         self.analysis_service = AnalysisService(db)
         self.transaction_service = TransactionService(db)
         self.account_service = AccountService(db)
+        self.category_service = CategoryService(db)
 
     async def execute_tool(
         self,
@@ -137,19 +139,18 @@ class ToolOrchestrator:
 
         start_date, end_date = self._get_date_range(period, date_from, date_to)
 
-        # Get category ID if specified
-        category_id = None
+        # Validate category exists if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
-            if category:
-                category_id = category.category_id
-            else:
+            if not category:
                 return {
                     "error": f"Category '{category_name}' not found",
                     "suggestion": "Try searching for transactions to see available categories"
                 }
+            # Use the canonical name from DB
+            category_name = category.category_name
 
         # Query expenses
         result = self.analysis_service.analyze_expenses(
@@ -157,17 +158,31 @@ class ToolOrchestrator:
             mode=AnalysisMode.ANALYSIS
         )
 
+        period_info = {
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+            "label": period,
+        }
+
+        # Filter to specific category if requested
+        if category_name:
+            breakdown = _convert_decimals(result.breakdown_by_category)
+            cat_data = breakdown.get(category_name, {})
+            return {
+                "total": cat_data.get("total", 0),
+                "count": cat_data.get("count", 0),
+                "average": round(cat_data.get("total", 0) / max(cat_data.get("count", 1), 1), 2),
+                "period": period_info,
+                "category": category_name,
+            }
+
         return {
             "total": float(result.total_expenses),
             "count": result.transaction_count,
             "average": float(result.average_transaction),
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat(),
-                "label": period
-            },
-            "category": category_name,
-            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
+            "period": period_info,
+            "category": None,
+            "breakdown": _convert_decimals(result.breakdown_by_category),
         }
 
     async def _execute_get_income_summary(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -179,14 +194,13 @@ class ToolOrchestrator:
 
         start_date, end_date = self._get_date_range(period, date_from, date_to)
 
-        # Get category ID if specified
-        category_id = None
+        # Validate category exists if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
             if category:
-                category_id = category.category_id
+                category_name = category.category_name
 
         # Query income
         result = self.analysis_service.analyze_income(
@@ -194,17 +208,31 @@ class ToolOrchestrator:
             mode=AnalysisMode.ANALYSIS
         )
 
+        period_info = {
+            "start": start_date.isoformat(),
+            "end": end_date.isoformat(),
+            "label": period,
+        }
+
+        # Filter to specific category if requested
+        if category_name:
+            breakdown = _convert_decimals(result.breakdown_by_category)
+            cat_data = breakdown.get(category_name, {})
+            return {
+                "total": cat_data.get("total", 0),
+                "count": cat_data.get("count", 0),
+                "average": round(cat_data.get("total", 0) / max(cat_data.get("count", 1), 1), 2),
+                "period": period_info,
+                "category": category_name,
+            }
+
         return {
             "total": float(result.total_income),
             "count": result.transaction_count,
             "average": float(result.average_transaction),
-            "period": {
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat(),
-                "label": period
-            },
-            "category": category_name,
-            "breakdown": _convert_decimals(result.breakdown_by_category) if not category_name else None
+            "period": period_info,
+            "category": None,
+            "breakdown": _convert_decimals(result.breakdown_by_category),
         }
 
     async def _execute_get_top_categories(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -315,6 +343,13 @@ class ToolOrchestrator:
             "limit": limit
         }
 
+    def _get_account_balance_value(self, account_id: int) -> float:
+        """Get the current balance for an account from the most recent snapshot."""
+        balance = self.account_service.get_current_balance(account_id)
+        if balance:
+            return float(balance.total_balance)
+        return 0.0
+
     async def _execute_get_account_balance(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Get account balance(s)."""
         account_name = args.get("account_name")
@@ -325,20 +360,21 @@ class ToolOrchestrator:
                 Account.is_active == True
             ).all()
 
+            account_data = []
+            total = 0.0
+            for a in accounts:
+                bal = self._get_account_balance_value(a.account_id)
+                total += bal
+                account_data.append({
+                    "name": a.account_name,
+                    "type": a.account_type,
+                    "balance": bal,
+                    "institution": a.institution_name,
+                })
+
             return {
-                "accounts": [
-                    {
-                        "name": a.account_name,
-                        "type": a.account_type,
-                        "balance": float(a.current_balance) if a.current_balance else 0,
-                        "institution": a.institution_name
-                    }
-                    for a in accounts
-                ],
-                "total_balance": sum(
-                    float(a.current_balance) if a.current_balance else 0
-                    for a in accounts
-                )
+                "accounts": account_data,
+                "total_balance": total,
             }
         else:
             account = self.db.query(Account).filter(
@@ -351,8 +387,8 @@ class ToolOrchestrator:
             return {
                 "name": account.account_name,
                 "type": account.account_type,
-                "balance": float(account.current_balance) if account.current_balance else 0,
-                "institution": account.institution_name
+                "balance": self._get_account_balance_value(account.account_id),
+                "institution": account.institution_name,
             }
 
     async def _execute_get_cash_flow(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -388,6 +424,12 @@ class ToolOrchestrator:
 
         return result
 
+    def _extract_category_value(self, breakdown: Dict, category_name: str, value_key: str = "total") -> float:
+        """Extract a specific category's value from a breakdown dict."""
+        converted = _convert_decimals(breakdown)
+        cat_data = converted.get(category_name, {})
+        return cat_data.get(value_key, 0)
+
     async def _execute_compare_periods(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Compare metrics between two periods."""
         metric = args["metric"]
@@ -398,14 +440,13 @@ class ToolOrchestrator:
         start_1, end_1 = self._get_date_range(period_1)
         start_2, end_2 = self._get_date_range(period_2)
 
-        # Get category ID if specified
-        category_id = None
+        # Resolve canonical category name if specified
         if category_name:
             category = self.db.query(Category).filter(
                 func.lower(Category.category_name) == category_name.lower()
             ).first()
             if category:
-                category_id = category.category_id
+                category_name = category.category_name
 
         # Get values for each period
         if metric == "spending":
@@ -417,8 +458,12 @@ class ToolOrchestrator:
                 date_range=DateRange(start_date=start_2, end_date=end_2),
                 mode=AnalysisMode.ANALYSIS
             )
-            value_1 = float(result_1.total_expenses)
-            value_2 = float(result_2.total_expenses)
+            if category_name:
+                value_1 = self._extract_category_value(result_1.breakdown_by_category, category_name)
+                value_2 = self._extract_category_value(result_2.breakdown_by_category, category_name)
+            else:
+                value_1 = float(result_1.total_expenses)
+                value_2 = float(result_2.total_expenses)
         elif metric == "income":
             result_1 = self.analysis_service.analyze_income(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
@@ -428,8 +473,12 @@ class ToolOrchestrator:
                 date_range=DateRange(start_date=start_2, end_date=end_2),
                 mode=AnalysisMode.ANALYSIS
             )
-            value_1 = float(result_1.total_income)
-            value_2 = float(result_2.total_income)
+            if category_name:
+                value_1 = self._extract_category_value(result_1.breakdown_by_category, category_name)
+                value_2 = self._extract_category_value(result_2.breakdown_by_category, category_name)
+            else:
+                value_1 = float(result_1.total_income)
+                value_2 = float(result_2.total_income)
         else:  # net_cash_flow
             cf_1 = self.analysis_service.analyze_cash_flow(
                 date_range=DateRange(start_date=start_1, end_date=end_1),
@@ -619,4 +668,392 @@ class ToolOrchestrator:
                 "category_name": category_name,
                 "rule_name": rule_name
             }
+        }
+
+    async def _execute_propose_entity_assignment(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Propose assigning transactions to an entity (requires confirmation)."""
+        transaction_ids = args.get("transaction_ids", [])
+        merchant_pattern = args.get("merchant_pattern")
+        entity_name = args["entity_name"]
+
+        # Find target entity
+        entity = self.db.query(Entity).filter(
+            func.lower(Entity.entity_name) == entity_name.lower()
+        ).first()
+
+        if not entity:
+            return {"error": f"Entity '{entity_name}' not found"}
+
+        # Find transactions to update
+        if transaction_ids:
+            transactions = self.db.query(Transaction).filter(
+                Transaction.transaction_id.in_(transaction_ids)
+            ).all()
+        elif merchant_pattern:
+            transactions = self.db.query(Transaction).filter(
+                Transaction.source.ilike(f"%{merchant_pattern}%")
+            ).all()
+        else:
+            return {"error": "Must provide transaction_ids or merchant_pattern"}
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        return {
+            "type": "action_proposal",
+            "action": "assign_entity",
+            "requires_confirmation": True,
+            "preview": {
+                "transaction_count": len(transactions),
+                "entity": entity_name,
+                "entity_type": entity.entity_type,
+                "total_amount": sum(float(t.amount) for t in transactions),
+                "transactions": [
+                    {
+                        "id": t.transaction_id,
+                        "date": t.transaction_date.isoformat(),
+                        "source": t.source,
+                        "amount": float(t.amount),
+                        "current_entity": None,
+                    }
+                    for t in transactions[:10]
+                ],
+                "more_count": max(0, len(transactions) - 10)
+            },
+            "payload": {
+                "transaction_ids": [t.transaction_id for t in transactions],
+                "entity_id": entity.entity_id,
+                "entity_name": entity_name
+            }
+        }
+
+    # ===== Action Execution (Confirmation Handlers) =====
+
+    async def confirm_action(
+        self,
+        action_type: str,
+        payload: Dict[str, Any],
+        message_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute a confirmed action and log it for undo.
+
+        Args:
+            action_type: Type of action ('categorize', 'create_rule')
+            payload: Action payload from the proposal
+            message_id: ID of the originating assistant message
+
+        Returns:
+            Execution result with action_log_id for undo
+        """
+        handler = {
+            "categorize": self._confirm_categorize,
+            "create_rule": self._confirm_create_rule,
+            "assign_entity": self._confirm_entity_assignment,
+        }.get(action_type)
+
+        if not handler:
+            return {"error": f"Unknown action type: {action_type}"}
+
+        try:
+            return await handler(payload, message_id)
+        except Exception as e:
+            logger.error(f"Action execution error: {e}")
+            return {"error": str(e)}
+
+    async def _confirm_categorize(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute a categorization action: update transaction categories."""
+        transaction_ids = payload.get("transaction_ids", [])
+        category_id = payload.get("category_id")
+        category_name = payload.get("category_name", "")
+
+        if not transaction_ids or not category_id:
+            return {"error": "Missing transaction_ids or category_id in payload"}
+
+        # Verify category still exists
+        category = self.db.query(Category).filter(
+            Category.category_id == category_id
+        ).first()
+        if not category:
+            return {"error": f"Category ID {category_id} no longer exists"}
+
+        transactions = self.db.query(Transaction).filter(
+            Transaction.transaction_id.in_(transaction_ids)
+        ).all()
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        # Log previous state and update each transaction
+        action_log_ids = []
+        for tx in transactions:
+            previous_category_id = tx.category_id
+            previous_category_name = tx.category.category_name if tx.category else None
+
+            # Create undo log entry
+            log_entry = AssistantActionLog(
+                id=str(uuid4()),
+                message_id=message_id,
+                action_type="categorize_transaction",
+                entity_type="transaction",
+                entity_id=str(tx.transaction_id),
+                previous_state={
+                    "category_id": previous_category_id,
+                    "category_name": previous_category_name,
+                },
+                new_state={
+                    "category_id": category_id,
+                    "category_name": category_name,
+                },
+            )
+            self.db.add(log_entry)
+            action_log_ids.append(log_entry.id)
+
+            # Update the transaction
+            tx.category_id = category_id
+
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "categorize",
+            "updated_count": len(transactions),
+            "category": category_name,
+            "action_log_ids": action_log_ids,
+            "undo_available": True,
+        }
+
+    async def _confirm_create_rule(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute a category rule creation action."""
+        pattern = payload.get("pattern")
+        pattern_type = payload.get("pattern_type")
+        category_id = payload.get("category_id")
+        category_name = payload.get("category_name", "")
+        rule_name = payload.get("rule_name", f"Auto-categorize {pattern}")
+
+        if not pattern or not category_id:
+            return {"error": "Missing pattern or category_id in payload"}
+
+        # Verify category still exists
+        category = self.db.query(Category).filter(
+            Category.category_id == category_id
+        ).first()
+        if not category:
+            return {"error": f"Category ID {category_id} no longer exists"}
+
+        # Map pattern_type to source_pattern format
+        if pattern_type == "contains":
+            source_pattern = f"%{pattern}%"
+        elif pattern_type == "starts_with":
+            source_pattern = f"{pattern}%"
+        elif pattern_type == "ends_with":
+            source_pattern = f"%{pattern}"
+        elif pattern_type == "exact":
+            source_pattern = pattern
+        else:
+            source_pattern = f"%{pattern}%"
+
+        # Create the rule via CategoryService
+        rule = self.category_service.create_category_rule(
+            rule_name=rule_name,
+            category_id=category_id,
+            source_pattern=source_pattern,
+        )
+
+        # Create undo log entry
+        log_entry = AssistantActionLog(
+            id=str(uuid4()),
+            message_id=message_id,
+            action_type="create_category_rule",
+            entity_type="category_rule",
+            entity_id=str(rule.rule_id),
+            previous_state=None,
+            new_state={
+                "rule_id": rule.rule_id,
+                "rule_name": rule_name,
+                "source_pattern": source_pattern,
+                "category_id": category_id,
+                "category_name": category_name,
+            },
+        )
+        self.db.add(log_entry)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "create_rule",
+            "rule_id": rule.rule_id,
+            "rule_name": rule_name,
+            "pattern": source_pattern,
+            "category": category_name,
+            "action_log_id": log_entry.id,
+            "undo_available": True,
+        }
+
+    async def _confirm_entity_assignment(
+        self,
+        payload: Dict[str, Any],
+        message_id: Optional[str],
+    ) -> Dict[str, Any]:
+        """Execute an entity assignment action: update transaction entity_id."""
+        transaction_ids = payload.get("transaction_ids", [])
+        entity_id = payload.get("entity_id")
+        entity_name = payload.get("entity_name", "")
+
+        if not transaction_ids or not entity_id:
+            return {"error": "Missing transaction_ids or entity_id in payload"}
+
+        # Verify entity still exists
+        entity = self.db.query(Entity).filter(
+            Entity.entity_id == entity_id
+        ).first()
+        if not entity:
+            return {"error": f"Entity ID {entity_id} no longer exists"}
+
+        transactions = self.db.query(Transaction).filter(
+            Transaction.transaction_id.in_(transaction_ids)
+        ).all()
+
+        if not transactions:
+            return {"error": "No matching transactions found"}
+
+        action_log_ids = []
+        for tx in transactions:
+            previous_entity_id = tx.entity_id
+
+            log_entry = AssistantActionLog(
+                id=str(uuid4()),
+                message_id=message_id,
+                action_type="assign_entity",
+                entity_type="transaction",
+                entity_id=str(tx.transaction_id),
+                previous_state={
+                    "entity_id": previous_entity_id,
+                },
+                new_state={
+                    "entity_id": entity_id,
+                    "entity_name": entity_name,
+                },
+            )
+            self.db.add(log_entry)
+            action_log_ids.append(log_entry.id)
+
+            tx.entity_id = entity_id
+
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "assign_entity",
+            "updated_count": len(transactions),
+            "entity": entity_name,
+            "action_log_ids": action_log_ids,
+            "undo_available": True,
+        }
+
+    async def undo_action(self, action_log_id: str) -> Dict[str, Any]:
+        """
+        Undo a previously executed action.
+
+        Args:
+            action_log_id: ID of the action log entry to undo
+
+        Returns:
+            Undo result
+        """
+        log_entry = self.db.query(AssistantActionLog).filter(
+            AssistantActionLog.id == action_log_id
+        ).first()
+
+        if not log_entry:
+            return {"error": f"Action log {action_log_id} not found"}
+
+        if log_entry.undone_at is not None:
+            return {"error": "Action has already been undone"}
+
+        try:
+            if log_entry.action_type == "categorize_transaction":
+                return await self._undo_categorize(log_entry)
+            elif log_entry.action_type == "create_category_rule":
+                return await self._undo_create_rule(log_entry)
+            elif log_entry.action_type == "assign_entity":
+                return await self._undo_entity_assignment(log_entry)
+            else:
+                return {"error": f"Cannot undo action type: {log_entry.action_type}"}
+        except Exception as e:
+            logger.error(f"Undo error: {e}")
+            return {"error": str(e)}
+
+    async def _undo_categorize(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo a categorization by restoring the previous category."""
+        tx_id = int(log_entry.entity_id)
+        previous_state = log_entry.previous_state or {}
+        previous_category_id = previous_state.get("category_id")
+
+        transaction = self.db.query(Transaction).filter(
+            Transaction.transaction_id == tx_id
+        ).first()
+
+        if not transaction:
+            return {"error": f"Transaction {tx_id} no longer exists"}
+
+        transaction.category_id = previous_category_id
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_categorize",
+            "transaction_id": tx_id,
+            "restored_category": previous_state.get("category_name"),
+        }
+
+    async def _undo_create_rule(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo a rule creation by deleting the rule."""
+        rule_id = int(log_entry.entity_id)
+
+        deleted = self.category_service.delete_category_rule(rule_id)
+        if not deleted:
+            return {"error": f"Rule {rule_id} no longer exists"}
+
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_create_rule",
+            "rule_id": rule_id,
+            "rule_name": (log_entry.new_state or {}).get("rule_name"),
+        }
+
+    async def _undo_entity_assignment(self, log_entry: AssistantActionLog) -> Dict[str, Any]:
+        """Undo an entity assignment by restoring the previous entity_id."""
+        tx_id = int(log_entry.entity_id)
+        previous_state = log_entry.previous_state or {}
+        previous_entity_id = previous_state.get("entity_id")
+
+        transaction = self.db.query(Transaction).filter(
+            Transaction.transaction_id == tx_id
+        ).first()
+
+        if not transaction:
+            return {"error": f"Transaction {tx_id} no longer exists"}
+
+        transaction.entity_id = previous_entity_id
+        log_entry.undone_at = datetime.now(timezone.utc)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "action": "undo_entity_assignment",
+            "transaction_id": tx_id,
+            "restored_entity_id": previous_entity_id,
         }

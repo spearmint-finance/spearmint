@@ -219,37 +219,44 @@ class AssistantService:
                 )
 
             # Get final response from LLM after tool execution
-            async for event in self.llm.chat_completion(
-                messages=messages,
-                tools=ASSISTANT_TOOLS,
-                stream=True,
-            ):
-                if event.type == "content":
-                    full_content += event.data
-                    yield {
-                        "event": "content_delta",
-                        "data": {"delta": event.data}
-                    }
+            try:
+                async for event in self.llm.chat_completion(
+                    messages=messages,
+                    tools=ASSISTANT_TOOLS,
+                    stream=True,
+                ):
+                    if event.type == "content":
+                        full_content += event.data
+                        yield {
+                            "event": "content_delta",
+                            "data": {"delta": event.data}
+                        }
 
-                elif event.type == "usage":
-                    tokens_used += event.data.get("total_tokens", 0)
+                    elif event.type == "usage":
+                        tokens_used += event.data.get("total_tokens", 0)
 
-                elif event.type == "done":
-                    model = event.data.get("model", "")
+                    elif event.type == "done":
+                        model = event.data.get("model", "")
+
+                    elif event.type == "error":
+                        yield {
+                            "event": "error",
+                            "data": {"message": event.data}
+                        }
+                        return
+
+            except Exception as e:
+                logger.error(f"LLM follow-up error: {e}")
+                yield {
+                    "event": "error",
+                    "data": {"message": f"AI service error: {str(e)}"}
+                }
+                return
 
         # Save final assistant message (response after tool execution or direct response)
-        if full_content:
-            self.conversation_manager.add_message(
-                conversation_id=conversation.id,
-                role="assistant",
-                content=full_content,
-                tool_calls=None,  # Final response has no tool calls
-                tokens_used=tokens_used,
-                model=model,
-            )
-        elif not tool_calls:
-            # No tool calls and no content - save empty response
-            self.conversation_manager.add_message(
+        final_message = None
+        if full_content or not tool_calls:
+            final_message = self.conversation_manager.add_message(
                 conversation_id=conversation.id,
                 role="assistant",
                 content=full_content,
@@ -264,7 +271,7 @@ class AssistantService:
             "data": {
                 "tokens_used": tokens_used,
                 "model": model,
-                "message_id": conversation.id  # TODO: return actual message ID
+                "message_id": final_message.id if final_message else conversation.id,
             }
         }
 

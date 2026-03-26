@@ -24,6 +24,7 @@ import {
   IconButton,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
 import { useSnackbar } from "notistack";
 import type {
   Transaction,
@@ -72,7 +73,7 @@ interface FormData {
   date: string;
   description: string;
   amount: number;
-  transaction_type: "Income" | "Expense";
+  transaction_type: "Income" | "Expense" | "MortgagePayment";
   category_id: number; // Required field
   account_id: string; // Empty string = no account selected
   entity_id: string; // Empty string = inherit from account
@@ -85,6 +86,11 @@ interface FormData {
   exclude_from_income: boolean;
   exclude_from_expenses: boolean;
   splits: SplitRow[];
+  // Mortgage payment fields
+  mortgage_account_id: string; // Empty string = none
+  mortgage_principal?: number;
+  mortgage_interest?: number;
+  mortgage_escrow?: number;
 }
 
 function TransactionForm({
@@ -152,11 +158,31 @@ function TransactionForm({
       exclude_from_income: false,
       exclude_from_expenses: false,
       splits: [],
+      mortgage_account_id: "",
+      mortgage_principal: undefined,
+      mortgage_interest: undefined,
+      mortgage_escrow: undefined,
     },
   });
 
   // Watch the transaction type to set default category type
   const transactionType = watch("transaction_type");
+  const watchedPrincipal = watch("mortgage_principal");
+  const watchedInterest = watch("mortgage_interest");
+  const watchedEscrow = watch("mortgage_escrow");
+  const watchedAmount = watch("amount");
+
+  // Auto-select "Mortgage Payment" category when type switches to MortgagePayment
+  useEffect(() => {
+    if (transactionType === "MortgagePayment" && categoriesData?.categories) {
+      const mortgageCat = categoriesData.categories.find(
+        (c) => c.category_name.toLowerCase().includes("mortgage")
+      );
+      if (mortgageCat) {
+        setValue("category_id", mortgageCat.category_id);
+      }
+    }
+  }, [transactionType, categoriesData]);
 
   // Reset form when transaction changes
   useEffect(() => {
@@ -185,6 +211,10 @@ function TransactionForm({
           entity_id: s.entity_id ? String(s.entity_id) : "",
           description: s.description ?? "",
         })) ?? [],
+        mortgage_account_id: transaction.mortgage_account_id ? String(transaction.mortgage_account_id) : "",
+        mortgage_principal: transaction.mortgage_principal ?? undefined,
+        mortgage_interest: transaction.mortgage_interest ?? undefined,
+        mortgage_escrow: transaction.mortgage_escrow ?? undefined,
       });
     } else if (mode === "create") {
       const prefill = defaultTransaction;
@@ -212,6 +242,10 @@ function TransactionForm({
             entity_id: s.entity_id ? String(s.entity_id) : "",
             description: s.description ?? "",
           })) ?? [],
+          mortgage_account_id: "",
+          mortgage_principal: undefined,
+          mortgage_interest: undefined,
+          mortgage_escrow: undefined,
         });
       } else {
         setFormEntityId(selectedEntityId ?? undefined);
@@ -232,6 +266,10 @@ function TransactionForm({
           exclude_from_income: false,
           exclude_from_expenses: false,
           splits: [],
+          mortgage_account_id: "",
+          mortgage_principal: undefined,
+          mortgage_interest: undefined,
+          mortgage_escrow: undefined,
         });
       }
     }
@@ -274,6 +312,7 @@ function TransactionForm({
 
       const accountId = data.account_id ? parseInt(data.account_id, 10) : undefined;
       const entityId = data.entity_id ? parseInt(data.entity_id, 10) : null;
+      const mortgageAccountId = data.mortgage_account_id ? parseInt(data.mortgage_account_id, 10) : undefined;
 
       if (mode === "create") {
         const createData: TransactionCreate = {
@@ -292,6 +331,12 @@ function TransactionForm({
           is_reimbursable: data.is_reimbursable,
           exclude_from_income: data.exclude_from_income,
           exclude_from_expenses: data.exclude_from_expenses,
+          ...(data.transaction_type === "MortgagePayment" && {
+            mortgage_account_id: mortgageAccountId,
+            mortgage_principal: data.mortgage_principal,
+            mortgage_interest: data.mortgage_interest,
+            mortgage_escrow: data.mortgage_escrow,
+          }),
         };
         const created = await createMutation.mutateAsync(createData);
         if (data.splits.length > 0) {
@@ -323,6 +368,12 @@ function TransactionForm({
           is_reimbursable: data.is_reimbursable,
           exclude_from_income: data.exclude_from_income,
           exclude_from_expenses: data.exclude_from_expenses,
+          ...(data.transaction_type === "MortgagePayment" && {
+            mortgage_account_id: mortgageAccountId,
+            mortgage_principal: data.mortgage_principal,
+            mortgage_interest: data.mortgage_interest,
+            mortgage_escrow: data.mortgage_escrow,
+          }),
         };
         await updateMutation.mutateAsync({
           id: transaction.id,
@@ -391,7 +442,12 @@ function TransactionForm({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {mode === "create" ? "Add New Transaction" : "Edit Transaction"}
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          {mode === "create" ? "Add New Transaction" : "Edit Transaction"}
+          <IconButton onClick={onClose} size="small" aria-label="Close">
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent>
@@ -434,6 +490,11 @@ function TransactionForm({
                         value="Expense"
                         control={<Radio size="small" />}
                         label="Expense"
+                      />
+                      <FormControlLabel
+                        value="MortgagePayment"
+                        control={<Radio size="small" />}
+                        label="Mortgage Payment"
                       />
                     </RadioGroup>
                   )}
@@ -506,13 +567,13 @@ function TransactionForm({
                     required
                     value={field.value || ""}
                     error={!!errors.category_id}
-                    helperText={errors.category_id?.message}
-                    disabled={categoriesLoading}
+                    helperText={transactionType === "MortgagePayment" ? "Fixed for Mortgage Payment" : errors.category_id?.message}
+                    disabled={categoriesLoading || transactionType === "MortgagePayment"}
                     onChange={(e) => {
                       const value = e.target.value;
                       if (value === "CREATE_NEW") {
                         // Set default category type based on current transaction type
-                        setNewCategoryType(transactionType || "Expense");
+                        setNewCategoryType((transactionType === "MortgagePayment" ? "Expense" : transactionType) || "Expense");
                         setNewCategoryDialogOpen(true);
                       } else {
                         field.onChange(value);
@@ -532,7 +593,7 @@ function TransactionForm({
                           const filtered = (categoriesData?.categories || [])
                             .filter((category) => {
                               if (transactionType === "Income") return category.category_type === "Income" || category.category_type === "Both" || category.category_type === "Transfer";
-                              if (transactionType === "Expense") return category.category_type === "Expense" || category.category_type === "Both" || category.category_type === "Transfer";
+                              if (transactionType === "Expense" || transactionType === "MortgagePayment") return category.category_type === "Expense" || category.category_type === "Both" || category.category_type === "Transfer";
                               return true;
                             });
                           // Sort hierarchically: roots alphabetically, children under their parent
@@ -657,6 +718,153 @@ function TransactionForm({
                 )}
               />
             </Grid>
+
+            {/* Mortgage Payment Details */}
+            {transactionType === "MortgagePayment" && (
+              <>
+                <Grid item xs={12}>
+                  <Divider sx={{ mb: 1 }} />
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
+                    Mortgage Details
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Controller
+                    name="mortgage_account_id"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Mortgage Account"
+                        select
+                        fullWidth
+                        value={field.value || ""}
+                        helperText="Which mortgage account does this payment apply to?"
+                      >
+                        <MenuItem value="">
+                          <em>No mortgage account</em>
+                        </MenuItem>
+                        {accountsData
+                          ?.filter((a) => a.account_type === "mortgage")
+                          .map((account) => (
+                            <MenuItem key={account.account_id} value={String(account.account_id)}>
+                              {account.account_name}
+                              {account.institution_name ? ` (${account.institution_name})` : ""}
+                            </MenuItem>
+                          ))}
+                      </TextField>
+                    )}
+                  />
+                </Grid>
+                {(() => {
+                  const total = Number(watchedAmount) || 0;
+                  const p = Number(watchedPrincipal) || 0;
+                  const i = Number(watchedInterest) || 0;
+                  const e = Number(watchedEscrow) || 0;
+                  const allocated = Math.round((p + i + e) * 100) / 100;
+                  const remaining = Math.round((total - allocated) * 100) / 100;
+                  const isBalanced = Math.abs(remaining) < 0.01;
+
+                  const fillRemaining = (field: "mortgage_principal" | "mortgage_interest" | "mortgage_escrow") => {
+                    const cur = field === "mortgage_principal" ? p : field === "mortgage_interest" ? i : e;
+                    const newVal = Math.round((cur + remaining) * 100) / 100;
+                    setValue(field, newVal >= 0 ? newVal : 0);
+                  };
+
+                  return (
+                    <>
+                      <Grid item xs={12} sm={4}>
+                        <Controller
+                          name="mortgage_principal"
+                          control={control}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              label="Principal"
+                              type="number"
+                              fullWidth
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                              inputProps={{ step: "0.01", min: "0" }}
+                              InputProps={{
+                                endAdornment: !isBalanced && remaining > 0 ? (
+                                  <Button size="small" sx={{ whiteSpace: "nowrap", minWidth: "auto", px: 0.5, fontSize: "0.7rem" }} onClick={() => fillRemaining("mortgage_principal")}>
+                                    +{remaining.toFixed(2)}
+                                  </Button>
+                                ) : undefined,
+                              }}
+                              helperText="Reduces loan balance"
+                            />
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Controller
+                          name="mortgage_interest"
+                          control={control}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              label="Interest"
+                              type="number"
+                              fullWidth
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                              inputProps={{ step: "0.01", min: "0" }}
+                              InputProps={{
+                                endAdornment: !isBalanced && remaining > 0 ? (
+                                  <Button size="small" sx={{ whiteSpace: "nowrap", minWidth: "auto", px: 0.5, fontSize: "0.7rem" }} onClick={() => fillRemaining("mortgage_interest")}>
+                                    +{remaining.toFixed(2)}
+                                  </Button>
+                                ) : undefined,
+                              }}
+                              helperText="Interest portion"
+                            />
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Controller
+                          name="mortgage_escrow"
+                          control={control}
+                          render={({ field }) => (
+                            <TextField
+                              {...field}
+                              label="Escrow"
+                              type="number"
+                              fullWidth
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseFloat(e.target.value))}
+                              inputProps={{ step: "0.01", min: "0" }}
+                              InputProps={{
+                                endAdornment: !isBalanced && remaining > 0 ? (
+                                  <Button size="small" sx={{ whiteSpace: "nowrap", minWidth: "auto", px: 0.5, fontSize: "0.7rem" }} onClick={() => fillRemaining("mortgage_escrow")}>
+                                    +{remaining.toFixed(2)}
+                                  </Button>
+                                ) : undefined,
+                              }}
+                              helperText="Taxes & insurance (optional)"
+                            />
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="caption"
+                          color={isBalanced ? "success.main" : remaining < 0 ? "error" : "text.secondary"}
+                        >
+                          {isBalanced
+                            ? `Allocated: $${allocated.toFixed(2)} ✓`
+                            : remaining > 0
+                            ? `Allocated: $${allocated.toFixed(2)} of $${total.toFixed(2)} — $${remaining.toFixed(2)} unallocated (click + to fill)`
+                            : `Over-allocated by $${Math.abs(remaining).toFixed(2)}`}
+                        </Typography>
+                      </Grid>
+                    </>
+                  );
+                })()}
+              </>
+            )}
 
             {/* Properties */}
             <Grid item xs={12}>
@@ -896,12 +1104,12 @@ function TransactionForm({
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', zIndex: 1 }}>
           <Button onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {mode === "create" ? "Create" : "Update"}
+            {mode === "create" ? "Create" : "Save"}
           </Button>
         </DialogActions>
       </form>

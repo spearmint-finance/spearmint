@@ -61,24 +61,26 @@ def get_income_analysis(
     start_date: Optional[date] = Query(None, description="Start date for analysis"),
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get income analysis for a period.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         mode: Analysis mode (analysis or complete)
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         IncomeAnalysisResponse: Income analysis results
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
-    result = service.analyze_income(date_range=date_range, mode=_convert_mode(mode))
+    result = service.analyze_income(date_range=date_range, mode=_convert_mode(mode), entity_id=entity_id)
     
     # Convert breakdown to Pydantic models
     breakdown = {
@@ -103,28 +105,31 @@ def get_income_trends(
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     period: TimePeriodEnum = Query(TimePeriodEnum.MONTHLY, description="Period granularity"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get income trends over time.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         period: Period granularity (daily, weekly, monthly, etc.)
         mode: Analysis mode
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         TrendsResponse: Income trend data
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
     trends = service.get_income_trends(
         date_range=date_range,
         period=_convert_period(period),
-        mode=_convert_mode(mode)
+        mode=_convert_mode(mode),
+        entity_id=entity_id
     )
     
     return TrendsResponse(
@@ -140,25 +145,27 @@ def get_expense_analysis(
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
     top_n: int = Query(10, ge=1, le=50, description="Number of top categories to return"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get expense analysis for a period.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         mode: Analysis mode (analysis or complete)
         top_n: Number of top categories to return
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         ExpenseAnalysisResponse: Expense analysis results
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
-    result = service.analyze_expenses(date_range=date_range, mode=_convert_mode(mode), top_n=top_n)
+    result = service.analyze_expenses(date_range=date_range, mode=_convert_mode(mode), top_n=top_n, entity_id=entity_id)
     
     # Convert breakdown to Pydantic models
     breakdown = {
@@ -187,28 +194,31 @@ def get_expense_trends(
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     period: TimePeriodEnum = Query(TimePeriodEnum.MONTHLY, description="Period granularity"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get expense trends over time.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         period: Period granularity (daily, weekly, monthly, etc.)
         mode: Analysis mode
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         TrendsResponse: Expense trend data
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
     trends = service.get_expense_trends(
         date_range=date_range,
         period=_convert_period(period),
-        mode=_convert_mode(mode)
+        mode=_convert_mode(mode),
+        entity_id=entity_id
     )
     
     return TrendsResponse(
@@ -223,24 +233,26 @@ def get_cash_flow_analysis(
     start_date: Optional[date] = Query(None, description="Start date for analysis"),
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get cash flow analysis for a period.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         mode: Analysis mode (analysis or complete)
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         CashFlowResponse: Cash flow analysis results
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
-    result = service.analyze_cash_flow(date_range=date_range, mode=_convert_mode(mode))
+    result = service.analyze_cash_flow(date_range=date_range, mode=_convert_mode(mode), entity_id=entity_id)
     
     return CashFlowResponse(
         net_cash_flow=result.net_cash_flow,
@@ -260,28 +272,31 @@ def get_cash_flow_trends(
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     period: TimePeriodEnum = Query(TimePeriodEnum.MONTHLY, description="Period granularity"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
     Get cash flow trends over time.
-    
+
     Args:
         start_date: Start date for analysis
         end_date: End date for analysis
         period: Period granularity (daily, weekly, monthly, etc.)
         mode: Analysis mode
+        entity_id: Entity ID to filter by
         db: Database session
-        
+
     Returns:
         CashFlowTrendsResponse: Cash flow trend data
     """
     service = AnalysisService(db)
-    
+
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
     trends = service.get_cash_flow_trends(
         date_range=date_range,
         period=_convert_period(period),
-        mode=_convert_mode(mode)
+        mode=_convert_mode(mode),
+        entity_id=entity_id
     )
     
     return CashFlowTrendsResponse(
@@ -296,6 +311,7 @@ def get_financial_health(
     start_date: Optional[date] = Query(None, description="Start date for analysis"),
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
@@ -305,6 +321,7 @@ def get_financial_health(
         start_date: Start date for analysis
         end_date: End date for analysis
         mode: Analysis mode (analysis, with_capital, or complete)
+        entity_id: Entity ID to filter by
         db: Database session
 
     Returns:
@@ -313,7 +330,7 @@ def get_financial_health(
     service = AnalysisService(db)
 
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
-    result = service.get_financial_health_indicators(date_range=date_range, mode=_convert_mode(mode))
+    result = service.get_financial_health_indicators(date_range=date_range, mode=_convert_mode(mode), entity_id=entity_id)
 
     return FinancialHealthResponse(
         income_to_expense_ratio=result.income_to_expense_ratio,
@@ -332,6 +349,7 @@ def get_financial_summary(
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
     top_n: int = Query(5, ge=1, le=20, description="Number of top categories to return"),
     recent_count: int = Query(10, ge=1, le=50, description="Number of recent transactions to return"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
@@ -349,6 +367,7 @@ def get_financial_summary(
         mode: Analysis mode (analysis or complete)
         top_n: Number of top categories to return
         recent_count: Number of recent transactions to return
+        entity_id: Entity ID to filter by
         db: Database session
 
     Returns:
@@ -361,7 +380,8 @@ def get_financial_summary(
         date_range=date_range,
         mode=_convert_mode(mode),
         top_n=top_n,
-        recent_count=recent_count
+        recent_count=recent_count,
+        entity_id=entity_id
     )
 
     # Convert to response model
@@ -387,6 +407,7 @@ def get_income_expense_comparison(
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
     top_n: int = Query(10, ge=1, le=50, description="Number of top categories to return"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
@@ -403,6 +424,7 @@ def get_income_expense_comparison(
         end_date: End date for analysis
         mode: Analysis mode (analysis or complete)
         top_n: Number of top categories to return
+        entity_id: Entity ID to filter by
         db: Database session
 
     Returns:
@@ -414,7 +436,8 @@ def get_income_expense_comparison(
     result = service.get_income_expense_comparison(
         date_range=date_range,
         mode=_convert_mode(mode),
-        top_n=top_n
+        top_n=top_n,
+        entity_id=entity_id
     )
 
     # Convert breakdown to Pydantic models for income
@@ -468,6 +491,7 @@ def get_category_breakdown(
     start_date: Optional[date] = Query(None, description="Start date for analysis"),
     end_date: Optional[date] = Query(None, description="End date for analysis"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
@@ -483,6 +507,7 @@ def get_category_breakdown(
         start_date: Start date for analysis
         end_date: End date for analysis
         mode: Analysis mode (analysis or complete)
+        entity_id: Entity ID to filter by
         db: Database session
 
     Returns:
@@ -493,7 +518,8 @@ def get_category_breakdown(
     date_range = DateRange(start_date=start_date, end_date=end_date) if start_date or end_date else None
     result = service.get_category_breakdown(
         date_range=date_range,
-        mode=_convert_mode(mode)
+        mode=_convert_mode(mode),
+        entity_id=entity_id
     )
 
     return CategoryBreakdownResponse(
@@ -514,6 +540,7 @@ def get_expense_category_trends(
     period: TimePeriodEnum = Query(TimePeriodEnum.MONTHLY, description="Period granularity"),
     mode: AnalysisModeEnum = Query(AnalysisModeEnum.ANALYSIS, description="Analysis mode"),
     top_n: int = Query(8, description="Number of top categories to include"),
+    entity_id: Optional[int] = Query(None, description="Entity ID to filter by"),
     db: Session = Depends(get_db)
 ):
     """
@@ -530,7 +557,8 @@ def get_expense_category_trends(
         period=_convert_period(period),
         date_range=date_range,
         mode=_convert_mode(mode),
-        top_n=top_n
+        top_n=top_n,
+        entity_id=entity_id
     )
 
     return result

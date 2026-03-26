@@ -246,7 +246,7 @@ export default function UserPreferencesComponent() {
               label="Thousands Separator"
               value={preferences.thousandsSeparator}
               onChange={(e) =>
-                setPreferences({ ...preferences, thousandsSeparator: e.target.value })
+                setPreferences({ ...preferences, thousandsSeparator: e.target.value as "" | "," | " " | "." })
               }
             >
               <MenuItem value=",">, (comma)</MenuItem>

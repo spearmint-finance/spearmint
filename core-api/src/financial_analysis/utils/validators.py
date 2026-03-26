@@ -14,7 +14,7 @@ class ValidationError(Exception):
 class DataValidator:
     """Validator class for transaction data."""
     
-    VALID_TRANSACTION_TYPES = {'Income', 'Expense'}
+    VALID_TRANSACTION_TYPES = {'Income', 'Expense', 'MortgagePayment'}
     VALID_IMPORT_MODES = {'full', 'incremental', 'update'}
     
     @staticmethod

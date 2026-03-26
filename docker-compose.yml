@@ -48,6 +48,7 @@ services:
       - DATABASE_URL=sqlite:////app/data/financial_data.db
       - OPENAI_API_KEY=${OPENAI_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_KEY}
+      - DEMO_MODE=${DEMO_MODE:-false}  # Set to 'true' to seed demo data on first start
     # Pass --reload to entrypoint for hot reloading in dev
     command: ["--reload"]
     healthcheck:

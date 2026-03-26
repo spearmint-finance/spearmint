@@ -630,6 +630,12 @@ class CategoryService:
                 applied = False
                 if rule.category_id:
                     transaction.category_id = rule.category_id
+                    # Auto-exclude from analysis if category is Transfer type
+                    cat = self.db.query(Category).filter(
+                        Category.category_id == rule.category_id
+                    ).first()
+                    if cat and cat.category_type == 'Transfer':
+                        transaction.include_in_analysis = False
                     applied = True
                 if rule.entity_id:
                     transaction.entity_id = rule.entity_id
@@ -683,6 +689,11 @@ class CategoryService:
                 return False
             pattern = rule.payment_method_pattern.replace('%', '.*')
             if not re.search(pattern, transaction.payment_method, re.IGNORECASE):
+                return False
+
+        # Check account_id match
+        if rule.account_id is not None:
+            if transaction.account_id != rule.account_id:
                 return False
 
         # All conditions matched
@@ -789,6 +800,12 @@ class CategoryService:
                     # Assign category if rule has one and transaction needs it
                     if rule.category_id and (not transaction.category_id or force_recategorize):
                         transaction.category_id = rule.category_id
+                        # Auto-exclude from analysis if category is Transfer type
+                        cat = self.db.query(Category).filter(
+                            Category.category_id == rule.category_id
+                        ).first()
+                        if cat and cat.category_type == 'Transfer':
+                            transaction.include_in_analysis = False
                         categorized_count += 1
                         applied = True
                     # Assign entity if rule has one and transaction needs it

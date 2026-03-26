@@ -14,7 +14,7 @@ class TransactionBase(DecimalBaseModel):
 
     transaction_date: date = Field(..., description="Transaction date")
     amount: Decimal = Field(..., description="Transaction amount (can be negative for expenses)")
-    transaction_type: str = Field(..., pattern="^(Income|Expense)$", description="Transaction type: 'Income' or 'Expense'")
+    transaction_type: str = Field(..., pattern="^(Income|Expense|MortgagePayment)$", description="Transaction type: 'Income', 'Expense', or 'MortgagePayment'")
     category_id: int = Field(..., gt=0, description="Category ID")
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
@@ -31,6 +31,11 @@ class TransactionBase(DecimalBaseModel):
     exclude_from_income: bool = Field(default=False, description="Exclude from income analysis")
     exclude_from_expenses: bool = Field(default=False, description="Exclude from expense analysis")
     entity_id: Optional[int] = Field(None, description="Entity ID (null = inherit from account)")
+    # Mortgage payment fields (only when transaction_type = 'MortgagePayment')
+    mortgage_account_id: Optional[int] = Field(None, description="Mortgage account this payment applies to")
+    mortgage_principal: Optional[Decimal] = Field(None, description="Principal portion of mortgage payment")
+    mortgage_interest: Optional[Decimal] = Field(None, description="Interest portion of mortgage payment")
+    mortgage_escrow: Optional[Decimal] = Field(None, description="Escrow portion of mortgage payment")
 
 
 class TransactionCreate(TransactionBase):
@@ -45,7 +50,7 @@ class TransactionUpdate(DecimalBaseModel):
 
     transaction_date: Optional[date] = Field(None, description="Transaction date")
     amount: Optional[Decimal] = Field(None, description="Transaction amount (can be negative for expenses)")
-    transaction_type: Optional[str] = Field(None, pattern="^(Income|Expense)$", description="Transaction type: 'Income' or 'Expense'")
+    transaction_type: Optional[str] = Field(None, pattern="^(Income|Expense|MortgagePayment)$", description="Transaction type: 'Income', 'Expense', or 'MortgagePayment'")
     category_id: Optional[int] = Field(None, gt=0, description="Category ID")
     source: Optional[str] = Field(None, max_length=255, description="Transaction source")
     description: Optional[str] = Field(None, description="Transaction description")
@@ -64,6 +69,10 @@ class TransactionUpdate(DecimalBaseModel):
     entity_id: Optional[int] = Field(None, description="Entity ID (null = inherit from account)")
     tag_names: Optional[List[str]] = Field(None, description="List of tag names")
     splits: Optional[List[TransactionSplitCreate]] = Field(None, description="If provided, replaces all splits. Empty list removes all splits.")
+    mortgage_account_id: Optional[int] = Field(None, description="Mortgage account this payment applies to")
+    mortgage_principal: Optional[Decimal] = Field(None, description="Principal portion of mortgage payment")
+    mortgage_interest: Optional[Decimal] = Field(None, description="Interest portion of mortgage payment")
+    mortgage_escrow: Optional[Decimal] = Field(None, description="Escrow portion of mortgage payment")
 
 
 class CategoryInfo(BaseModel):
@@ -99,6 +108,8 @@ class TransactionResponse(TransactionBase):
     tags: List[TagInfo] = Field(default_factory=list, description="Associated tags")
     splits: List[TransactionSplitResponse] = Field(default_factory=list, description="Line-item splits")
     split_portion: Optional[bool] = Field(None, description="True when the displayed amount is a split portion, not the full transaction amount")
+    is_cleared: bool = Field(default=False, description="Whether the transaction has been cleared/reconciled")
+    cleared_date: Optional[date] = Field(None, description="Date the transaction was cleared")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

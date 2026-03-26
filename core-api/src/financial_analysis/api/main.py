@@ -66,7 +66,7 @@ async def health_check():
 # Import routers
 from .routes import (
     transactions, categories, import_routes, analysis, relationships, projections, reports,
-    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator, entities
+    persons, splits, scenarios, accounts, maintenance, auth, assistant, agents, aggregator, entities, budgets
 )
 
 # Register routers
@@ -82,6 +82,7 @@ app.include_router(splits.router, prefix="/api", tags=["splits"])
 app.include_router(scenarios.router, prefix="/api", tags=["scenarios"])
 app.include_router(accounts.router, prefix="/api", tags=["accounts"])
 app.include_router(entities.router, prefix="/api", tags=["entities"])
+app.include_router(budgets.router, prefix="/api", tags=["budgets"])
 app.include_router(maintenance.router, prefix="/api", tags=["maintenance"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(assistant.router, prefix="/api", tags=["assistant"])
@@ -196,6 +197,67 @@ def ensure_database_tables():
                     "SELECT account_id, entity_id FROM accounts "
                     "WHERE entity_id IS NOT NULL"
                 ))
+
+    # Migration: add account_id to category_rules
+    if inspector.has_table("category_rules"):
+        columns = [c["name"] for c in inspector.get_columns("category_rules")]
+        if "account_id" not in columns:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE category_rules ADD COLUMN account_id INTEGER "
+                    "REFERENCES accounts(account_id)"
+                ))
+
+    # Migration: add real estate and mortgage fields to accounts
+    if inspector.has_table("accounts"):
+        columns = [c["name"] for c in inspector.get_columns("accounts")]
+        acct_additions = [
+            ("purchase_price",  "NUMERIC(15,2)"),
+            ("purchase_date",   "DATE"),
+            ("interest_rate",   "NUMERIC(6,4)"),
+            ("original_loan_amount", "NUMERIC(15,2)"),
+            ("loan_start_date", "DATE"),
+            ("loan_term_months", "INTEGER"),
+            ("linked_real_estate_account_id", "INTEGER REFERENCES accounts(account_id)"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in acct_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE accounts ADD COLUMN {col_name} {col_def}"
+                    ))
+
+    # Migration: add mortgage payment fields to transactions
+    if inspector.has_table("transactions"):
+        columns = [c["name"] for c in inspector.get_columns("transactions")]
+        mort_additions = [
+            ("mortgage_account_id", "INTEGER REFERENCES accounts(account_id)"),
+            ("mortgage_principal",  "NUMERIC(10,2)"),
+            ("mortgage_interest",   "NUMERIC(10,2)"),
+            ("mortgage_escrow",     "NUMERIC(10,2)"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in mort_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE transactions ADD COLUMN {col_name} {col_def}"
+                    ))
+
+    # Migration: add new columns to budgets table
+    if inspector.has_table("budgets"):
+        columns = [c["name"] for c in inspector.get_columns("budgets")]
+        budget_additions = [
+            ("entity_id", "INTEGER REFERENCES entities(entity_id)"),
+            ("is_active", "BOOLEAN DEFAULT 1"),
+            ("notes", "TEXT"),
+            ("updated_at", "DATETIME"),
+        ]
+        with engine.begin() as conn:
+            for col_name, col_def in budget_additions:
+                if col_name not in columns:
+                    conn.execute(text(
+                        f"ALTER TABLE budgets ADD COLUMN {col_name} {col_def}"
+                    ))
 
 
 # Root endpoint

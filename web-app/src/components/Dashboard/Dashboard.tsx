@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { useEntityContext } from "../../contexts/EntityContext";
 import {
   Box,
   Typography,
@@ -12,6 +13,8 @@ import {
   Skeleton,
   Button,
   LinearProgress,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -38,12 +41,24 @@ import ExpenseStackedBarChart from "../Charts/ExpenseStackedBarChart";
 import DateRangePicker, {
   DateRange,
 } from "../Analysis/DateRangePicker";
+import ExpenseViewToggle, {
+  ExpenseView,
+} from "../Analysis/ExpenseViewToggle";
+import ExportButton from "../Analysis/ExportButton";
 
 function Dashboard() {
+  const { selectedEntityId, selectedEntity } = useEntityContext();
   const [dateRange, setDateRange] = useState<DateRange>({
     start_date: "",
     end_date: "",
   });
+  const [expenseView, setExpenseView] = useState<ExpenseView>("operating");
+  const [trendPeriod, setTrendPeriod] = useState<"daily" | "weekly" | "monthly" | "quarterly" | "yearly">("monthly");
+
+  // Convert expense view to API mode
+  const viewMode = expenseView === "operating" ? "analysis" :
+                   expenseView === "with-capital" ? "with_capital" :
+                   "complete";
 
   // Fetch comprehensive dashboard data using the summary endpoint
   const {
@@ -53,41 +68,48 @@ function Dashboard() {
     error,
     refetch,
   } = useFinancialSummary({
-    mode: "analysis",
+    mode: viewMode,
     top_n: 5,
     recent_count: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
   // Fetch cash flow trends for charts
-  const { data: trendsData } = useCashFlowTrends({
-    mode: "analysis",
-    period: "monthly",
+  const { data: trendsData, isLoading: trendsLoading } = useCashFlowTrends({
+    mode: viewMode,
+    period: trendPeriod,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
   // Fetch expense category trends for stacked bar chart
-  const { data: categoryTrends } = useExpenseCategoryTrends({
-    period: "monthly",
-    mode: "analysis",
+  const { data: categoryTrends, isLoading: categoryTrendsLoading } = useExpenseCategoryTrends({
+    period: trendPeriod,
+    mode: viewMode,
     top_n: 5,
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
+    entity_id: selectedEntityId ?? undefined,
   });
 
-  // Fetch net worth data
+  // Fetch net worth data (entity-scoped)
   const { data: netWorth, isLoading: netWorthLoading } = useQuery({
-    queryKey: ["netWorth"],
-    queryFn: () => getNetWorth(),
+    queryKey: ["netWorth", selectedEntityId],
+    queryFn: () => getNetWorth(
+      selectedEntityId ? { entity_id: selectedEntityId } : undefined
+    ),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch account summary for quick balances view
+  // Fetch account summary for quick balances view (entity-scoped)
   const { data: accountSummary, isLoading: accountsLoading } = useQuery({
-    queryKey: ["accountSummary"],
-    queryFn: () => getAccountSummary(),
+    queryKey: ["accountSummary", selectedEntityId],
+    queryFn: () => getAccountSummary(
+      selectedEntityId ? { entity_id: selectedEntityId } : undefined
+    ),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -122,10 +144,30 @@ function Dashboard() {
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
+          flexWrap: "wrap",
+          gap: 2,
         }}
       >
-        <Typography variant="h4">Dashboard</Typography>
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+          <Typography variant="h4">Dashboard</Typography>
+          {selectedEntity && (
+            <Chip
+              label={selectedEntity.entity_name}
+              size="small"
+              color="primary"
+              variant="outlined"
+            />
+          )}
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <ExportButton
+            dateRange={dateRange}
+            viewMode={viewMode}
+            summaryData={summary}
+          />
+        </Box>
       </Box>
       {isFetching && !isLoading && (
         <LinearProgress sx={{ mb: 1, borderRadius: 1 }} />
@@ -135,7 +177,7 @@ function Dashboard() {
       <Grid container spacing={3}>
         {/* Total Income Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "success.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingUpIcon color="success" sx={{ mr: 1 }} />
@@ -165,7 +207,7 @@ function Dashboard() {
 
         {/* Total Expenses Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "error.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingDownIcon color="error" sx={{ mr: 1 }} />
@@ -195,7 +237,7 @@ function Dashboard() {
 
         {/* Net Cash Flow Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: summary.net_cash_flow >= 0 ? "success.main" : "error.main" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <AccountBalanceWalletIcon color="primary" sx={{ mr: 1 }} />
@@ -222,7 +264,7 @@ function Dashboard() {
 
         {/* Financial Health Indicators */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "primary.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Income/Expense Ratio
@@ -258,7 +300,7 @@ function Dashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: "primary.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Savings Rate
@@ -277,7 +319,7 @@ function Dashboard() {
                 }
               >
                 {summary.financial_health.savings_rate !== null
-                  ? formatPercentage(summary.financial_health.savings_rate)
+                  ? formatPercentage(summary.financial_health.savings_rate * 100)
                   : "N/A"}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -288,7 +330,7 @@ function Dashboard() {
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
-          <Card>
+          <Card sx={{ borderLeft: 4, borderColor: summary.financial_health.net_daily_cash_flow >= 0 ? "success.main" : "error.main" }}>
             <CardContent>
               <Typography variant="h6" color="text.secondary" gutterBottom>
                 Daily Cash Flow
@@ -332,11 +374,11 @@ function Dashboard() {
                     variant="h4"
                     component="div"
                     color={
-                      parseFloat(String(netWorth.netWorth || netWorth.net_worth || 0)) >= 0 ? "primary.main" : "error.main"
+                      parseFloat(String(netWorth.net_worth ?? netWorth.netWorth ?? 0)) >= 0 ? "primary.main" : "error.main"
                     }
                     gutterBottom
                   >
-                    {formatCurrency(netWorth.netWorth || netWorth.net_worth || 0)}
+                    {formatCurrency(netWorth.net_worth ?? netWorth.netWorth ?? 0)}
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
@@ -361,7 +403,7 @@ function Dashboard() {
                     color="text.secondary"
                     sx={{ mt: 1, display: "block" }}
                   >
-                    As of {formatDate(netWorth.asOfDate || netWorth.as_of_date || '')}
+                    As of {formatDate(netWorth.as_of_date ?? netWorth.asOfDate ?? '')}
                   </Typography>
                 </Box>
               ) : (
@@ -461,43 +503,85 @@ function Dashboard() {
         </Grid>
 
         {/* Charts Section */}
-        {trendsData && trendsData.trends.length > 0 && (
+        {(trendsLoading || (trendsData && trendsData.trends.length > 0)) && (
           <>
             {/* Cash Flow Trend Chart */}
             <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
-                <TrendLineChart
-                  data={trendsData.trends.map((t) => ({
-                    date: t.period,
-                    income: Number(t.income),
-                    expense: Number(t.expenses),
-                    netCashFlow: Number(t.net_cash_flow),
-                  }))}
-                  title="Income & Expense Trends"
-                  height={350}
-                  showIncome={true}
-                  showExpense={true}
-                  showNetCashFlow={true}
-                />
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                    flexWrap: "wrap",
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="h6">Income & Expense Trends</Typography>
+                  <ToggleButtonGroup
+                    value={trendPeriod}
+                    exclusive
+                    onChange={(_e, val) => val && setTrendPeriod(val)}
+                    size="small"
+                    aria-label="trend period"
+                  >
+                    <ToggleButton value="daily" aria-label="daily">
+                      Daily
+                    </ToggleButton>
+                    <ToggleButton value="weekly" aria-label="weekly">
+                      Weekly
+                    </ToggleButton>
+                    <ToggleButton value="monthly" aria-label="monthly">
+                      Monthly
+                    </ToggleButton>
+                    <ToggleButton value="quarterly" aria-label="quarterly">
+                      Quarterly
+                    </ToggleButton>
+                    <ToggleButton value="yearly" aria-label="yearly">
+                      Yearly
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+                {trendsLoading ? (
+                  <Skeleton variant="rectangular" height={350} sx={{ borderRadius: 1 }} />
+                ) : trendsData && trendsData.trends.length > 0 ? (
+                  <TrendLineChart
+                    data={trendsData.trends.map((t) => ({
+                      date: t.period,
+                      income: Number(t.income),
+                      expense: Number(t.expenses),
+                      netCashFlow: Number(t.net_cash_flow),
+                    }))}
+                    height={350}
+                    showIncome={true}
+                    showExpense={true}
+                    showNetCashFlow={true}
+                  />
+                ) : null}
               </Paper>
             </Grid>
           </>
         )}
 
         {/* Expense Category Trends - Stacked Bar Chart */}
-        {categoryTrends &&
+        {(categoryTrendsLoading || (categoryTrends &&
           categoryTrends.categories.length > 0 &&
-          categoryTrends.data.length > 0 && (
+          categoryTrends.data.length > 0)) && (
             <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Expense Categories Over Time
+                  Expense Categories ({trendPeriod.charAt(0).toUpperCase() + trendPeriod.slice(1)})
                 </Typography>
-                <ExpenseStackedBarChart
-                  data={categoryTrends.data}
-                  categories={categoryTrends.categories}
-                  height={400}
-                />
+                {categoryTrendsLoading ? (
+                  <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 1 }} />
+                ) : (
+                  <ExpenseStackedBarChart
+                    data={categoryTrends!.data}
+                    categories={categoryTrends!.categories}
+                    height={400}
+                  />
+                )}
               </Paper>
             </Grid>
           )}
@@ -573,6 +657,25 @@ function Dashboard() {
                     }))}
                     height={350}
                     colorScheme="error"
+                  />
+                </Paper>
+              </Grid>
+            )}
+
+            {/* Income Breakdown - Bar Chart */}
+            {summary.top_income_categories.length > 0 && (
+              <Grid item xs={12} md={6}>
+                <Paper sx={{ p: 3 }}>
+                  <CategoryBarChart
+                    data={summary.top_income_categories.map((cat) => ({
+                      name: cat.category,
+                      value: Number(cat.amount),
+                      count: cat.count,
+                    }))}
+                    title="Income Breakdown"
+                    height={350}
+                    horizontal={true}
+                    color="#4caf50"
                   />
                 </Paper>
               </Grid>

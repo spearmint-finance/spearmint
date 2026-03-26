@@ -13,6 +13,8 @@ export { getCashflowTrendTool, executeGetCashflowTrend } from "./get-cashflow-tr
 export { getIncomeBreakdownTool, executeGetIncomeBreakdown } from "./get-income-breakdown.js";
 export { getSpendingTrendTool, executeGetSpendingTrend } from "./get-spending-trend.js";
 export { getFinancialHealthTool, executeGetFinancialHealth } from "./get-financial-health.js";
+export { updateTransactionTool, executeUpdateTransaction } from "./update-transaction.js";
+export { createCategoryRuleTool, executeCreateCategoryRule } from "./create-category-rule.js";
 
 export const GENERATED_TOOL_NAMES = {
   GET_FINANCIAL_SUMMARY: "get_financial_summary",
@@ -22,7 +24,9 @@ export const GENERATED_TOOL_NAMES = {
   GET_CASHFLOW_TREND: "get_cashflow_trend",
   GET_INCOME_BREAKDOWN: "get_income_breakdown",
   GET_SPENDING_TREND: "get_spending_trend",
-  GET_FINANCIAL_HEALTH: "get_financial_health"
+  GET_FINANCIAL_HEALTH: "get_financial_health",
+  UPDATE_TRANSACTION: "update-transaction",
+  CREATE_CATEGORY_RULE: "create-category-rule",
 } as const;
 
 export type GeneratedToolName = typeof GENERATED_TOOL_NAMES[keyof typeof GENERATED_TOOL_NAMES];

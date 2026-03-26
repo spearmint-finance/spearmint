@@ -119,7 +119,8 @@ class AnalysisService:
     def analyze_income(
         self,
         date_range: Optional[DateRange] = None,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> IncomeAnalysisResult:
         """
         Analyze income for a given period.
@@ -135,11 +136,18 @@ class AnalysisService:
         query = self.db.query(Transaction).filter(
             Transaction.transaction_type == 'Income'
         )
-        
+
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False set at import/classification time
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             # For both ANALYSIS and WITH_CAPITAL modes: exclude non-operating income
             # (e.g., credit card receipts, loan disbursements, reimbursements)
@@ -179,16 +187,17 @@ class AnalysisService:
         self,
         date_range: Optional[DateRange] = None,
         period: TimePeriod = TimePeriod.MONTHLY,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> List[TrendDataPoint]:
         """
         Get income trends over time.
-        
+
         Args:
             date_range: Date range for analysis
             period: Time period granularity
             mode: Analysis mode
-            
+
         Returns:
             List[TrendDataPoint]: Trend data points
         """
@@ -196,11 +205,18 @@ class AnalysisService:
         query = self.db.query(Transaction).filter(
             Transaction.transaction_type == 'Income'
         )
-        
+
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False
+            # Exclude transfers by category type (must match analyze_income)
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
             query = query.filter(
                 or_(Transaction.exclude_from_income == False, Transaction.exclude_from_income == None)
             )
@@ -255,7 +271,8 @@ class AnalysisService:
         self,
         date_range: Optional[DateRange] = None,
         mode: AnalysisMode = AnalysisMode.ANALYSIS,
-        top_n: int = 10
+        top_n: int = 10,
+        entity_id: Optional[int] = None
     ) -> ExpenseAnalysisResult:
         """
         Analyze expenses for a given period.
@@ -273,10 +290,17 @@ class AnalysisService:
             Transaction.transaction_type == 'Expense'
         )
 
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False set at import/classification time
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses (capital, CC payments, refunds, etc.)
@@ -302,13 +326,13 @@ class AnalysisService:
         # Get transactions
         transactions = query.all()
 
-        # Calculate totals
-        total_expenses = sum(t.amount for t in transactions)
+        # Calculate totals — use abs() since expense amounts may be stored as negative
+        total_expenses = sum(abs(t.amount) for t in transactions)
         transaction_count = len(transactions)
         average_transaction = total_expenses / transaction_count if transaction_count > 0 else Decimal(0)
 
-        # Breakdown by category
-        breakdown = self._breakdown_by_category(transactions)
+        # Breakdown by category (use abs for consistency)
+        breakdown = self._breakdown_by_category(transactions, use_abs=True)
 
         # Get top categories
         top_categories = sorted(
@@ -340,7 +364,8 @@ class AnalysisService:
         self,
         date_range: Optional[DateRange] = None,
         period: TimePeriod = TimePeriod.MONTHLY,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> List[TrendDataPoint]:
         """
         Get expense trends over time.
@@ -358,10 +383,17 @@ class AnalysisService:
             Transaction.transaction_type == 'Expense'
         )
 
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers are excluded via include_in_analysis=False
+            # Exclude transfers by category type (must match analyze_expenses)
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 # ANALYSIS mode: exclude ALL non-operating expenses
@@ -394,7 +426,7 @@ class AnalysisService:
         df = pd.DataFrame([
             {
                 'date': t.transaction_date,
-                'amount': float(t.amount)
+                'amount': float(abs(t.amount))  # Use abs for expenses (may be stored as negative)
             }
             for t in transactions
         ])
@@ -426,7 +458,8 @@ class AnalysisService:
     def analyze_cash_flow(
         self,
         date_range: Optional[DateRange] = None,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> CashFlowResult:
         """
         Analyze cash flow (income - expenses).
@@ -439,10 +472,10 @@ class AnalysisService:
             CashFlowResult: Cash flow analysis results
         """
         # Get income analysis
-        income_result = self.analyze_income(date_range, mode)
+        income_result = self.analyze_income(date_range, mode, entity_id=entity_id)
 
         # Get expense analysis
-        expense_result = self.analyze_expenses(date_range, mode)
+        expense_result = self.analyze_expenses(date_range, mode, entity_id=entity_id)
 
         # Calculate net cash flow
         # Note: expenses are stored as positive values, so we subtract them
@@ -463,7 +496,8 @@ class AnalysisService:
         self,
         date_range: Optional[DateRange] = None,
         period: TimePeriod = TimePeriod.MONTHLY,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
         Get cash flow trends over time.
@@ -477,8 +511,8 @@ class AnalysisService:
             List[Dict]: Cash flow trend data with income, expenses, and net
         """
         # Get income and expense trends
-        income_trends = self.get_income_trends(date_range, period, mode)
-        expense_trends = self.get_expense_trends(date_range, period, mode)
+        income_trends = self.get_income_trends(date_range, period, mode, entity_id=entity_id)
+        expense_trends = self.get_expense_trends(date_range, period, mode, entity_id=entity_id)
 
         # Create a dictionary for easy lookup
         income_dict = {t.period: t for t in income_trends}
@@ -510,7 +544,8 @@ class AnalysisService:
     def get_financial_health_indicators(
         self,
         date_range: Optional[DateRange] = None,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> FinancialHealthIndicators:
         """
         Calculate financial health indicators.
@@ -523,7 +558,7 @@ class AnalysisService:
             FinancialHealthIndicators: Financial health metrics
         """
         # Get cash flow analysis using the specified mode
-        cash_flow = self.analyze_cash_flow(date_range, mode)
+        cash_flow = self.analyze_cash_flow(date_range, mode, entity_id=entity_id)
 
         # Calculate number of days in period
         if date_range and date_range.start_date and date_range.end_date:
@@ -564,12 +599,13 @@ class AnalysisService:
 
     # ==================== Helper Methods ====================
 
-    def _breakdown_by_category(self, transactions: List[Transaction]) -> Dict[str, Dict[str, Any]]:
+    def _breakdown_by_category(self, transactions: List[Transaction], use_abs: bool = False) -> Dict[str, Dict[str, Any]]:
         """
         Break down transactions by category.
 
         Args:
             transactions: List of transactions
+            use_abs: If True, use absolute values for amounts (for expense breakdowns)
 
         Returns:
             Dict: Category breakdown with totals and percentages
@@ -589,15 +625,15 @@ class AnalysisService:
                     'average': Decimal(0)
                 }
 
-            category_totals[category_name]['total'] += tx.amount
+            amount = abs(tx.amount) if use_abs else tx.amount
+            category_totals[category_name]['total'] += amount
             category_totals[category_name]['count'] += 1
 
         # Calculate averages and percentages
-        grand_total = sum(t.amount for t in transactions)
+        grand_total = sum(abs(t.amount) if use_abs else t.amount for t in transactions)
 
         for data in category_totals.values():
             data['average'] = data['total'] / data['count'] if data['count'] > 0 else Decimal(0)
-            # Use absolute value for percentage calculation since expenses are negative
             data['percentage'] = float(abs(data['total']) / abs(grand_total) * 100) if grand_total != 0 else 0.0
 
         return category_totals
@@ -691,7 +727,8 @@ class AnalysisService:
         date_range: Optional[DateRange] = None,
         mode: AnalysisMode = AnalysisMode.ANALYSIS,
         top_n: int = 5,
-        recent_count: int = 10
+        recent_count: int = 10,
+        entity_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get comprehensive financial summary.
@@ -706,10 +743,10 @@ class AnalysisService:
             Dictionary with comprehensive financial summary
         """
         # Get income, expense, and cash flow analysis
-        income_result = self.analyze_income(date_range=date_range, mode=mode)
-        expense_result = self.analyze_expenses(date_range=date_range, mode=mode, top_n=top_n)
-        cash_flow_result = self.analyze_cash_flow(date_range=date_range, mode=mode)
-        health_result = self.get_financial_health_indicators(date_range=date_range)
+        income_result = self.analyze_income(date_range=date_range, mode=mode, entity_id=entity_id)
+        expense_result = self.analyze_expenses(date_range=date_range, mode=mode, top_n=top_n, entity_id=entity_id)
+        cash_flow_result = self.analyze_cash_flow(date_range=date_range, mode=mode, entity_id=entity_id)
+        health_result = self.get_financial_health_indicators(date_range=date_range, entity_id=entity_id)
 
         # Get top income categories
         top_income = sorted(
@@ -728,6 +765,10 @@ class AnalysisService:
 
         # Get recent transactions
         query = self.db.query(Transaction).join(Category)
+
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
 
         # Apply date range filter
         if date_range:
@@ -781,7 +822,8 @@ class AnalysisService:
         self,
         date_range: Optional[DateRange] = None,
         mode: AnalysisMode = AnalysisMode.ANALYSIS,
-        top_n: int = 10
+        top_n: int = 10,
+        entity_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get combined income and expense comparison.
@@ -794,9 +836,9 @@ class AnalysisService:
         Returns:
             Dictionary with income/expense comparison
         """
-        income_result = self.analyze_income(date_range=date_range, mode=mode)
-        expense_result = self.analyze_expenses(date_range=date_range, mode=mode, top_n=top_n)
-        cash_flow_result = self.analyze_cash_flow(date_range=date_range, mode=mode)
+        income_result = self.analyze_income(date_range=date_range, mode=mode, entity_id=entity_id)
+        expense_result = self.analyze_expenses(date_range=date_range, mode=mode, top_n=top_n, entity_id=entity_id)
+        cash_flow_result = self.analyze_cash_flow(date_range=date_range, mode=mode, entity_id=entity_id)
 
         # Calculate comparison metrics
         income_to_expense_ratio = None
@@ -823,7 +865,8 @@ class AnalysisService:
     def get_category_breakdown(
         self,
         date_range: Optional[DateRange] = None,
-        mode: AnalysisMode = AnalysisMode.ANALYSIS
+        mode: AnalysisMode = AnalysisMode.ANALYSIS,
+        entity_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get detailed category breakdown for income and expenses.
@@ -845,6 +888,10 @@ class AnalysisService:
             func.avg(Transaction.amount).label('average_amount')
         ).join(Transaction)
 
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply date range filter
         if date_range:
             if date_range.start_date:
@@ -855,7 +902,7 @@ class AnalysisService:
         # Apply mode filter
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers excluded via include_in_analysis=False
+            # Transfers excluded by category_type filter below (only Income/Expense pass)
 
             if mode == AnalysisMode.WITH_CAPITAL:
                 # WITH_CAPITAL: include capital expenses, exclude other non-operating transactions
@@ -956,7 +1003,8 @@ class AnalysisService:
         period: TimePeriod,
         date_range: Optional[DateRange] = None,
         mode: AnalysisMode = AnalysisMode.ANALYSIS,
-        top_n: int = 8
+        top_n: int = 8,
+        entity_id: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Get expense trends broken down by category for each time period.
@@ -984,10 +1032,17 @@ class AnalysisService:
             Transaction.transaction_type == 'Expense'
         )
 
+        # Apply entity filter
+        if entity_id is not None:
+            query = query.filter(Transaction.entity_id == entity_id)
+
         # Apply mode filtering
         if mode == AnalysisMode.ANALYSIS or mode == AnalysisMode.WITH_CAPITAL:
             query = query.filter(Transaction.include_in_analysis == True)
-            # Transfers excluded via include_in_analysis=False
+            # Exclude transfers by category type
+            query = query.join(Category, Transaction.category_id == Category.category_id, isouter=True).filter(
+                or_(Category.category_type != 'Transfer', Category.category_type.is_(None))
+            )
 
             if mode == AnalysisMode.ANALYSIS:
                 query = query.filter(
@@ -1009,8 +1064,9 @@ class AnalysisService:
             if date_range.end_date:
                 query = query.filter(Transaction.transaction_date <= date_range.end_date)
 
-        # Join with Category to get category names
-        query = query.join(Category, Transaction.category_id == Category.category_id)
+        # Join with Category to get category names (only if not already joined above)
+        if mode not in (AnalysisMode.ANALYSIS, AnalysisMode.WITH_CAPITAL):
+            query = query.join(Category, Transaction.category_id == Category.category_id)
 
         # Get all transactions with category info
         transactions = query.add_columns(

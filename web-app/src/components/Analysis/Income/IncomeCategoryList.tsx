@@ -38,7 +38,7 @@ import { format } from "date-fns";
 interface IncomeCategoryListProps {
   incomeData?: IncomeAnalysisResponse;
   dateRange: DateRange;
-  viewMode: "analysis" | "complete";
+  viewMode: "analysis" | "with_capital" | "complete";
   isLoading?: boolean;
 }
 

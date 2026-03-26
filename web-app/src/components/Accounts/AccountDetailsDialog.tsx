@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -27,6 +27,8 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
+  Checkbox,
+  LinearProgress,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -41,9 +43,11 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import {
   Account,
   AccountUpdate,
+  PropertyType,
   getAccountTypeLabel,
   getAccountTypeIcon,
 } from '../../types/account';
@@ -52,13 +56,18 @@ import {
   getPortfolioSummary,
   getReconciliations,
   createReconciliation,
+  completeReconciliation,
   addHolding,
   updateHolding,
   deleteHolding,
   addBalanceSnapshot,
   updateAccount,
   deleteAccount,
+  getAccounts,
 } from '../../api/accounts';
+import { getTransactions } from '../../api/transactions';
+import type { Transaction } from '../../types/transaction';
+import type { Reconciliation } from '../../types/account';
 import BalanceHistoryChart from './BalanceHistoryChart';
 import { formatCurrency } from '../../utils/formatters';
 import { useEntityContext } from '../../contexts/EntityContext';
@@ -99,7 +108,9 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   onAccountUpdated,
 }) => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const { entities } = useEntityContext();
+  const acctCurrency = account?.currency || "USD";
   const [tabValue, setTabValue] = useState(0);
   const [showAddBalance, setShowAddBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
@@ -119,6 +130,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     cost_basis: '',
     current_value: '',
   });
+  const [activeRecon, setActiveRecon] = useState<Reconciliation | null>(null);
+  const [clearedIds, setClearedIds] = useState<Set<number>>(new Set());
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -128,7 +141,36 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     notes: account.notes || '',
     entity_ids: account.entity_ids || [],
     is_active: account.is_active,
+    property_value: account.property_value ?? '',
+    property_type: account.property_type ?? '',
+    linked_real_estate_account_id: account.linked_real_estate_account_id ?? '',
   });
+
+  const isRealEstate = account.account_type === 'real_estate';
+  const isMortgage = account.account_type === 'mortgage';
+
+  // For real estate: find mortgage accounts linked to this property
+  const { data: linkedMortgages = [] } = useQuery({
+    queryKey: ['accounts', 'mortgages-for', account.account_id],
+    queryFn: () => getAccounts(),
+    select: (data) => data.filter((a) => a.account_type === 'mortgage' && a.linked_real_estate_account_id === account.account_id),
+    enabled: isRealEstate,
+  });
+
+  // For mortgage: find real estate accounts (for selector in edit mode)
+  const { data: realEstateAccounts = [] } = useQuery({
+    queryKey: ['accounts', 'real-estate'],
+    queryFn: () => getAccounts(),
+    select: (data) => data.filter((a) => a.account_type === 'real_estate'),
+    enabled: isMortgage,
+  });
+
+  const mortgageAccount = linkedMortgages[0]; // primary linked mortgage
+
+  const propertyValue = account.property_value ?? 0;
+  const mortgageBalance = mortgageAccount?.current_balance ?? 0;
+  // Mortgage is a liability so current_balance is typically negative; equity = value - |balance|
+  const equity = propertyValue - Math.abs(mortgageBalance);
 
   // Fetch balance history
   const { data: balanceHistory } = useQuery({
@@ -151,6 +193,88 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     enabled: open && tabValue === 3,
   });
 
+  // Fetch account transactions for reconciliation clearing
+  const { data: reconTransactions, isLoading: reconTxLoading } = useQuery({
+    queryKey: ['reconTransactions', account.account_id, activeRecon?.statement_date],
+    queryFn: () =>
+      getTransactions({
+        account_id: account.account_id,
+        end_date: activeRecon!.statement_date,
+        limit: 1000,
+        sort_by: 'transaction_date',
+        sort_order: 'desc',
+      }),
+    enabled: !!activeRecon,
+  });
+
+  // Compute running cleared balance
+  const clearedBalance = useMemo(() => {
+    if (!reconTransactions?.transactions) return 0;
+    return reconTransactions.transactions
+      .filter((t: Transaction) => clearedIds.has(t.id))
+      .reduce((sum: number, t: Transaction) => {
+        return sum + (t.transaction_type === 'Income' ? t.amount : -t.amount);
+      }, account.opening_balance || 0);
+  }, [reconTransactions, clearedIds, account.opening_balance]);
+
+  const discrepancy = activeRecon
+    ? activeRecon.statement_balance - clearedBalance
+    : 0;
+
+  // Complete reconciliation mutation
+  const completeReconMutation = useMutation({
+    mutationFn: () =>
+      completeReconciliation(activeRecon!.reconciliation_id, {
+        reconciled_by: 'user',
+        cleared_transaction_ids: Array.from(clearedIds),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      enqueueSnackbar('Reconciliation completed', { variant: 'success' });
+      setActiveRecon(null);
+      setClearedIds(new Set());
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to complete reconciliation', { variant: 'error' });
+    },
+  });
+
+  const handleToggleCleared = (txId: number) => {
+    setClearedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(txId)) {
+        next.delete(txId);
+      } else {
+        next.add(txId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllCleared = () => {
+    if (!reconTransactions?.transactions) return;
+    const allIds = reconTransactions.transactions.map((t: Transaction) => t.id);
+    setClearedIds(new Set(allIds));
+  };
+
+  const handleDeselectAllCleared = () => {
+    setClearedIds(new Set());
+  };
+
+  const handleStartClearing = (recon: Reconciliation) => {
+    setActiveRecon(recon);
+    // Pre-select already-cleared transactions
+    if (reconTransactions?.transactions) {
+      const alreadyCleared = reconTransactions.transactions
+        .filter((t: Transaction) => t.is_cleared)
+        .map((t: Transaction) => t.id);
+      setClearedIds(new Set(alreadyCleared));
+    } else {
+      setClearedIds(new Set());
+    }
+  };
+
   // Add balance mutation
   const addBalanceMutation = useMutation({
     mutationFn: (data: { balance: number; date: string }) =>
@@ -160,9 +284,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
         balance_type: 'statement',
       }),
     onSuccess: () => {
+      enqueueSnackbar('Balance snapshot added', { variant: 'success' });
       onAccountUpdated();
       setShowAddBalance(false);
       setNewBalance('');
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to add balance snapshot', { variant: 'error' });
     },
   });
 
@@ -170,8 +298,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const updateAccountMutation = useMutation({
     mutationFn: (data: AccountUpdate) => updateAccount(account.account_id, data),
     onSuccess: () => {
+      enqueueSnackbar('Account updated', { variant: 'success' });
       onAccountUpdated();
       setIsEditing(false);
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to update account', { variant: 'error' });
     },
   });
 
@@ -184,8 +316,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reconciliations', account.account_id] });
+      enqueueSnackbar('Reconciliation started', { variant: 'success' });
       setShowReconForm(false);
       setReconBalance('');
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to create reconciliation', { variant: 'error' });
     },
   });
 
@@ -202,8 +338,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding added', { variant: 'success' });
       setShowHoldingForm(false);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to add holding', { variant: 'error' });
     },
   });
 
@@ -220,9 +360,13 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding updated', { variant: 'success' });
       setShowHoldingForm(false);
       setEditingHoldingId(null);
       setHoldingForm({ symbol: '', quantity: '', as_of_date: new Date().toISOString().split('T')[0], cost_basis: '', current_value: '' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to update holding', { variant: 'error' });
     },
   });
 
@@ -232,6 +376,10 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['portfolio', account.account_id] });
       queryClient.invalidateQueries({ queryKey: ['holdings', account.account_id] });
+      enqueueSnackbar('Holding deleted', { variant: 'success' });
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to delete holding', { variant: 'error' });
     },
   });
 
@@ -239,8 +387,12 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
   const deleteAccountMutation = useMutation({
     mutationFn: () => deleteAccount(account.account_id),
     onSuccess: () => {
+      enqueueSnackbar('Account deleted', { variant: 'success' });
       onAccountUpdated();
       onClose();
+    },
+    onError: () => {
+      enqueueSnackbar('Failed to delete account', { variant: 'error' });
     },
   });
 
@@ -263,6 +415,9 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       notes: account.notes || '',
       entity_ids: account.entity_ids || [],
       is_active: account.is_active,
+      property_value: account.property_value ?? '',
+      property_type: account.property_type ?? '',
+      linked_real_estate_account_id: account.linked_real_estate_account_id ?? '',
     });
     setIsEditing(true);
   };
@@ -280,6 +435,15 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
       notes: editForm.notes.trim() || undefined,
       entity_ids: editForm.entity_ids,
       is_active: editForm.is_active,
+      ...(isRealEstate && {
+        property_value: editForm.property_value !== '' ? Number(editForm.property_value) : undefined,
+        property_type: editForm.property_type ? (editForm.property_type as PropertyType) : undefined,
+      }),
+      ...(isMortgage && {
+        linked_real_estate_account_id: editForm.linked_real_estate_account_id !== ''
+          ? Number(editForm.linked_real_estate_account_id)
+          : null,
+      }),
     };
     updateAccountMutation.mutate(update);
   };
@@ -350,7 +514,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   Current Balance
                 </Typography>
                 <Typography variant="h5">
-                  {formatCurrency(account.current_balance || 0)}
+                  {formatCurrency(account.current_balance || 0, acctCurrency)}
                 </Typography>
                 {account.current_balance_date && (
                   <Typography variant="caption" color="text.secondary">
@@ -359,17 +523,27 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                 )}
               </Grid>
 
-              {account.institution_name && (
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Institution
-                  </Typography>
-                  <Typography variant="body1">{account.institution_name}</Typography>
-                  {account.account_number_last4 && (
-                    <Typography variant="caption">****{account.account_number_last4}</Typography>
-                  )}
-                </Grid>
-              )}
+              <Grid item xs={12} sm={6}>
+                {account.institution_name && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Institution
+                    </Typography>
+                    <Typography variant="body1">{account.institution_name}</Typography>
+                    {account.account_number_last4 && (
+                      <Typography variant="caption">****{account.account_number_last4}</Typography>
+                    )}
+                  </>
+                )}
+                {acctCurrency !== "USD" && (
+                  <Box sx={{ mt: account.institution_name ? 1 : 0 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Currency
+                    </Typography>
+                    <Typography variant="body1">{acctCurrency}</Typography>
+                  </Box>
+                )}
+              </Grid>
 
               {account.has_cash_component && account.cash_balance !== undefined && (
                 <Grid item xs={6}>
@@ -377,7 +551,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     Cash Position
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(account.cash_balance)}
+                    {formatCurrency(account.cash_balance, acctCurrency)}
                   </Typography>
                 </Grid>
               )}
@@ -388,9 +562,52 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     Investment Value
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(account.investment_value)}
+                    {formatCurrency(account.investment_value, acctCurrency)}
                   </Typography>
                 </Grid>
+              )}
+
+              {isRealEstate && account.property_value !== undefined && (
+                <>
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">
+                      Property Value
+                    </Typography>
+                    <Typography variant="body1">
+                      {formatCurrency(account.property_value, acctCurrency)}
+                    </Typography>
+                  </Grid>
+                  {mortgageAccount && (
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Mortgage Balance
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatCurrency(Math.abs(mortgageBalance), acctCurrency)}
+                      </Typography>
+                    </Grid>
+                  )}
+                  <Grid item xs={6} sm={3}>
+                    <Typography variant="body2" color="text.secondary">
+                      Equity
+                    </Typography>
+                    <Typography variant="body1" color={equity >= 0 ? 'success.main' : 'error.main'}>
+                      {formatCurrency(equity, acctCurrency)}
+                    </Typography>
+                  </Grid>
+                  {account.property_type && (
+                    <Grid item xs={6} sm={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Property Type
+                      </Typography>
+                      <Typography variant="body1">
+                        {account.property_type === 'primary_residence' ? 'Primary Residence'
+                          : account.property_type === 'rental' ? 'Rental'
+                          : 'Vacation Home'}
+                      </Typography>
+                    </Grid>
+                  )}
+                </>
               )}
             </Grid>
           </CardContent>
@@ -475,6 +692,54 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                 />
               </Grid>
+              {isRealEstate && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Property Value"
+                      fullWidth
+                      type="number"
+                      value={editForm.property_value}
+                      onChange={(e) => setEditForm({ ...editForm, property_value: e.target.value })}
+                      InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>Property Type</InputLabel>
+                      <Select
+                        value={editForm.property_type}
+                        onChange={(e) => setEditForm({ ...editForm, property_type: e.target.value })}
+                        label="Property Type"
+                      >
+                        <MenuItem value="">—</MenuItem>
+                        <MenuItem value="primary_residence">Primary Residence</MenuItem>
+                        <MenuItem value="rental">Rental Property</MenuItem>
+                        <MenuItem value="vacation">Vacation Home</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </>
+              )}
+              {isMortgage && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Secured by Property</InputLabel>
+                    <Select
+                      value={editForm.linked_real_estate_account_id}
+                      onChange={(e) => setEditForm({ ...editForm, linked_real_estate_account_id: e.target.value })}
+                      label="Secured by Property"
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      {realEstateAccounts.map((acc) => (
+                        <MenuItem key={acc.account_id} value={acc.account_id}>
+                          {acc.account_name}{acc.institution_name ? ` — ${acc.institution_name}` : ''}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
               <Grid item xs={12}>
                 <FormControlLabel
                   control={
@@ -514,7 +779,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   <ListItem>
                     <ListItemText
                       primary="Opening Balance"
-                      secondary={formatCurrency(account.opening_balance)}
+                      secondary={formatCurrency(account.opening_balance, acctCurrency)}
                     />
                   </ListItem>
                   <ListItem>
@@ -542,6 +807,14 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                   {account.notes && (
                     <ListItem>
                       <ListItemText primary="Notes" secondary={account.notes} />
+                    </ListItem>
+                  )}
+                  {isRealEstate && mortgageAccount && (
+                    <ListItem>
+                      <ListItemText
+                        primary="Linked Mortgage"
+                        secondary={mortgageAccount.account_name}
+                      />
                     </ListItem>
                   )}
                 </List>
@@ -603,7 +876,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
           )}
 
           {balanceHistory && balanceHistory.balances.length > 0 ? (
-            <BalanceHistoryChart balances={balanceHistory.balances} />
+            <BalanceHistoryChart balances={balanceHistory.balances} currency={acctCurrency} />
           ) : (
             <Typography color="text.secondary">No balance history available</Typography>
           )}
@@ -710,7 +983,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Total Value
                     </Typography>
-                    <Typography variant="h6">{formatCurrency(portfolio.total_value)}</Typography>
+                    <Typography variant="h6">{formatCurrency(portfolio.total_value, acctCurrency)}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">
@@ -729,7 +1002,7 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       }
                     >
                       {portfolio.total_gain_loss != null
-                        ? formatCurrency(portfolio.total_gain_loss)
+                        ? formatCurrency(portfolio.total_gain_loss, acctCurrency)
                         : 'N/A'}
                     </Typography>
                   </Grid>
@@ -779,8 +1052,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                       <ListItemText
                         primary={`${holding.symbol} - ${holding.description || 'N/A'}`}
                         secondary={`${holding.quantity} shares @ ${formatCurrency(
-                          holding.current_value || 0
-                        )}${holding.gain_loss != null ? ` (${holding.gain_loss >= 0 ? '+' : ''}${formatCurrency(holding.gain_loss)})` : ''}`}
+                          holding.current_value || 0, acctCurrency
+                        )}${holding.gain_loss != null ? ` (${holding.gain_loss >= 0 ? '+' : ''}${formatCurrency(holding.gain_loss, acctCurrency)})` : ''}`}
                       />
                       {holding.gain_loss_percent != null && (
                         <Chip
@@ -868,17 +1141,139 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
             </Card>
           )}
 
+          {/* Active reconciliation clearing UI */}
+          {activeRecon && (
+            <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                <Typography variant="subtitle2">
+                  Clearing Transactions — Statement {new Date(activeRecon.statement_date).toLocaleDateString()}
+                </Typography>
+                <Button size="small" onClick={() => { setActiveRecon(null); setClearedIds(new Set()); }}>
+                  Cancel
+                </Button>
+              </Box>
+
+              {/* Running totals */}
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Statement Balance</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatCurrency(activeRecon.statement_balance, acctCurrency)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Cleared Balance</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatCurrency(clearedBalance, acctCurrency)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  <Typography variant="caption" color="text.secondary">Difference</Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    color={Math.abs(discrepancy) < 0.01 ? 'success.main' : 'warning.main'}
+                  >
+                    {formatCurrency(discrepancy, acctCurrency)}
+                  </Typography>
+                </Grid>
+              </Grid>
+
+              {reconTxLoading && <LinearProgress sx={{ mb: 1 }} />}
+
+              {reconTransactions?.transactions && reconTransactions.transactions.length > 0 && (
+                <>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      {clearedIds.size} of {reconTransactions.transactions.length} transactions cleared
+                    </Typography>
+                    <Box>
+                      <Button size="small" onClick={handleSelectAllCleared}>Select All</Button>
+                      <Button size="small" onClick={handleDeselectAllCleared}>Clear All</Button>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <List dense disablePadding>
+                      {reconTransactions.transactions.map((tx: Transaction) => (
+                        <ListItem
+                          key={tx.id}
+                          dense
+                          sx={{
+                            borderBottom: '1px solid',
+                            borderBottomColor: 'divider',
+                            bgcolor: clearedIds.has(tx.id) ? 'action.selected' : 'transparent',
+                          }}
+                        >
+                          <Checkbox
+                            checked={clearedIds.has(tx.id)}
+                            onChange={() => handleToggleCleared(tx.id)}
+                            size="small"
+                          />
+                          <ListItemText
+                            primary={
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="body2" noWrap sx={{ maxWidth: '60%' }}>
+                                  {tx.description || 'No description'}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color={tx.transaction_type === 'Income' ? 'success.main' : 'error.main'}
+                                >
+                                  {tx.transaction_type === 'Income' ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), acctCurrency)}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={tx.date}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                </>
+              )}
+
+              {reconTransactions?.transactions && reconTransactions.transactions.length === 0 && (
+                <Typography color="text.secondary" variant="body2">
+                  No transactions found for this account up to {new Date(activeRecon.statement_date).toLocaleDateString()}.
+                </Typography>
+              )}
+
+              <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => completeReconMutation.mutate()}
+                  disabled={completeReconMutation.isPending}
+                >
+                  {completeReconMutation.isPending ? 'Completing...' : 'Finish Reconciliation'}
+                </Button>
+              </Box>
+              {completeReconMutation.isError && (
+                <Alert severity="error" sx={{ mt: 1 }}>Failed to complete reconciliation.</Alert>
+              )}
+            </Card>
+          )}
+
           {reconciliations && reconciliations.length > 0 ? (
             <List>
               {reconciliations.map((recon) => (
-                <ListItem key={recon.reconciliation_id}>
+                <ListItem
+                  key={recon.reconciliation_id}
+                  sx={{ cursor: recon.is_reconciled ? 'default' : 'pointer' }}
+                  onClick={() => {
+                    if (!recon.is_reconciled && !activeRecon) {
+                      handleStartClearing(recon);
+                    }
+                  }}
+                >
                   <ListItemText
                     primary={new Date(recon.statement_date).toLocaleDateString()}
                     secondary={`Statement: ${formatCurrency(
-                      recon.statement_balance
+                      recon.statement_balance, acctCurrency
                     )} | Calculated: ${formatCurrency(
-                      recon.calculated_balance
-                    )} | Discrepancy: ${formatCurrency(recon.discrepancy_amount || 0)}`}
+                      recon.calculated_balance, acctCurrency
+                    )} | Discrepancy: ${formatCurrency(recon.discrepancy_amount || 0, acctCurrency)}`}
                   />
                   {recon.is_reconciled ? (
                     <Chip
@@ -889,8 +1284,8 @@ const AccountDetailsDialog: React.FC<AccountDetailsDialogProps> = ({
                     />
                   ) : (
                     <Chip
-                      label={`${formatCurrency(recon.discrepancy_amount || 0)} off`}
-                      color={recon.discrepancy_amount && Math.abs(recon.discrepancy_amount) > 0.01 ? 'warning' : 'success'}
+                      label={activeRecon?.reconciliation_id === recon.reconciliation_id ? 'Clearing...' : 'Click to clear'}
+                      color={activeRecon?.reconciliation_id === recon.reconciliation_id ? 'info' : 'warning'}
                       size="small"
                     />
                   )}

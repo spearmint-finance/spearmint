@@ -11,9 +11,9 @@ import "./styles/global.css";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 0, // Always refetch — no stale cache
     },
   },
 });

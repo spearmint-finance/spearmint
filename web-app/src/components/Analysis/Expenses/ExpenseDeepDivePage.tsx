@@ -13,9 +13,11 @@ import {
   useCashFlowTrends,
 } from "../../../hooks/useAnalysis";
 import { format, subMonths } from "date-fns";
+import { useEntityContext } from "../../../contexts/EntityContext";
 
 function ExpenseDeepDivePage() {
   const navigate = useNavigate();
+  const { selectedEntityId } = useEntityContext();
 
   // State for filters
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -28,15 +30,17 @@ function ExpenseDeepDivePage() {
   >("monthly");
 
   // Convert expense view to API mode
-  const viewMode = expenseView === "operating" ? "analysis" :
-                   expenseView === "with-capital" ? "with_capital" :
-                   "complete";
+  const viewMode: "analysis" | "with_capital" | "complete" =
+    expenseView === "operating" ? "analysis" :
+    expenseView === "with-capital" ? "with_capital" :
+    "complete";
 
   // Prepare params for API calls
   const params = {
     start_date: dateRange.start_date || undefined,
     end_date: dateRange.end_date || undefined,
     mode: viewMode,
+    entity_id: selectedEntityId ?? undefined,
   };
 
   // Fetch data using hooks
@@ -87,7 +91,7 @@ function ExpenseDeepDivePage() {
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <Stack direction="row" spacing={2}>
             <ExpenseViewToggle value={expenseView} onChange={setExpenseView} />
-            <ExportButton dateRange={dateRange} viewMode={viewMode} />
+            <ExportButton dateRange={dateRange} viewMode={viewMode} expenseData={expenseData} />
           </Stack>
         </Stack>
         <Box sx={{ mt: 2 }}>

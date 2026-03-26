@@ -5,7 +5,6 @@
 
 import { Box, Typography, useTheme, Paper } from "@mui/material";
 import {
-  LineChart,
   Line,
   Area,
   XAxis,

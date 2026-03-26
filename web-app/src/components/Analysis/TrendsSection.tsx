@@ -6,8 +6,19 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Grid,
+  useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import TrendLineChart from "../Charts/TrendLineChart";
 import CashFlowAreaChart from "../Charts/CashFlowAreaChart";
 import { CashFlowTrendsResponse } from "../../api/analysis";
@@ -19,6 +30,7 @@ interface TrendsSectionProps {
 }
 
 function TrendsSection({ trendsData, isLoading, onPeriodChange }: TrendsSectionProps) {
+  const theme = useTheme();
   const [chartType, setChartType] = useState<"line" | "area" | "bar">("line");
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "quarterly" | "yearly">(
     "monthly"
@@ -131,11 +143,28 @@ function TrendsSection({ trendsData, isLoading, onPeriodChange }: TrendsSectionP
               />
             )}
             {chartType === "bar" && (
-              <Box sx={{ height: 400 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-                  Bar chart view - Coming soon
-                </Typography>
-              </Box>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis dataKey="date" stroke={theme.palette.text.secondary} />
+                  <YAxis
+                    stroke={theme.palette.text.secondary}
+                    tickFormatter={(value: number) => `$${value.toLocaleString()}`}
+                  />
+                  <Tooltip
+                    formatter={(value: number, name: string) => [
+                      `$${value.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`,
+                      name,
+                    ]}
+                  />
+                  <Legend />
+                  <Bar dataKey="income" name="Income" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expense" name="Expenses" fill={theme.palette.error.main} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </Box>
         ) : (

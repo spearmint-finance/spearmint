@@ -315,6 +315,33 @@ ASSISTANT_TOOLS: List[Dict[str, Any]] = [
         }
     },
 
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_entity_assignment",
+            "description": "Propose assigning one or more transactions to a specific entity (e.g., personal, business, rental property). Returns a preview that the user must confirm before changes are made.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "transaction_ids": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "List of transaction IDs to assign"
+                    },
+                    "merchant_pattern": {
+                        "type": "string",
+                        "description": "Match transactions by merchant name pattern instead of IDs"
+                    },
+                    "entity_name": {
+                        "type": "string",
+                        "description": "Target entity name to assign transactions to"
+                    }
+                },
+                "required": ["entity_name"]
+            }
+        }
+    },
+
     # ===== NAVIGATION TOOLS =====
     {
         "type": "function",
@@ -367,7 +394,7 @@ ASSISTANT_TOOLS: List[Dict[str, Any]] = [
 CONFIRMATION_REQUIRED_TOOLS = {
     "propose_categorization",
     "propose_category_rule",
-    "propose_mark_as_transfer",
+    "propose_entity_assignment",
 }
 
 # Tool names that are read-only (safe to execute without confirmation)

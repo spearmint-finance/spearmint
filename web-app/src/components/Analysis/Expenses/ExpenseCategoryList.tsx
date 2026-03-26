@@ -38,7 +38,7 @@ import { format } from "date-fns";
 interface ExpenseCategoryListProps {
   expenseData?: ExpenseAnalysisResponse;
   dateRange: DateRange;
-  viewMode: "analysis" | "complete";
+  viewMode: "analysis" | "with_capital" | "complete";
   isLoading?: boolean;
 }
 

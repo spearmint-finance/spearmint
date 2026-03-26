@@ -82,10 +82,13 @@ def get_net_worth(
 
 
 @router.get("/summary", response_model=List[AccountSummary])
-def get_account_summary(db: Session = Depends(get_db)):
-    """Get summary of all accounts with current balances."""
+def get_account_summary(
+    entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID"),
+    db: Session = Depends(get_db)
+):
+    """Get summary of all accounts with current balances, optionally filtered by entity."""
     service = AccountService(db)
-    summaries = service.get_account_summary()
+    summaries = service.get_account_summary(entity_id=entity_id)
     return [AccountSummary(**summary) for summary in summaries]
 
 
@@ -121,7 +124,16 @@ def list_accounts(
             "entity_ids": [e.entity_id for e in account.entities],
             "notes": account.notes,
             "created_at": account.created_at,
-            "updated_at": account.updated_at
+            "updated_at": account.updated_at,
+            "property_value": account.property_value,
+            "property_type": account.property_type,
+            "purchase_price": account.purchase_price,
+            "purchase_date": account.purchase_date,
+            "interest_rate": account.interest_rate,
+            "original_loan_amount": account.original_loan_amount,
+            "loan_start_date": account.loan_start_date,
+            "loan_term_months": account.loan_term_months,
+            "linked_real_estate_account_id": account.linked_real_estate_account_id,
         }
 
         # Get current balance
@@ -156,7 +168,16 @@ def create_account(
             opening_balance=account.opening_balance,
             opening_balance_date=account.opening_balance_date,
             entity_ids=account.entity_ids,
-            notes=account.notes
+            notes=account.notes,
+            property_value=account.property_value,
+            property_type=account.property_type,
+            purchase_price=account.purchase_price,
+            purchase_date=account.purchase_date,
+            interest_rate=account.interest_rate,
+            original_loan_amount=account.original_loan_amount,
+            loan_start_date=account.loan_start_date,
+            loan_term_months=account.loan_term_months,
+            linked_real_estate_account_id=account.linked_real_estate_account_id,
         )
 
         # Build response
@@ -175,7 +196,16 @@ def create_account(
             opening_balance_date=new_account.opening_balance_date,
             notes=new_account.notes,
             created_at=new_account.created_at,
-            updated_at=new_account.updated_at
+            updated_at=new_account.updated_at,
+            property_value=new_account.property_value,
+            property_type=new_account.property_type,
+            purchase_price=new_account.purchase_price,
+            purchase_date=new_account.purchase_date,
+            interest_rate=new_account.interest_rate,
+            original_loan_amount=new_account.original_loan_amount,
+            loan_start_date=new_account.loan_start_date,
+            loan_term_months=new_account.loan_term_months,
+            linked_real_estate_account_id=new_account.linked_real_estate_account_id,
         )
 
         if account.opening_balance != 0:
@@ -223,7 +253,16 @@ def get_account(
         "notes": account.notes,
         "entity_ids": [e.entity_id for e in account.entities],
         "created_at": account.created_at,
-        "updated_at": account.updated_at
+        "updated_at": account.updated_at,
+        "property_value": account.property_value,
+        "property_type": account.property_type,
+        "purchase_price": account.purchase_price,
+        "purchase_date": account.purchase_date,
+        "interest_rate": account.interest_rate,
+        "original_loan_amount": account.original_loan_amount,
+        "loan_start_date": account.loan_start_date,
+        "loan_term_months": account.loan_term_months,
+        "linked_real_estate_account_id": account.linked_real_estate_account_id,
     }
 
     # Get current balance
@@ -271,7 +310,16 @@ def update_account(
         "notes": updated_account.notes,
         "entity_ids": [e.entity_id for e in updated_account.entities],
         "created_at": updated_account.created_at,
-        "updated_at": updated_account.updated_at
+        "updated_at": updated_account.updated_at,
+        "property_value": updated_account.property_value,
+        "property_type": updated_account.property_type,
+        "purchase_price": updated_account.purchase_price,
+        "purchase_date": updated_account.purchase_date,
+        "interest_rate": updated_account.interest_rate,
+        "original_loan_amount": updated_account.original_loan_amount,
+        "loan_start_date": updated_account.loan_start_date,
+        "loan_term_months": updated_account.loan_term_months,
+        "linked_real_estate_account_id": updated_account.linked_real_estate_account_id,
     }
 
     return AccountResponse(**response_dict)

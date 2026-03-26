@@ -44,7 +44,9 @@ function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          px: 3,
+          pb: 3,
+          pt: { xs: 8, md: 3 },
           width: { xs: "100%", md: `calc(100% - ${DRAWER_WIDTH}px)` },
           ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
           backgroundColor: "background.default",

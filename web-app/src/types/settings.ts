@@ -59,6 +59,7 @@ export interface CategoryRuleCreate {
   rule_priority?: number;
   category_id?: number | null;
   entity_id?: number | null;
+  account_id?: number | null;
   is_active?: boolean;
   description_pattern?: string | null;
   source_pattern?: string | null;

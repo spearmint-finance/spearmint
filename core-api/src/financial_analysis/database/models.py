@@ -97,6 +97,12 @@ class Transaction(Base):
     security_symbol = Column(String(20))
     security_quantity = Column(Numeric(15, 6))
 
+    # Mortgage payment fields (only used when transaction_type = 'MortgagePayment')
+    mortgage_account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)
+    mortgage_principal = Column(Numeric(10, 2), nullable=True)   # Principal portion
+    mortgage_interest = Column(Numeric(10, 2), nullable=True)    # Interest portion
+    mortgage_escrow = Column(Numeric(10, 2), nullable=True)      # Escrow portion (taxes/insurance)
+
     # Direct entity assignment (NULL = inherit from account's entities)
     entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
 
@@ -105,12 +111,12 @@ class Transaction(Base):
     related_transaction = relationship("Transaction", remote_side=[transaction_id], backref="related_transactions")
     tags = relationship("Tag", secondary="transaction_tags", back_populates="transactions")
     splits = relationship("TransactionSplit", back_populates="transaction", cascade="all, delete-orphan")
-    account = relationship("Account", back_populates="transactions")
+    account = relationship("Account", back_populates="transactions", foreign_keys=[account_id])
     entity = relationship("Entity")
 
     # Constraints and Indexes
     __table_args__ = (
-        CheckConstraint("transaction_type IN ('Income', 'Expense')", name='check_transaction_type'),
+        CheckConstraint("transaction_type IN ('Income', 'Expense', 'MortgagePayment')", name='check_transaction_type'),
         Index('idx_transaction_date', 'transaction_date'),
         Index('idx_transaction_type', 'transaction_type'),
         Index('idx_category_id', 'category_id'),
@@ -168,6 +174,7 @@ class CategoryRule(Base):
     rule_priority = Column(Integer, default=100)
     category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=True)
     entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+    account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)
     is_active = Column(Boolean, default=True)
 
     # Pattern matching criteria
@@ -184,6 +191,7 @@ class CategoryRule(Base):
     # Relationships
     category = relationship("Category", backref="category_rules")
     entity = relationship("Entity")
+    account = relationship("Account")
 
     # Indexes
     __table_args__ = (
@@ -191,6 +199,7 @@ class CategoryRule(Base):
         Index('idx_category_rule_active', 'is_active'),
         Index('idx_category_rule_category', 'category_id'),
         Index('idx_category_rule_entity', 'entity_id'),
+        Index('idx_category_rule_account', 'account_id'),
     )
 
     def __repr__(self):
@@ -291,21 +300,32 @@ class Budget(Base):
     """
     Budgets table (PRD Section 3.2.8).
 
-    Budget tracking by category (future enhancement).
+    Budget tracking by category with entity scoping.
     """
     __tablename__ = "budgets"
 
     budget_id = Column(Integer, primary_key=True, autoincrement=True)
     category_id = Column(Integer, ForeignKey('categories.category_id'), nullable=False)
     budget_amount = Column(Numeric(10, 2), nullable=False)
-    period_type = Column(String(20), nullable=False)
+    period_type = Column(String(20), nullable=False, default='Monthly')
     start_date = Column(Date, nullable=False)
     end_date = Column(Date)
+    entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
+    is_active = Column(Boolean, default=True)
+    notes = Column(Text)
     created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    # Relationships
+    category = relationship("Category")
+    entity = relationship("Entity")
 
     # Constraints
     __table_args__ = (
         CheckConstraint("period_type IN ('Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly')", name='check_period_type'),
+        Index('idx_budget_category', 'category_id'),
+        Index('idx_budget_entity', 'entity_id'),
+        Index('idx_budget_active', 'is_active'),
     )
 
     def __repr__(self):
@@ -521,6 +541,19 @@ class Account(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
+    # Real estate fields (only used when account_type = 'real_estate')
+    property_value = Column(Numeric(15, 2), nullable=True)         # Current market value
+    property_type = Column(String(30), nullable=True)              # primary_residence, rental, vacation
+    purchase_price = Column(Numeric(15, 2), nullable=True)         # Original purchase price
+    purchase_date = Column(Date, nullable=True)                    # Date of purchase
+
+    # Mortgage fields (only used when account_type = 'mortgage')
+    interest_rate = Column(Numeric(6, 4), nullable=True)           # Annual rate, e.g. 6.5000 = 6.5%
+    original_loan_amount = Column(Numeric(15, 2), nullable=True)   # Original principal
+    loan_start_date = Column(Date, nullable=True)                  # Date mortgage began
+    loan_term_months = Column(Integer, nullable=True)              # e.g. 360 for 30 years
+    linked_real_estate_account_id = Column(Integer, ForeignKey('accounts.account_id'), nullable=True)  # Property this mortgage secures
+
     # Entity assignment (NULL = default/personal entity)
     entity_id = Column(Integer, ForeignKey('entities.entity_id'), nullable=True)
 
@@ -532,7 +565,7 @@ class Account(Base):
     # Relationships
     entities = relationship("Entity", secondary=account_entities, back_populates="accounts")
     linked_provider = relationship("LinkedProvider", back_populates="accounts")
-    transactions = relationship("Transaction", back_populates="account")
+    transactions = relationship("Transaction", back_populates="account", foreign_keys="Transaction.account_id")
     balances = relationship("AccountBalance", back_populates="account", cascade="all, delete-orphan")
     holdings = relationship("InvestmentHolding", back_populates="account", cascade="all, delete-orphan")
     reconciliations = relationship("Reconciliation", back_populates="account", cascade="all, delete-orphan")
@@ -540,7 +573,7 @@ class Account(Base):
     # Constraints and Indexes
     __table_args__ = (
         CheckConstraint("account_type IN ('checking', 'savings', 'brokerage', 'investment', "
-                       "'credit_card', 'loan', '401k', 'ira', 'other')",
+                       "'credit_card', 'loan', 'mortgage', '401k', 'ira', 'real_estate', 'other')",
                        name='check_account_type'),
         Index('idx_account_type', 'account_type'),
         Index('idx_account_active', 'is_active'),

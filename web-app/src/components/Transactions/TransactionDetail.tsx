@@ -25,11 +25,16 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import SaveIcon from "@mui/icons-material/Save";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "../../types/transaction";
+import { getRelatedTransactions } from "../../api/relationships";
 import { useDeleteTransaction, useUpdateTransaction } from "../../hooks/useTransactions";
 import { useEntities } from "../../hooks/useEntities";
 import { getAccounts } from "../../api/accounts";
@@ -46,16 +51,25 @@ const DEFAULT_TAG_SUGGESTIONS = [
   "exclude-from-expenses",
 ];
 
+const RELATIONSHIP_TYPE_LABELS: Record<string, { label: string; icon: typeof LinkIcon }> = {
+  transfer: { label: "Transfer", icon: SwapHorizIcon },
+  credit_card_payment: { label: "Credit Card Payment", icon: CreditCardIcon },
+  reimbursement: { label: "Reimbursement", icon: ReceiptLongIcon },
+  dividend_reinvestment: { label: "Dividend Reinvestment", icon: LinkIcon },
+};
+
 interface TransactionDetailProps {
   open: boolean;
   onClose: () => void;
   transaction: Transaction | null;
+  onNavigateToTransaction?: (transactionId: number) => void;
 }
 
 function TransactionDetail({
   open,
   onClose,
   transaction,
+  onNavigateToTransaction,
 }: TransactionDetailProps) {
   const { enqueueSnackbar } = useSnackbar();
   const deleteMutation = useDeleteTransaction();
@@ -64,6 +78,11 @@ function TransactionDetail({
   const { data: accountsData } = useQuery({
     queryKey: ["accounts"],
     queryFn: () => getAccounts(),
+  });
+  const { data: relatedData } = useQuery({
+    queryKey: ["related-transactions", transaction?.id],
+    queryFn: () => getRelatedTransactions(transaction!.id),
+    enabled: !!transaction?.related_transaction_id && open,
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -248,44 +267,69 @@ function TransactionDetail({
                 </Grid>
               )}
 
-            {/* Related Transaction */}
+            {/* Related Transactions */}
             {transaction.related_transaction_id && (
               <Grid item xs={12}>
                 <Divider sx={{ my: 1 }} />
-                <Box
-                  sx={{
-                    p: 2,
-                    bgcolor: "info.lighter",
-                    borderRadius: 1,
-                    border: "1px solid",
-                    borderColor: "info.light",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1,
-                    }}
-                  >
-                    <LinkIcon fontSize="small" color="primary" />
-                    <Typography variant="subtitle2" color="primary">
-                      Linked Transaction
+                {relatedData && relatedData.related_transactions.length > 0 ? (
+                  relatedData.related_transactions.map((rel, idx) => {
+                    const typeInfo = RELATIONSHIP_TYPE_LABELS[rel.relationship_type] || { label: rel.relationship_type, icon: LinkIcon };
+                    const TypeIcon = typeInfo.icon;
+                    const relTx = rel.transaction;
+                    return (
+                      <Box
+                        key={idx}
+                        sx={{
+                          p: 2,
+                          bgcolor: "action.hover",
+                          borderRadius: 1,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          cursor: onNavigateToTransaction ? "pointer" : "default",
+                          "&:hover": onNavigateToTransaction ? { bgcolor: "action.selected" } : {},
+                          mb: 1,
+                        }}
+                        onClick={() => onNavigateToTransaction?.(relTx.transaction_id)}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                          <TypeIcon fontSize="small" color="primary" />
+                          <Typography variant="subtitle2" color="primary">
+                            {typeInfo.label}
+                          </Typography>
+                          {onNavigateToTransaction && (
+                            <OpenInNewIcon fontSize="small" color="action" sx={{ ml: "auto" }} />
+                          )}
+                        </Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <Typography variant="body2" sx={{ flex: 1, mr: 1 }} noWrap>
+                            {relTx.description || "No description"}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight="medium"
+                            color={relTx.transaction_type === "Income" ? "success.main" : "error.main"}
+                          >
+                            {relTx.transaction_type === "Income" ? "+" : "-"}
+                            {formatCurrency(Math.abs(relTx.amount))}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(relTx.transaction_date)} {relTx.category_name ? `· ${relTx.category_name}` : ""}
+                        </Typography>
+                      </Box>
+                    );
+                  })
+                ) : (
+                  <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1, border: "1px solid", borderColor: "divider" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <LinkIcon fontSize="small" color="primary" />
+                      <Typography variant="subtitle2" color="primary">Linked Transaction</Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+                      Related Transaction ID: {transaction.related_transaction_id}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    This transaction is linked to another transaction (e.g., transfer pair).
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 1, display: "block" }}
-                  >
-                    Related Transaction ID:{" "}
-                    {transaction.related_transaction_id}
-                  </Typography>
-                </Box>
+                )}
               </Grid>
             )}
 
@@ -515,22 +559,23 @@ function TransactionDetail({
             )}
           </Grid>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ position: 'sticky', bottom: 0, bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider', zIndex: 1 }}>
           <Button
             startIcon={<DeleteIcon />}
             color="error"
+            size="small"
             onClick={() => setDeleteConfirmOpen(true)}
           >
             Delete
           </Button>
-          <Box sx={{ flex: 1 }} />
           <Button
             startIcon={<ContentCopyIcon />}
+            size="small"
             onClick={() => setDuplicateDialogOpen(true)}
           >
             Duplicate
           </Button>
-          <Button onClick={onClose}>Close</Button>
+          <Box sx={{ flex: 1 }} />
           <Button
             variant="contained"
             startIcon={<EditIcon />}

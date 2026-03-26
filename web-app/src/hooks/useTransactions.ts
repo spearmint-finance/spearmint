@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   getTransactions,
   getTransaction,
@@ -20,9 +20,7 @@ export const useTransactions = (params?: TransactionListParams) => {
   return useQuery({
     queryKey: ["transactions", params],
     queryFn: () => getTransactions(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    keepPreviousData: true, // keep rows/rowCount while fetching next page to avoid UI reset
-    refetchOnWindowFocus: false,
+    placeholderData: keepPreviousData, // keep rows/rowCount while fetching next page to avoid UI reset
   });
 };
 

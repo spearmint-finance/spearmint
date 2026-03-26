@@ -36,7 +36,16 @@ class AccountService:
         opening_balance: Decimal = Decimal('0'),
         opening_balance_date: Optional[date] = None,
         entity_ids: Optional[List[int]] = None,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
+        property_value: Optional[Decimal] = None,
+        property_type: Optional[str] = None,
+        purchase_price: Optional[Decimal] = None,
+        purchase_date: Optional[date] = None,
+        interest_rate: Optional[Decimal] = None,
+        original_loan_amount: Optional[Decimal] = None,
+        loan_start_date: Optional[date] = None,
+        loan_term_months: Optional[int] = None,
+        linked_real_estate_account_id: Optional[int] = None,
     ) -> Account:
         """
         Create a new financial account.
@@ -73,7 +82,16 @@ class AccountService:
             has_investment_component=has_investments,
             opening_balance=opening_balance,
             opening_balance_date=opening_balance_date or date.today(),
-            notes=notes
+            notes=notes,
+            property_value=property_value,
+            property_type=property_type,
+            purchase_price=purchase_price,
+            purchase_date=purchase_date,
+            interest_rate=interest_rate,
+            original_loan_amount=original_loan_amount,
+            loan_start_date=loan_start_date,
+            loan_term_months=loan_term_months,
+            linked_real_estate_account_id=linked_real_estate_account_id,
         )
 
         # Assign entities
@@ -164,6 +182,16 @@ class AccountService:
                 Entity.entity_id.in_(entity_ids)
             ).all() if entity_ids else []
             account.entities = entities
+
+            # Backfill transactions with NULL entity_id when account has exactly one entity
+            if len(entities) == 1:
+                self.db.query(Transaction).filter(
+                    Transaction.account_id == account_id,
+                    Transaction.entity_id.is_(None),
+                ).update(
+                    {Transaction.entity_id: entities[0].entity_id},
+                    synchronize_session='fetch',
+                )
 
         for key, value in kwargs.items():
             if hasattr(account, key):
@@ -684,11 +712,11 @@ class AccountService:
                 amount = balance.total_balance
 
                 # Categorize by account type
-                if account.account_type in ['credit_card', 'loan']:
-                    # For credit cards/loans: negative or positive balance = amount owed (liability)
-                    # But if balance is negative (credit in your favor), it's an asset
+                if account.account_type in ['credit_card', 'loan', 'mortgage']:
+                    # For credit cards/loans/mortgages: positive balance = amount owed (liability)
+                    # If balance is negative (credit in your favor), treat as asset
                     if amount < 0:
-                        # Credit in your favor (overpayment) - treat as asset
+                        # Credit in your favor - treat as asset
                         assets += abs(amount)
                         liquid_assets += abs(amount)
                     else:
@@ -725,14 +753,26 @@ class AccountService:
             'as_of_date': as_of_date
         }
 
-    def get_account_summary(self) -> List[Dict[str, Any]]:
+    def get_account_summary(self, entity_id: int = None) -> List[Dict[str, Any]]:
         """
-        Get a summary of all accounts with current balances.
+        Get a summary of accounts with current balances.
+
+        Args:
+            entity_id: If provided, only return accounts linked to this entity.
 
         Returns:
             List of account summaries
         """
-        accounts = self.get_accounts(is_active=True)
+        if entity_id is not None:
+            from ..database.models import account_entities
+            # Get account IDs linked to this entity
+            linked = self.db.query(account_entities.c.account_id).filter(
+                account_entities.c.entity_id == entity_id
+            ).all()
+            linked_ids = {row[0] for row in linked}
+            accounts = [a for a in self.get_accounts(is_active=True) if a.account_id in linked_ids]
+        else:
+            accounts = self.get_accounts(is_active=True)
         summaries = []
 
         for account in accounts:

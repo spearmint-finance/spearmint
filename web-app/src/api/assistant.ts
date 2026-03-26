@@ -241,8 +241,10 @@ export async function executeAction(
   payload: Record<string, unknown>
 ): Promise<{
   success: boolean;
-  message: string;
-  action_log_id: string;
+  action: string;
+  updated_count?: number;
+  action_log_ids?: string[];
+  action_log_id?: string;
   undo_available: boolean;
 }> {
   const response = await fetch(`${baseUrl}/api/assistant/actions`, {
@@ -257,7 +259,8 @@ export async function executeAction(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to execute action: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to execute action: ${response.statusText}`);
   }
 
   return response.json();

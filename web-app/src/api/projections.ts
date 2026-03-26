@@ -9,7 +9,7 @@ import {
   CashflowProjectionResponse,
   AccuracyMetrics,
   ValidationRequest,
-  ProjectionMethodEnum,
+  ProjectionMethod as ProjectionMethodEnum,
 } from "../types/projection";
 
 export interface ProjectionQueryParams {
@@ -97,7 +97,7 @@ export const validateProjection = async (
   data: ValidationRequest
 ): Promise<AccuracyMetrics> => {
   const response =
-    await projectionsApi.validateProjection(data);
+    await projectionsApi.validateProjection(data as any);
   return response.data as unknown as AccuracyMetrics;
 };
 

@@ -1,9 +1,12 @@
 """Transaction API endpoints."""
 
+import asyncio
 from typing import Optional, List
 from datetime import date
 from decimal import Decimal
+from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
@@ -61,6 +64,10 @@ def create_transaction(
             exclude_from_income=transaction.exclude_from_income or False,
             exclude_from_expenses=transaction.exclude_from_expenses or False,
             splits=transaction.splits,
+            mortgage_account_id=transaction.mortgage_account_id,
+            mortgage_principal=transaction.mortgage_principal,
+            mortgage_interest=transaction.mortgage_interest,
+            mortgage_escrow=transaction.mortgage_escrow,
         )
         return created
     except ValidationError as e:
@@ -101,6 +108,29 @@ def bulk_update_transactions(
             failed.append({"id": tid, "error": str(e)})
 
     return {"updated": updated_count, "total": len(transaction_ids), "failed": failed}
+
+
+# NOTE: These static routes MUST be before /transactions/{transaction_id} to avoid route collision
+@router.get("/transactions/uncategorized-descriptions")
+def get_uncategorized_descriptions(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=5000),
+    db: Session = Depends(get_db),
+):
+    """Get unique uncategorized descriptions sorted by frequency."""
+    from ...services.auto_categorize_service import AutoCategorizeService
+    service = AutoCategorizeService(db)
+    desc_map = service.get_uncategorized_descriptions()
+    items = sorted(desc_map.values(), key=lambda d: d["count"], reverse=True)
+    total = len(items)
+    page = items[offset:offset + limit]
+    return {
+        "total": total,
+        "total_transactions": sum(d["count"] for d in items),
+        "offset": offset,
+        "limit": limit,
+        "descriptions": page,
+    }
 
 
 @router.get("/transactions/{transaction_id}", response_model=TransactionResponse)
@@ -144,6 +174,7 @@ def list_transactions(
     min_amount: Optional[Decimal] = Query(None, gt=0, description="Minimum amount filter"),
     max_amount: Optional[Decimal] = Query(None, gt=0, description="Maximum amount filter"),
     search_text: Optional[str] = Query(None, description="Search in description, source, notes"),
+    description_contains: Optional[str] = Query(None, description="Filter by description text (case-insensitive substring match)"),
     account_id: Optional[int] = Query(None, gt=0, description="Filter by account ID"),
     tag_ids: Optional[List[int]] = Query(None, description="Filter by tag IDs (transactions matching any of the given tags)"),
     entity_id: Optional[int] = Query(None, gt=0, description="Filter by entity ID (via account)"),
@@ -182,6 +213,7 @@ def list_transactions(
         min_amount=min_amount,
         max_amount=max_amount,
         search_text=search_text,
+        description_contains=description_contains,
         account_id=account_id,
         tag_ids=tag_ids,
         entity_id=entity_id,
@@ -226,16 +258,47 @@ def list_transactions(
     stats = service.count_and_summarize(filters)
     total = stats['total']
 
-    # When entity-filtered, recalculate summary from adjusted transaction amounts
-    # (split portions may differ from raw SQL aggregation)
+    # When entity-filtered, recalculate summary from ALL matching transactions
+    # (not just the current page), because split portions may differ from raw
+    # SQL aggregation.
     total_income = stats['total_income']
     total_expenses = stats['total_expenses']
     if entity_id:
+        # Fetch ALL entity-filtered transactions (no pagination) for accurate totals
+        all_filters = TransactionFilter(
+            start_date=start_date,
+            end_date=end_date,
+            transaction_type=transaction_type,
+            category_id=category_id,
+            include_in_analysis=include_in_analysis,
+            is_transfer=resolved_is_transfer,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            search_text=search_text,
+            account_id=account_id,
+            tag_ids=tag_ids,
+            entity_id=entity_id,
+            limit=total,  # fetch all matching
+            offset=0,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        all_txns = service.list_transactions(all_filters)
+        # Apply the same split-portion adjustment
+        for tx in all_txns:
+            splits = tx.splits or []
+            entity_assigned_splits = [s for s in splits if s.entity_id is not None]
+            if not entity_assigned_splits:
+                continue
+            matching_splits = [s for s in splits if s.entity_id == entity_id]
+            if matching_splits:
+                split_total = sum(s.amount for s in matching_splits)
+                tx.amount = split_total if tx.amount >= 0 else -abs(split_total)
         total_income = sum(
-            tx.amount for tx in transactions if tx.transaction_type == 'Income'
+            tx.amount for tx in all_txns if tx.transaction_type == 'Income'
         )
         total_expenses = sum(
-            abs(tx.amount) for tx in transactions if tx.transaction_type == 'Expense'
+            abs(tx.amount) for tx in all_txns if tx.transaction_type == 'Expense'
         )
 
     summary = {
@@ -346,4 +409,219 @@ def delete_transaction(
         raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
     
     return SuccessResponse(message=f"Transaction {transaction_id} deleted successfully")
+
+
+# ==================== Smart Auto-Categorization ====================
+
+
+class ClassifyBatchRequest(BaseModel):
+    """Request to classify a specific list of descriptions."""
+    descriptions: List[str] = Field(..., description="List of descriptions to classify")
+    mode: str = Field(default="apply", description="'preview' or 'apply'")
+    create_rules: bool = Field(default=True)
+
+
+@router.post("/transactions/classify-batch")
+def classify_batch(
+    request: ClassifyBatchRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Classify a small batch of specific descriptions using LLM.
+    Designed for interactive use — pass 10-20 descriptions at a time.
+    """
+    from ...services.auto_categorize_service import AutoCategorizeService
+    service = AutoCategorizeService(db)
+    categories = service.get_existing_categories()
+
+    # Build description dicts from the requested descriptions
+    desc_map = service.get_uncategorized_descriptions()
+    batch = []
+    for desc_text in request.descriptions:
+        if desc_text in desc_map:
+            batch.append(desc_map[desc_text])
+        else:
+            batch.append({"description": desc_text, "transaction_type": "Expense", "sample_amount": 0, "count": 0})
+
+    if not batch:
+        return {"results": [], "rules_created": 0, "categories_created": 0}
+
+    try:
+        classifications = asyncio.run(service.classify_batch(batch, categories))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
+
+    # Map LLM descriptions back to originals (LLM may alter case/whitespace)
+    original_lookup = {d.strip().lower(): d for d in request.descriptions}
+    for c in classifications:
+        llm_desc = (c.get("description") or "").strip().lower()
+        if llm_desc in original_lookup:
+            c["description"] = original_lookup[llm_desc]
+
+    # Build category lookup
+    cat_name_to_id = {c["category_name"].lower(): c["category_id"] for c in categories}
+    rules_created = 0
+    categories_created = 0
+
+    results = []
+    for c in classifications:
+        desc = c.get("description", "")
+        cat_id = c.get("category_id")
+        suggested_cat = c.get("suggested_category", "")
+        confidence = c.get("confidence", 0.0)
+        count = desc_map.get(desc, {}).get("count", 0)
+
+        if cat_id is None and suggested_cat:
+            cat_id = cat_name_to_id.get(suggested_cat.lower())
+
+        # Apply if mode == "apply" and we have a category
+        if request.mode == "apply" and cat_id and confidence >= 0.5:
+            from ...database.models import Transaction as TxModel, Category as CatModel
+            from sqlalchemy import or_
+            nan_cat = db.query(CatModel).filter(CatModel.category_name == "nan").first()
+            cat_conditions = []
+            if nan_cat:
+                cat_conditions.append(TxModel.category_id == nan_cat.category_id)
+            cat_conditions.append(TxModel.category_id.is_(None))
+
+            updated = db.query(TxModel).filter(
+                TxModel.description == desc,
+                or_(*cat_conditions),
+            ).update(
+                {TxModel.category_id: cat_id},
+                synchronize_session="fetch",
+            )
+
+            # Create rule
+            if request.create_rules and c.get("suggested_pattern"):
+                from ...database.models import CategoryRule
+                existing = db.query(CategoryRule).filter(
+                    CategoryRule.description_pattern == c["suggested_pattern"]
+                ).first()
+                if not existing:
+                    db.add(CategoryRule(
+                        rule_name=f"Auto: {c.get('merchant_name', desc[:30])}",
+                        description_pattern=c["suggested_pattern"],
+                        category_id=cat_id,
+                        rule_priority=5,
+                        is_active=True,
+                    ))
+                    rules_created += 1
+
+        results.append({
+            **c,
+            "category_id": cat_id,
+            "transaction_count": count,
+        })
+
+    if request.mode == "apply":
+        db.commit()
+
+    return {
+        "results": results,
+        "rules_created": rules_created,
+        "categories_created": categories_created,
+    }
+
+
+class ApplyCategoryAssignment(BaseModel):
+    description: str
+    category_id: int
+    suggested_pattern: Optional[str] = None
+    rule_name: Optional[str] = None
+
+
+class ApplyCategoriesRequest(BaseModel):
+    """Apply pre-approved category assignments without calling LLM."""
+    assignments: List[ApplyCategoryAssignment]
+    create_rules: bool = Field(default=True)
+
+
+@router.post("/transactions/apply-categories")
+def apply_categories(
+    request: ApplyCategoriesRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Apply user-approved category assignments directly.
+    No LLM call — just updates transactions and optionally creates rules.
+    """
+    from ...database.models import Transaction as TxModel, Category as CatModel, CategoryRule
+    from sqlalchemy import or_, func
+
+    nan_cat = db.query(CatModel).filter(CatModel.category_name == "nan").first()
+    rules_created = 0
+    total_updated = 0
+
+    # Pre-check which categories are Transfer type (should exclude from analysis)
+    transfer_cat_ids = set(
+        c.category_id for c in db.query(CatModel).filter(CatModel.category_type == "Transfer").all()
+    )
+
+    for a in request.assignments:
+        cat_conditions = []
+        if nan_cat:
+            cat_conditions.append(TxModel.category_id == nan_cat.category_id)
+        cat_conditions.append(TxModel.category_id.is_(None))
+
+        # Build update dict — auto-exclude from analysis for Transfer-type categories
+        update_fields = {TxModel.category_id: a.category_id}
+        if a.category_id in transfer_cat_ids:
+            update_fields[TxModel.include_in_analysis] = False
+
+        # Update by exact description match first
+        updated = db.query(TxModel).filter(
+            TxModel.description == a.description,
+            or_(*cat_conditions),
+        ).update(
+            update_fields,
+            synchronize_session="fetch",
+        )
+
+        # Fallback: case-insensitive match if exact match found nothing
+        if updated == 0:
+            updated = db.query(TxModel).filter(
+                func.lower(TxModel.description) == a.description.strip().lower(),
+                or_(*cat_conditions),
+            ).update(
+                update_fields,
+                synchronize_session="fetch",
+            )
+
+        # Also update all transactions matching the suggested pattern (catches variants)
+        if a.suggested_pattern:
+            pattern_updated = db.query(TxModel).filter(
+                TxModel.description.contains(a.suggested_pattern),
+                or_(*cat_conditions),
+            ).update(
+                update_fields,
+                synchronize_session="fetch",
+            )
+            updated += pattern_updated
+
+        total_updated += updated
+
+        if request.create_rules and a.suggested_pattern:
+            existing = db.query(CategoryRule).filter(
+                CategoryRule.description_pattern == a.suggested_pattern
+            ).first()
+            if not existing:
+                db.add(CategoryRule(
+                    rule_name=a.rule_name or f"Auto: {a.description[:30]}",
+                    description_pattern=a.suggested_pattern,
+                    category_id=a.category_id,
+                    rule_priority=5,
+                    is_active=True,
+                ))
+                rules_created += 1
+
+    db.commit()
+
+    return {
+        "total_updated": total_updated,
+        "rules_created": rules_created,
+        "assignments_processed": len(request.assignments),
+    }
 

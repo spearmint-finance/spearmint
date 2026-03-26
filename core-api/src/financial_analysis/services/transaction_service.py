@@ -30,6 +30,7 @@ class TransactionFilter:
         min_amount: Optional[Decimal] = None,
         max_amount: Optional[Decimal] = None,
         search_text: Optional[str] = None,
+        description_contains: Optional[str] = None,
         tag_ids: Optional[List[int]] = None,
         account_id: Optional[int] = None,
         entity_id: Optional[int] = None,
@@ -47,6 +48,7 @@ class TransactionFilter:
         self.min_amount = min_amount
         self.max_amount = max_amount
         self.search_text = search_text
+        self.description_contains = description_contains
         self.tag_ids = tag_ids or []
         self.account_id = account_id
         self.entity_id = entity_id
@@ -92,6 +94,10 @@ class TransactionService:
         exclude_from_income: bool = False,
         exclude_from_expenses: bool = False,
         splits: Optional[List] = None,
+        mortgage_account_id: Optional[int] = None,
+        mortgage_principal: Optional[Decimal] = None,
+        mortgage_interest: Optional[Decimal] = None,
+        mortgage_escrow: Optional[Decimal] = None,
     ) -> Transaction:
         """
         Create a new transaction.
@@ -126,6 +132,15 @@ class TransactionService:
         if not category:
             raise ValidationError(f"Category with ID {category_id} not found")
 
+        # Auto-inherit entity from account if not explicitly set
+        resolved_entity_id = entity_id
+        if resolved_entity_id is None and account_id is not None:
+            from .account_service import AccountService
+            account_svc = AccountService(self.db)
+            acct = account_svc.get_account(account_id)
+            if acct and len(acct.entities) == 1:
+                resolved_entity_id = acct.entities[0].entity_id
+
         # Create transaction
         transaction = Transaction(
             transaction_date=transaction_date,
@@ -140,13 +155,17 @@ class TransactionService:
             transfer_account_to=transfer_account_to,
             notes=notes,
             account_id=account_id,
-            entity_id=entity_id,
+            entity_id=resolved_entity_id,
             is_capital_expense=is_capital_expense,
             is_tax_deductible=is_tax_deductible,
             is_recurring=is_recurring,
             is_reimbursable=is_reimbursable,
             exclude_from_income=exclude_from_income,
             exclude_from_expenses=exclude_from_expenses,
+            mortgage_account_id=mortgage_account_id,
+            mortgage_principal=mortgage_principal,
+            mortgage_interest=mortgage_interest,
+            mortgage_escrow=mortgage_escrow,
         )
 
         self.db.add(transaction)
@@ -283,6 +302,9 @@ class TransactionService:
                 )
             )
 
+        if filters.description_contains:
+            conditions.append(Transaction.description.ilike(f"%{filters.description_contains}%"))
+
         if filters.tag_ids:
             query = query.join(
                 TransactionTag,
@@ -402,6 +424,10 @@ class TransactionService:
                     Category.category_name.ilike(search_pattern)
                 )
             )
+
+        if filters.description_contains:
+            conditions.append(Transaction.description.ilike(f"%{filters.description_contains}%"))
+
         if conditions:
             query = query.filter(and_(*conditions))
 

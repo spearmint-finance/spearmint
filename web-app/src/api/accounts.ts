@@ -86,7 +86,19 @@ export const deleteAccount = async (accountId: number): Promise<void> => {
   await accountsApi.deleteAccount(accountId);
 };
 
-export const getAccountSummary = async (): Promise<AccountSummary[]> => {
+export const getAccountSummary = async (
+  params?: { entity_id?: number }
+): Promise<AccountSummary[]> => {
+  // SDK doesn't support entity_id on getAccountSummary yet (DASH-005),
+  // so we append it manually via requestConfig query params if needed.
+  if (params?.entity_id) {
+    const baseUrl = (accountsApi as any).config?.baseUrl || "";
+    const url = `${baseUrl}/api/accounts/summary?entity_id=${params.entity_id}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Account summary failed: ${resp.status}`);
+    const data = await resp.json();
+    return toSnakeCase<AccountSummary[]>(data);
+  }
   const response = await accountsApi.getAccountSummary();
   return toSnakeCase<AccountSummary[]>(response.data);
 };

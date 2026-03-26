@@ -36,6 +36,8 @@ export function ChatPanel({ open, onClose, onMinimize }: ChatPanelProps) {
     isLoading,
     error,
     sendMessage,
+    confirmAction,
+    dismissAction,
     startNewConversation,
   } = useAssistant();
 
@@ -157,7 +159,12 @@ export function ChatPanel({ open, onClose, onMinimize }: ChatPanelProps) {
           ) : (
             <>
               {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  onConfirmAction={confirmAction}
+                  onDismissAction={dismissAction}
+                />
               ))}
               <div ref={messagesEndRef} />
             </>

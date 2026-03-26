@@ -33,6 +33,10 @@ import {
   executeGetSpendingTrend,
   getFinancialHealthTool,
   executeGetFinancialHealth,
+  updateTransactionTool,
+  executeUpdateTransaction,
+  createCategoryRuleTool,
+  executeCreateCategoryRule,
   GENERATED_TOOL_NAMES,
 } from "./tools/generated/index.js";
 
@@ -46,6 +50,8 @@ const ALL_TOOLS = [
   getIncomeBreakdownTool,
   getSpendingTrendTool,
   getFinancialHealthTool,
+  updateTransactionTool,
+  createCategoryRuleTool,
 ];
 
 // Tool executor map for cleaner dispatch
@@ -59,6 +65,8 @@ const TOOL_EXECUTORS: Record<string, (args: any) => Promise<unknown>> = {
   [GENERATED_TOOL_NAMES.GET_INCOME_BREAKDOWN]: executeGetIncomeBreakdown,
   [GENERATED_TOOL_NAMES.GET_SPENDING_TREND]: executeGetSpendingTrend,
   [GENERATED_TOOL_NAMES.GET_FINANCIAL_HEALTH]: executeGetFinancialHealth,
+  [GENERATED_TOOL_NAMES.UPDATE_TRANSACTION]: executeUpdateTransaction,
+  [GENERATED_TOOL_NAMES.CREATE_CATEGORY_RULE]: executeCreateCategoryRule,
 };
 
 /**
